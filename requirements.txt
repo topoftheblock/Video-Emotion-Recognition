@@ -1,0 +1,10 @@
+transformers
+torch
+torchaudio
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+dkpro-cassis
+scipy
+cassis
