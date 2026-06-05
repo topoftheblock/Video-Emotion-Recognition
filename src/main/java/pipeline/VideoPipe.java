@@ -73,9 +73,8 @@ public class VideoPipe {
 
                 // 6) Audio-Emotions (Whisper SER): Emotion aus Audio
                 composer.add(new DUUIDockerDriver.Component(AUDIO_EMOTION)
+                                .withParameter("selection", "org.texttechnologylab.annotation.type.MultimediaElement")
                                 .withView(VIDEO_VIEW));
-                //                .withParameter("selection", audiosentencetyp) und der docker so gebaut, dass es jeder untertyp von
-                //MultimediaElement sein kann
 
                 // 7) Video-Segmente mit eingebranntem Untertitel schreiben (braucht
                 // _InitialView + AudioSentence)

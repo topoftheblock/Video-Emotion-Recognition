@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 from starlette.responses import JSONResponse
 from transformers import pipeline
+from pydub import AudioSegment
 
 class EmotionToken(BaseModel):
     emotion: str
@@ -33,11 +34,21 @@ class DocumentModification(BaseModel):
     timestamp: int
     comment: str
 
+class SegmentDef(BaseModel):
+    id: int
+    start_time: float
+    end_time: float
+
 class DUUIRequest(BaseModel):
     audio: str  # audio in base64
+    segments: Optional[List[SegmentDef]] = None
+
+class SegmentResult(BaseModel):
+    id: int
+    emotions: List[EmotionToken]
 
 class DUUIResponse(BaseModel):
-    emotions: List[EmotionToken]
+    results: List[SegmentResult]
     meta: Optional[AnnotationMeta]
     modification_meta: Optional[DocumentModification]
 
@@ -130,12 +141,31 @@ def post_process(request: DUUIRequest) -> DUUIResponse:
         with open(audio_file, "wb") as fp:
             fp.write(base64.b64decode(request.audio))
             
-        results = classifier(str(audio_file))
+        full_audio = AudioSegment.from_file(audio_file)
         
-        emotions = [
-            EmotionToken(emotion=emo['label'], confidence=emo['score'])
-            for emo in results
-        ]
+        segment_results = []
+        
+        if request.segments:
+            for seg in request.segments:
+                # pydub works in milliseconds
+                start_ms = int(seg.start_time * 1000)
+                end_ms = int(seg.end_time * 1000)
+                
+                if end_ms <= start_ms:
+                    continue # invalid segment
+                    
+                snippet = full_audio[start_ms:end_ms]
+                snippet_path = Path(audio_dir) / f"snippet_{seg.id}.wav"
+                snippet.export(snippet_path, format="wav")
+                
+                results = classifier(str(snippet_path))
+                emotions = [EmotionToken(emotion=emo['label'], confidence=emo['score']) for emo in results]
+                segment_results.append(SegmentResult(id=seg.id, emotions=emotions))
+        else:
+            # Process entire audio if no segments provided
+            results = classifier(str(audio_file))
+            emotions = [EmotionToken(emotion=emo['label'], confidence=emo['score']) for emo in results]
+            segment_results.append(SegmentResult(id=0, emotions=emotions))
 
     meta = AnnotationMeta(
         name=settings.annotator_name,
@@ -151,7 +181,7 @@ def post_process(request: DUUIRequest) -> DUUIResponse:
     )
 
     return DUUIResponse(
-        emotions=emotions,
+        results=segment_results,
         meta=meta,
         modification_meta=modification_meta
     )
