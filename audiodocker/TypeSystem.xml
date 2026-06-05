@@ -1,73 +1,133 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <name>DUUI_Emotion_TypeSystem</name>
     <types>
+        <!-- EmotionScore -->
         <typeDescription>
-            <name>org.texttechnologylab.annotation.type.EmotionAnnotation</name>
-            <description>Annotation to represent an emotion classification and its confidence score.</description>
-            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <name>org.texttechnologylab.annotation.emotion.EmotionScore</name>
+            <supertypeName>uima.cas.TOP</supertypeName>
             <features>
                 <featureDescription>
-                    <name>emotion</name>
-                    <description>The labeled emotion (e.g., Happy, Neutral).</description>
+                    <name>label</name>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
-                    <name>confidence</name>
-                    <description>The confidence score of the emotion classification.</description>
-                    <rangeTypeName>uima.cas.Float</rangeTypeName>
+                    <name>score</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
                 </featureDescription>
             </features>
         </typeDescription>
+
+        <!-- Emotion -->
         <typeDescription>
-            <name>org.texttechnologylab.annotation.AnnotatorMetaData</name>
-            <description/>
+            <name>org.texttechnologylab.annotation.emotion.Emotion</name>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>scores</name>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                    <elementType>org.texttechnologylab.annotation.emotion.EmotionScore</elementType>
+                </featureDescription>
+                <featureDescription>
+                    <name>dominant</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>dominantScore</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>valence</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>arousal</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>dominance</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>reference</name>
+                    <rangeTypeName>uima.tcas.Annotation</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>timeStart</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>timeEnd</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>frameIndex</name>
+                    <rangeTypeName>uima.cas.Integer</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>granularity</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>aggregatedFrom</name>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                    <elementType>org.texttechnologylab.annotation.emotion.Emotion</elementType>
+                    <multipleReferencesAllowed>true</multipleReferencesAllowed>
+                </featureDescription>
+                <featureDescription>
+                    <name>modality</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>model</name>
+                    <rangeTypeName>org.texttechnologylab.annotation.model.MetaData</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <!-- MetaData -->
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.model.MetaData</name>
             <supertypeName>uima.cas.AnnotationBase</supertypeName>
             <features>
                 <featureDescription>
                     <name>reference</name>
-                    <description/>
                     <rangeTypeName>uima.cas.TOP</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>name</name>
-                    <description/>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>version</name>
-                    <description/>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>modelName</name>
-                    <description/>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>modelVersion</name>
-                    <description/>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
             </features>
         </typeDescription>
+
+        <!-- DocumentModification -->
         <typeDescription>
             <name>org.texttechnologylab.annotation.DocumentModification</name>
-            <description/>
             <supertypeName>uima.cas.AnnotationBase</supertypeName>
             <features>
                 <featureDescription>
                     <name>user</name>
-                    <description/>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>timestamp</name>
-                    <description/>
                     <rangeTypeName>uima.cas.Long</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>comment</name>
-                    <description/>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
             </features>

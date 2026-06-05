@@ -96,7 +96,7 @@ app = FastAPI(
 def get_input_output() -> JSONResponse:
     json_item = {
         "inputs": [],
-        "outputs": ["org.texttechnologylab.annotation.type.EmotionAnnotation"]
+        "outputs": ["org.texttechnologylab.annotation.emotion.Emotion"]
     }
     return JSONResponse(content=jsonable_encoder(json_item))
 

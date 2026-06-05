@@ -26,22 +26,43 @@ function deserialize(inputCas, inputStream)
         end
         local docLength = string.len(documentText)
 
-        for i, emo in ipairs(results["emotions"]) do
-            local emotionAnno = luajava.newInstance("org.texttechnologylab.annotation.type.EmotionAnnotation", inputCas)
-            emotionAnno:setBegin(0)
-            emotionAnno:setEnd(docLength)
-            emotionAnno:setEmotion(emo["emotion"])
-            emotionAnno:setConfidence(emo["confidence"])
-            emotionAnno:addToIndexes()
+        local emotionAnno = luajava.newInstance("org.texttechnologylab.annotation.emotion.Emotion", inputCas)
+        emotionAnno:setBegin(0)
+        emotionAnno:setEnd(docLength)
+        emotionAnno:setModality("audio")
 
-            local meta = results["meta"]
-            local meta_anno = luajava.newInstance("org.texttechnologylab.annotation.AnnotatorMetaData", inputCas)
-            meta_anno:setReference(emotionAnno)
-            meta_anno:setName(meta["name"])
-            meta_anno:setVersion(meta["version"])
-            meta_anno:setModelName(meta["modelName"])
-            meta_anno:setModelVersion(meta["modelVersion"])
-            meta_anno:addToIndexes()
+        local numEmotions = #results["emotions"]
+        local scoresArray = luajava.newInstance("org.apache.uima.jcas.cas.FSArray", inputCas:getJCas(), numEmotions)
+
+        local dominantLabel = ""
+        local dominantScore = -1.0
+
+        for i, emo in ipairs(results["emotions"]) do
+            local scoreAnno = luajava.newInstance("org.texttechnologylab.annotation.emotion.EmotionScore", inputCas)
+            scoreAnno:setLabel(emo["emotion"])
+            scoreAnno:setScore(emo["confidence"])
+            scoreAnno:addToIndexes()
+            
+            scoresArray:set(i-1, scoreAnno)
+            
+            if emo["confidence"] > dominantScore then
+                dominantScore = emo["confidence"]
+                dominantLabel = emo["emotion"]
+            end
         end
+
+        emotionAnno:setScores(scoresArray)
+        emotionAnno:setDominant(dominantLabel)
+        emotionAnno:setDominantScore(dominantScore)
+        emotionAnno:addToIndexes()
+
+        local meta = results["meta"]
+        local meta_anno = luajava.newInstance("org.texttechnologylab.annotation.model.MetaData", inputCas)
+        meta_anno:setReference(emotionAnno)
+        meta_anno:setName(meta["name"])
+        meta_anno:setVersion(meta["version"])
+        meta_anno:setModelName(meta["modelName"])
+        meta_anno:setModelVersion(meta["modelVersion"])
+        meta_anno:addToIndexes()
     end
 end
