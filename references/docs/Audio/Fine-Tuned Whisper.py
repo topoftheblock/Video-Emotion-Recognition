@@ -9,7 +9,7 @@ classifier = pipeline(
 )
 
 # Run the classifier on your audio file
-results = classifier("/Users/andreasblock/Desktop/Video-Emotion-Recognition/Audio/extracted_speech.wav")
+results = classifier("./Audio/extracted_speech.wav")
 
 # The output will be a list of dictionaries with labels and confidence scores
 print("Whisper SER Results:")
