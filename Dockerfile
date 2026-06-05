@@ -2,19 +2,29 @@ FROM python:3.10
 
 WORKDIR /usr/src/app
 
-# Install system dependencies
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y ffmpeg
+EXPOSE 9714
 
-# Install python dependencies
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install ffmpeg -y
+
 COPY ./requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download the model to cache it in the image (similar to crisper_whisper.py)
-RUN python -c "from transformers import pipeline; pipeline('audio-classification', model='firdhokk/speech-emotion-recognition-with-openai-whisper-large-v3')"
+# Pre-download the model to cache it in the image
+COPY ./src/main/python/model_preloader.py ./src/main/python/model_preloader.py
+RUN python ./src/main/python/model_preloader.py
 
-# Copy the script and audio file
-COPY ./Audio/extracted_speech.wav ./Audio/extracted_speech.wav
-COPY ./Audio/Fine-Tuned\ Whisper.py ./Audio/Fine-Tuned\ Whisper.py
+COPY ./src/main/resources/TypeSystem.xml ./src/main/resources/TypeSystem.xml
+COPY ./src/main/python/duui.py ./src/main/python/duui.py
+COPY ./src/main/lua/duui.lua ./src/main/lua/duui.lua
 
-# Run the classifier script
-CMD ["python", "-u", "./Audio/Fine-Tuned Whisper.py"]
+ARG DUUI_WHISPER_SER_LOG_LEVEL="DEBUG"
+ENV DUUI_WHISPER_SER_LOG_LEVEL=$DUUI_WHISPER_SER_LOG_LEVEL
+
+ARG DUUI_WHISPER_SER_ANNOTATOR_NAME="duui-whisper-ser"
+ENV DUUI_WHISPER_SER_ANNOTATOR_NAME=$DUUI_WHISPER_SER_ANNOTATOR_NAME
+
+ARG DUUI_WHISPER_SER_ANNOTATOR_VERSION="0.0.1"
+ENV DUUI_WHISPER_SER_ANNOTATOR_VERSION=$DUUI_WHISPER_SER_ANNOTATOR_VERSION
+
+ENTRYPOINT ["uvicorn", "src.main.python.duui:app", "--host", "0.0.0.0", "--port" ,"9714"]
+CMD ["--workers", "1"]
