@@ -1,0 +1,41 @@
+[project]
+name = "vision-identity"
+version = "0.1.0"
+requires-python = ">=3.11,<3.13"      # insightface-Wheels gehen bis cp312
+dependencies = [
+    "scenedetect>=0.6.4",             # [1] Shot Detection
+    "ultralytics>=8.3.0",             # [2] YOLO11/26 + ByteTrack
+    "insightface==0.7.3",             # [2] SCRFD + ArcFace (buffalo_l)
+    "opencv-python-headless>=4.9",    # headless -> serverfreundlich
+    "scikit-learn>=1.4",              # [3] Agglomerative Clustering
+    "numpy>=1.24,<2",                 # insightface 0.7.3 ist gegen NumPy 1.x gebaut
+    # onnxruntime-Backend pro Plattform:
+    "onnxruntime>=1.17 ; sys_platform == 'darwin'",       # mac (M4): CPU/CoreML
+    "onnxruntime-gpu>=1.17 ; sys_platform == 'linux'",    # Server: CUDA
+    "lap>=0.5.12",                    # ByteTrack: lineare Zuordnung (Ultralytics-Abhängigkeit)
+
+    "hsemotion-onnx>=0.3.1",          # [E] FER: enet_b0_8_va_mtl (8 Klassen + Valence/Arousal)
+]
+## von chatgpt vorgeschlagen
+[tool.uv]
+override-dependencies = [
+    "opencv-python",
+    "onnxruntime",
+]
+## hsemotion-onnx deklariert generisches opencv-python + onnxruntime.
+## Beides würde unsere bewussten Wahlen (headless / GPU-Split) unterlaufen,
+## weil je zwei Distributionen denselben Import liefern. Daher gezielt rausnehmen:
+#override-dependencies = [
+#    "opencv-python; sys_platform == 'never'",        # cv2 kommt aus opencv-python-headless
+#    "onnxruntime>=1.17; sys_platform == 'darwin'",    # Linux: nur onnxruntime-gpu
+#]
+#
+#Einzige auffällige Abweichung
+#Du hast jetzt:
+#opencv-python==4.11.0.86
+#nicht opencv-python-headless.
+#Das bedeutet:
+#GUI-OpenCV ist aktiv
+#cv2 ist stabil
+#aber du hast wieder GUI-/libGL-Abhängigkeit im Environment
+#Das ist funktional ok auf macOS, aber nicht mehr “headless sauber”.
