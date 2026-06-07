@@ -189,8 +189,20 @@
                     <description>Konfidenz des Detektors (optional).</description>
                     <rangeTypeName>uima.cas.Float</rangeTypeName>
                 </featureDescription>
+                <!-- 5 SCRFD-Landmarks, normiert 0..1 (analog bbox). Reihenfolge fix:
+             linkes Auge, rechtes Auge, Nase, linker Mundwinkel, rechter Mundwinkel.
+             Flach als 10 Werte: [x0,y0, x1,y1, x2,y2, x3,y3, x4,y4].
+             Zweck: gezieltes Re-Embedding (Alignment) ohne erneute SCRFD-Detektion;
+             ausserdem Quelle der Frontalitaets-Berechnung. -->
+                <featureDescription>
+                    <name>landmarks</name>
+                    <description>5 SCRFD-Landmarks als flaches Array (10 Werte, x/y abwechselnd),
+                        normiert 0..1 wie die bbox. Reihenfolge: L-Auge, R-Auge, Nase, L-Mund, R-Mund.</description>
+                    <rangeTypeName>uima.cas.FloatArray</rangeTypeName>
+                </featureDescription>
             </features>
         </typeDescription>
+
 
         <!-- Eine einzelne Koerper-Detektion in genau einem Frame (Pendant zu FaceDetection). -->
         <typeDescription>
