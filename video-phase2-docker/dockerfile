@@ -1,0 +1,68 @@
+# ============================================================
+#  duui-emotion  —  HSEmotion facial emotion analysis
+#  DUUI-compatible Docker image
+#
+#  Build:
+#    docker build \
+#      --build-arg DUUI_EMOTION_ANNOTATOR_VERSION=0.1.0 \
+#      -t duui-emotion:0.1.0 \
+#      -f src/main/docker/Dockerfile \
+#      .
+#
+#  Run (mount your video directory):
+#    docker run --rm \
+#      -p 9714:9714 \
+#      -v /path/to/videos:/data \
+#      duui-emotion:0.1.0
+# ============================================================
+
+FROM python:3.13-slim
+
+# ---- system dependencies needed by OpenCV ----------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 \
+        libglib2.0-0 \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+
+# Port required by the DUUI API convention
+EXPOSE 9714
+
+# ---- Python dependencies ---------------------------------------
+RUN pip install --no-cache-dir setuptools wheel
+
+COPY requirements.txt ./requirements.txt
+# Install pinned versions from requirements.txt, then add the
+# FastAPI/Uvicorn server stack on top.
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ---- Pre-download the ONNX model at build time -----------------
+# This makes the image self-contained and avoids network calls at
+# runtime (important for reproducibility and air-gapped clusters).
+RUN python3 -c "\
+from hsemotion_onnx.facial_emotions import HSEmotionRecognizer; \
+HSEmotionRecognizer(model_name='enet_b0_8_va_mtl'); \
+print('Model cached.')"
+
+# ---- Annotator metadata (can be overridden at build time) ------
+ARG  DUUI_EMOTION_ANNOTATOR_NAME="duui-emotion-hsemotion"
+ENV  DUUI_EMOTION_ANNOTATOR_NAME=$DUUI_EMOTION_ANNOTATOR_NAME
+
+ARG  DUUI_EMOTION_ANNOTATOR_VERSION="0.1.0"
+ENV  DUUI_EMOTION_ANNOTATOR_VERSION=$DUUI_EMOTION_ANNOTATOR_VERSION
+
+ARG  DUUI_EMOTION_LOG_LEVEL="INFO"
+ENV  DUUI_EMOTION_LOG_LEVEL=$DUUI_EMOTION_LOG_LEVEL
+
+# ---- Copy source files -----------------------------------------
+COPY src/main/resources/TypeSystem.xml   ./src/main/resources/TypeSystem.xml
+COPY src/main/lua/duui_emotion.lua       ./src/main/lua/duui_emotion.lua
+COPY src/main/python/duui_emotion.py     ./src/main/python/duui_emotion.py
+COPY src/main/python/duui_emotion_rest.py ./src/main/python/duui_emotion_rest.py
+
+# ---- Start the FastAPI/Uvicorn server --------------------------
+ENTRYPOINT ["uvicorn", "src.main.python.duui_emotion_rest:app", \
+            "--host", "0.0.0.0", "--port", "9714"]
+CMD ["--workers", "1"]

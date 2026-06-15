@@ -1,0 +1,5 @@
+{
+  "source": "phase1.json",
+  "model": "enet_b0_8_va_mtl",
+  "emotions": []
+}
