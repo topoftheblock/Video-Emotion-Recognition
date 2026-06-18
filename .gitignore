@@ -6,3 +6,4 @@ target/
 .vscode
 multimodal
 **/.venv
+*.log
