@@ -1,11 +1,12 @@
 import base64
 import logging
 import tempfile
+import json
 from pathlib import Path
 from typing import Optional
 
 from cassis import load_typesystem
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,7 +23,7 @@ class Settings(BaseSettings):
 
 class DUUIRequest(BaseModel):
     video_base64: str
-    mime_type: str
+    mime_type: Optional[str] = None
     input_format: str = "mp4"
     output_format: str = "wav"
 
@@ -55,38 +56,64 @@ def get_typesystem() -> Response:
     return Response(content=typesystem.to_xml().encode("utf-8"), media_type="application/xml")
 
 
+# @app.post("/v1/process")
+# def post_process(request: DUUIRequest) -> DUUIResponse:
+#     audio_b64 = None
+#     out_mime = None
+#
+#     try:
+#         video_bytes = base64.b64decode(request.video_base64)
+#
+#         with tempfile.TemporaryDirectory() as tmp:
+#             video_path = Path(tmp) / f"input.{request.input_format}"
+#             audio_path = Path(tmp) / f"output.{request.output_format}"
+#             video_path.write_bytes(video_bytes)
+#
+#             ffmpeg = (
+#                 FFmpeg()
+#                 .option("y")
+#                 .input(str(video_path))
+#                 .output(str(audio_path), acodec="pcm_s16le", ac=1, ar=16000)
+#             )
+#             ffmpeg.execute()
+#
+#             #subprocess.run(
+#              #   ["ffmpeg", "-y", "-i", str(video_path),
+#               #   "-vn", str(audio_path)],
+#                # check=True, capture_output=True,
+#             #)
+#
+#             audio_bytes = audio_path.read_bytes()
+#             audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
+#             out_mime = f"audio/{request.output_format}"
+#
+#     except Exception as ex:
+#         logger.exception(ex)
+#
+#     return DUUIResponse(audio_base64=audio_b64, mime_type=out_mime)
+
 @app.post("/v1/process")
-def post_process(request: DUUIRequest) -> DUUIResponse:
+async def post_process(request: Request) -> DUUIResponse:
+    body = await request.body()
+    data = json.loads(body)
+    # if it double-encoded into a string, decode once more
+    if isinstance(data, str):
+        data = json.loads(data)
+    req = DUUIRequest(**data)
+
     audio_b64 = None
     out_mime = None
-
     try:
-        video_bytes = base64.b64decode(request.video_base64)
-
+        video_bytes = base64.b64decode(req.video_base64)
         with tempfile.TemporaryDirectory() as tmp:
-            video_path = Path(tmp) / f"input.{request.input_format}"
-            audio_path = Path(tmp) / f"output.{request.output_format}"
+            video_path = Path(tmp) / f"input.{req.input_format}"
+            audio_path = Path(tmp) / f"output.{req.output_format}"
             video_path.write_bytes(video_bytes)
-
-            ffmpeg = (
-                FFmpeg()
-                .option("y")
-                .input(str(video_path))
-                .output(str(audio_path), acodec="pcm_s16le", ac=1, ar=16000)
-            )
+            ffmpeg = (FFmpeg().option("y").input(str(video_path))
+                      .output(str(audio_path), acodec="pcm_s16le", ac=1, ar=16000))
             ffmpeg.execute()
-
-            #subprocess.run(
-             #   ["ffmpeg", "-y", "-i", str(video_path),
-              #   "-vn", str(audio_path)],
-               # check=True, capture_output=True,
-            #)
-
-            audio_bytes = audio_path.read_bytes()
-            audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
-            out_mime = f"audio/{request.output_format}"
-
+            audio_b64 = base64.b64encode(audio_path.read_bytes()).decode("ascii")
+            out_mime = f"audio/{req.output_format}"
     except Exception as ex:
         logger.exception(ex)
-
     return DUUIResponse(audio_base64=audio_b64, mime_type=out_mime)
