@@ -110,7 +110,7 @@ async def post_process(request: Request) -> DUUIResponse:
             audio_path = Path(tmp) / f"output.{req.output_format}"
             video_path.write_bytes(video_bytes)
             ffmpeg = (FFmpeg().option("y").input(str(video_path))
-                      .output(str(audio_path), acodec="pcm_s16le", ac=1, ar=16000))
+                      .output(str(audio_path), ac=1, ar=16000))
             ffmpeg.execute()
             audio_b64 = base64.b64encode(audio_path.read_bytes()).decode("ascii")
             out_mime = f"audio/{req.output_format}"
