@@ -56,42 +56,6 @@ def get_typesystem() -> Response:
     return Response(content=typesystem.to_xml().encode("utf-8"), media_type="application/xml")
 
 
-# @app.post("/v1/process")
-# def post_process(request: DUUIRequest) -> DUUIResponse:
-#     audio_b64 = None
-#     out_mime = None
-#
-#     try:
-#         video_bytes = base64.b64decode(request.video_base64)
-#
-#         with tempfile.TemporaryDirectory() as tmp:
-#             video_path = Path(tmp) / f"input.{request.input_format}"
-#             audio_path = Path(tmp) / f"output.{request.output_format}"
-#             video_path.write_bytes(video_bytes)
-#
-#             ffmpeg = (
-#                 FFmpeg()
-#                 .option("y")
-#                 .input(str(video_path))
-#                 .output(str(audio_path), acodec="pcm_s16le", ac=1, ar=16000)
-#             )
-#             ffmpeg.execute()
-#
-#             #subprocess.run(
-#              #   ["ffmpeg", "-y", "-i", str(video_path),
-#               #   "-vn", str(audio_path)],
-#                # check=True, capture_output=True,
-#             #)
-#
-#             audio_bytes = audio_path.read_bytes()
-#             audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
-#             out_mime = f"audio/{request.output_format}"
-#
-#     except Exception as ex:
-#         logger.exception(ex)
-#
-#     return DUUIResponse(audio_base64=audio_b64, mime_type=out_mime)
-
 @app.post("/v1/process")
 async def post_process(request: Request) -> DUUIResponse:
     body = await request.body()
