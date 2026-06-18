@@ -5,5 +5,5 @@ target/
 *.iml
 .vscode
 multimodal
-**/.venv
+.venv/
 *.log
