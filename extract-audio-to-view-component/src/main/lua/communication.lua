@@ -32,7 +32,7 @@ end ]]
 StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
 
 function serialize(inputCas, outputStream, params)
-    local videoBase64 = inputCas:getView("_InitialView"):getSofaDataString()
+    local videoBase64 = inputCas:getSofaDataString()
 
     outputStream:write(json.encode({
         video_base64 = videoBase64,
@@ -46,7 +46,8 @@ function deserialize(inputCas, inputStream)
     local results = json.decode(inputString)
 
     if results["audio_base64"] ~= null then
-        local view = inputCas:getView("audioView")   -- match your Java target view name
-        view:setSofaDataString(results["audio_base64"], results["mime_type"])
+--         local view = inputCas:getView("audioView")   -- match your Java target view name
+--         view:setSofaDataString(results["audio_base64"], results["mime_type"])
+        inputCas:setSofaDataString(results["audio_base64"], results["mime_type"])
     end
 end
