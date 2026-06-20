@@ -1,5 +1,5 @@
 # ============================================================================
-# DUUI Component: Audio Extraction from Video
+# DUUI Component: Audio Extraction from Video (to a separate view)
 #
 # Builds the container image for the audio-extraction annotator. The image runs
 # a FastAPI/uvicorn service that DUUI talks to over HTTP. Besides the Python
@@ -37,30 +37,35 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Log level.
 # ARG = build-time overridable (docker build --build-arg ...); ENV = present at
-# runtime. The Python Settings class reads TTLAB_DUUI_EXTRACT_AUDIO_LOG_LEVEL.
-ARG TTLAB_DUUI_EXTRACT_AUDIO_LOG_LEVEL="DEBUG"
-ENV TTLAB_DUUI_EXTRACT_AUDIO_LOG_LEVEL=$TTLAB_DUUI_EXTRACT_AUDIO_LOG_LEVEL
+# runtime. The Python Settings class reads this via the env prefix
+# "ttlab_duui_extract_audio_to_view_" (field: log_level).
+ARG TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_LOG_LEVEL="DEBUG"
+ENV TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_LOG_LEVEL=$TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_LOG_LEVEL
 
 # Meta data (annotator name + version, read by the Settings class).
 # These map to settings.annotator_name / settings.annotator_version via the
-# env_prefix "ttlab_duui_extract_audio_". Bump the version per release.
-ARG TTLAB_DUUI_EXTRACT_AUDIO_ANNOTATOR_NAME="duui-audio-extract"
-ENV TTLAB_DUUI_EXTRACT_AUDIO_ANNOTATOR_NAME=$TTLAB_DUUI_EXTRACT_AUDIO_ANNOTATOR_NAME
-ARG TTLAB_DUUI_EXTRACT_AUDIO_ANNOTATOR_VERSION="dev"
-ENV TTLAB_DUUI_EXTRACT_AUDIO_ANNOTATOR_VERSION=$TTLAB_DUUI_EXTRACT_AUDIO_ANNOTATOR_VERSION
+# env prefix "ttlab_duui_extract_audio_to_view_" and override the Python
+# Settings defaults at runtime. The name here is kept identical to the Python
+# default ("duui_extract_audio_to_view") so the component reports a consistent
+# name whether or not the env vars are set. Bump the version per release.
+ARG TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_ANNOTATOR_NAME="duui_extract_audio_to_view"
+ENV TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_ANNOTATOR_NAME=$TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_ANNOTATOR_NAME
+ARG TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_ANNOTATOR_VERSION="dev"
+ENV TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_ANNOTATOR_VERSION=$TTLAB_DUUI_EXTRACT_AUDIO_TO_VIEW_ANNOTATOR_VERSION
 
 # Copy the needed scripts.
-# Only the three runtime files are copied (typesystem, Lua layer, app). The in-container
+# Only the three runtime files are copied (typesystem, Lua layer, app), keeping
+# the image free of tests, the venv, and other project clutter. The in-container
 # paths mirror the repo layout because the Python code resolves them relative to
 # its own location (Path(__file__).parents[2]).
 COPY ./src/main/resources/dkpro-core-types.xml ./src/main/resources/dkpro-core-types.xml
 COPY ./src/main/lua/communication.lua ./src/main/lua/communication.lua
-COPY ./src/main/python/duui_extract_audio.py ./src/main/python/duui_extract_audio.py
+COPY ./src/main/python/duui_extract_audio_to_view.py ./src/main/python/duui_extract_audio_to_view.py
 
 # Start the server.
 # ENTRYPOINT launches uvicorn pointing at the FastAPI `app` object; --host
 # 0.0.0.0 makes it reachable from outside the container (not just localhost),
 # and --port 9714 is the DUUI-required port. CMD supplies default extra args
 # that can be overridden at `docker run` time without replacing the entrypoint.
-ENTRYPOINT ["uvicorn", "src.main.python.duui_extract_audio:app", "--host", "0.0.0.0", "--port", "9714"]
+ENTRYPOINT ["uvicorn", "src.main.python.duui_extract_audio_to_view:app", "--host", "0.0.0.0", "--port", "9714"]
 CMD ["--workers", "1"]
