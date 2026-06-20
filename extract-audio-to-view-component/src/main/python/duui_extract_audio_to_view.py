@@ -18,6 +18,8 @@ and .withTargetView(); this service only deals with the JSON payloads.
 The component listens on port 9714 inside the container, as required by DUUI.
 The system `ffmpeg` binary must be installed in the image (apt-get install ffmpeg);
 the chosen output codec is inferred by ffmpeg from the output file extension.
+
+Author: Nickolas Eickmann
 """
 
 import base64

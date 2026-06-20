@@ -14,6 +14,8 @@ XMI directly with lxml (with huge_tree enabled) sidesteps both problems, since w
 only need one attribute, not the full CAS object graph.
 
 Adjust XMI_PATH / VIEW_NAME / OUT_DIR below to match your setup.
+
+Author: Nickolas Eickmann
 """
 
 import os

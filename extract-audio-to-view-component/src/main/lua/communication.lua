@@ -11,6 +11,8 @@
 --
 -- View routing (which view is read from / written to) is controlled entirely
 -- from the Java pipeline via .withView(...) and .withTargetView(...).
+--
+-- @author Nickolas Eickmann
 -- ============================================================================
 
 

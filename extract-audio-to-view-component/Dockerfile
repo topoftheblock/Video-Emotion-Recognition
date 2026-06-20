@@ -6,6 +6,8 @@
 # dependencies, it installs the system `ffmpeg` binary, which does the actual
 # audio extraction (the python-ffmpeg package only wraps the binary, it does not
 # bundle it).
+#
+# @author Nickolas Eickmann
 # ============================================================================
 
 # Slim Python base: small image, Debian-based so `apt-get` is available for
