@@ -25,7 +25,7 @@ StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
 --                  Its Sofa holds the input video as a (base64) string.
 --   outputStream : the stream whose contents become the POST body to Python.
 --   params       : key/value parameters defined in Java via .withParameter(...)
---                  (here: input_format and output_format).
+--                  (here: output_format).
 -- ----------------------------------------------------------------------------
 function serialize(inputCas, outputStream, params)
     -- Read the Sofa data string of the source view.
@@ -34,9 +34,10 @@ function serialize(inputCas, outputStream, params)
     -- Encode the payload as JSON and write it to the request stream.
     -- The `json` library is provided automatically by DUUI in every Lua script.
     -- These keys must match the fields the Python DUUIRequest model expects.
+    -- The input format is intentionally not sent: ffmpeg auto-detects it on the
+    -- Python side from the video bytes.
     outputStream:write(json.encode({
         video_base64 = videoBase64,
-        input_format = params["input_format"],
         output_format = params["output_format"]
     }))
 end

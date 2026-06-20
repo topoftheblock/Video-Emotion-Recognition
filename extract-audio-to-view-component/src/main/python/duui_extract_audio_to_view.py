@@ -60,7 +60,6 @@ class DUUIRequest(BaseModel):
     """
     video_base64: str               # the input video, base64-encoded
     mime_type: Optional[str] = None  # incoming MIME type; optional, not used here
-    input_format: str = "mp4"        # container of the input (used for temp filename)
     output_format: str = "wav"       # desired audio format (drives output extension)
 
 
@@ -129,7 +128,10 @@ async def post_process(request: Request) -> DUUIResponse:
         # Work in a temp dir that is cleaned up automatically. ffmpeg operates on
         # files, so we write the video out, transcode, then read the audio back.
         with tempfile.TemporaryDirectory() as tmp:
-            video_path = Path(tmp) / f"input.{req.input_format}"
+            # The input is written with a generic name (no format-specific
+            # extension): ffmpeg detects the container/codec from the file's
+            # contents, so the input format never has to be declared.
+            video_path = Path(tmp) / "input"
             audio_path = Path(tmp) / f"output.{req.output_format}"
             video_path.write_bytes(video_bytes)
 
