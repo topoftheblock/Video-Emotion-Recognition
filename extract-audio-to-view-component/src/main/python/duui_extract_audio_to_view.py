@@ -8,7 +8,7 @@ written into a target view by the Lua communication layer.
 The service exposes the four endpoints DUUI expects:
   GET  /v1/communication_layer  - returns the Lua script that (de)serializes the CAS
   GET  /v1/typesystem           - returns the UIMA typesystem as XML
-  GET  /v1/documentation        - (not implemented here; optional)
+  GET  /v1/documentation        - returns annotator metadata (name, version, params)
   POST /v1/process              - does the actual audio extraction
 
 View routing (which view the video is read from and which view the audio is
@@ -71,6 +71,20 @@ class DUUIResponse(BaseModel):
     mime_type: Optional[str]         # MIME type of the extracted audio (e.g. "audio/wav")
 
 
+class DUUIDocumentation(BaseModel):
+    """Schema returned by the /v1/documentation endpoint.
+
+    Describes the annotator to DUUI and to humans: its name and version, a short
+    description, the parameters it accepts, and its implementation language.
+    """
+    annotator_name: str
+    version: str
+    implementation_lang: Optional[str] = None
+    meta: Optional[dict] = None
+    docker_container_id: Optional[str] = None
+    parameters: Optional[dict] = None
+
+
 # --- Service initialization -------------------------------------------------
 
 settings = Settings()
@@ -103,6 +117,34 @@ def get_communication_layer() -> str:
 def get_typesystem() -> Response:
     """Return the UIMA typesystem as XML."""
     return Response(content=typesystem.to_xml().encode("utf-8"), media_type="application/xml")
+
+
+@app.get("/v1/documentation")
+def get_documentation() -> DUUIDocumentation:
+    """Return human- and machine-readable metadata describing this annotator.
+
+    DUUI (and tooling around it) can query this to learn what the component does
+    and which parameters it accepts, without having to run it.
+    """
+    return DUUIDocumentation(
+        annotator_name=settings.annotator_name,
+        version=settings.annotator_version,
+        implementation_lang="Python",
+        meta={
+            "description": (
+                "Extracts the audio track from a video stored in the source "
+                "view's Sofa and writes it into the target view's Sofa. The "
+                "input format is auto-detected by ffmpeg; the output format is "
+                "configurable."
+            ),
+        },
+        parameters={
+            "output_format": (
+                "Audio format / file extension of the extracted audio "
+                "(e.g. 'wav', 'mp3', 'flac'). Default: 'wav'."
+            ),
+        },
+    )
 
 
 @app.post("/v1/process")
