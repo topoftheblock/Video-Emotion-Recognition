@@ -17,13 +17,15 @@ import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDesc
 
 public class NickolasTestPipeline {
 
+        private static final String EXTRACT_AUDIO_TO_VIEW = "duui_extract_audio";
         private static final String WHISPERX = "http://whisperx.service.component.duui.texttechnologylab.org/";
         private static final String SPACY = "docker.texttechnologylab.org/textimager-duui-spacy-single-de_core_news_sm:0.1.4";
         private static final String EMOTION = "docker.texttechnologylab.org/duui-transformers-emotion-german-emotions:latest";
         private static final String AUDIO_EMOTION = "whisper-emotion-app:latest";
 
         private static final String VIDEO_VIEW = "_InitialView";
-        private static final String TRANSCRIPT_VIEW = "transcript";
+        private static final String AUDIO_VIEW = "audioView";
+        private static final String TRANSCRIPT_VIEW = "transcriptView";
 
         public static void main(String[] args) throws Exception {
                 String videoDir = args.length > 0 ? args[0] : "src/main/resources/videos";
@@ -39,9 +41,9 @@ public class NickolasTestPipeline {
                 composer.addDriver(new DUUIDockerDriver(), new DUUIRemoteDriver(),
                                 new DUUIUIMADriver().withDebug(true));
 
-                composer.add(new DUUIDockerDriver.Component("duui_extract_audio")
+                composer.add(new DUUIDockerDriver.Component(EXTRACT_AUDIO_TO_VIEW)
                         .withView(VIDEO_VIEW)
-                        .withTargetView("audioView")
+                        .withTargetView(AUDIO_VIEW)
                         .withParameter("input_format", "mp4")
                         .withParameter("output_format", "wav"));
 
@@ -104,33 +106,9 @@ public class NickolasTestPipeline {
                         JCas jcas = JCasFactory.createJCas();
                         reader.getNextCas(jcas);
                         composer.run(jcas, "video-pipeline");
-
-//                        JCas clean = createCleanCas(jcas);
-                        // XMI schreiben
-//                        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(
-//                                        new File(outDir, "transcript.xmi"))) {
-//                                XmiCasSerializer.serialize(clean.getCas(), fos);
-//                        }
-
-                        // passendes Typesystem daneben schreiben
-//                        try (java.io.FileOutputStream ts = new java.io.FileOutputStream(
-//                                        new File(outDir, "typesystem.xml"))) {
-//                                TypeSystemUtil.typeSystem2TypeSystemDescription(clean.getTypeSystem()).toXML(ts);
-//                        }
-//                        System.out.println("Clean-XMI geschrieben: " + new File(outDir, "transcript.xmi").getPath());
                 } else {
                         System.out.println("Kein Video gefunden in: " + videoDir);
                 }
-
                 composer.shutdown();
-        }
-
-        private static JCas createCleanCas(JCas fullCas) throws Exception {
-                JCas clean = JCasFactory.createJCas();
-                CasCopier copier = new CasCopier(fullCas.getCas(), clean.getCas());
-                // nur transcript-View (inkl. Sofa-Text) kopieren – Video-View (_InitialView)
-                // bleibt weg
-                copier.copyCasView(fullCas.getView(TRANSCRIPT_VIEW).getCas(), true);
-                return clean;
         }
 }
