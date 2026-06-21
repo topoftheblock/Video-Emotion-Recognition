@@ -2,6 +2,7 @@ import json
 from fastapi import FastAPI, Response
 from pydantic import BaseModel
 from typing import List
+from collections import Counter
 
 app = FastAPI(title="DUUI Audio Sentence Merger Engine")
 
@@ -13,20 +14,15 @@ class TokenData(BaseModel):
     end: int
     timeStart: float
     timeEnd: float
+    speakerId: str
 
 class SentenceData(BaseModel):
     begin: int
     end: int
 
-class SpeakerData(BaseModel):
-    speakerId: str
-    timeStart: float
-    timeEnd: float
-
 class ProcessRequest(BaseModel):
     sentences: List[SentenceData]
     tokens: List[TokenData]
-    speakers: List[SpeakerData]
 
 @app.get("/v1/communication_layer")
 def get_lua():
@@ -38,23 +34,18 @@ def process(request: ProcessRequest):
 
     for sent in request.sentences:
         # Match tokens belonging to this sentence bound
-        sent_tokens = [t for token in request.tokens if token.begin >= sent.begin and token.end <= sent.end]
+        sent_tokens = [t for t in request.tokens if t.begin >= sent.begin and t.end <= sent.end]
         if not sent_tokens:
             continue
 
         time_start = min(t.timeStart for t in sent_tokens)
         time_end = max(t.timeEnd for t in sent_tokens)
 
-        # Resolve speaker via majority temporal overlap
+        # Determine the primary speaker for this sentence (most common speaker among its words)
+        speakers = [t.speakerId for t in sent_tokens if t.speakerId]
         assigned_speaker = "Unknown"
-        max_overlap = 0.0
-        for spk in request.speakers:
-            overlap_start = max(time_start, spk.timeStart)
-            overlap_end = min(time_end, spk.timeEnd)
-            overlap = max(0.0, overlap_end - overlap_start)
-            if overlap > max_overlap:
-                max_overlap = overlap
-                assigned_speaker = spk.speakerId
+        if speakers:
+            assigned_speaker = Counter(speakers).most_common(1)[0][0]
 
         audio_sentences.append({
             "begin": sent.begin,

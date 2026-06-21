@@ -40,10 +40,11 @@ public class DUUIAudioPipelineConnection {
             composer.addDriver(uimaDriver, dockerDriver);
 
             // A) WhisperX: Transcribes Audio -> Text
-            composer.add(new DUIDockerDriver.Component("registry/whisperx:latest")
+            composer.add(new DUIDockerDriver.Component("texttechnologylab/duui-whisperx:latest")
+                    .withParameter("hf_token", "hf_YOUR_TOKEN_HERE") // <-- REQUIRED FOR DIARIZATION
                     .withSourceView("AudioView")
                     .withTargetView("TextView")
-                    .withScale(1) // GPU bound, usually scale 1 is safer
+                    .withScale(1)
                     .build());
 
             // B) SpaCy: NLP Processing on Transcript

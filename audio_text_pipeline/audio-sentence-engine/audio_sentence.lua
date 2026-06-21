@@ -6,17 +6,25 @@ function serialize(inputCas, outputStream, params)
     local tokens = {}
 
     local sentenceIdx = textView:getAnnotationIndex("de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Sentence")
-    local tokenIdx = textView:getAnnotationIndex("org.texttechnologylab.annotation.type.AudioToken")
+    -- We now look for DiarizedAudioToken!
+    local tokenIdx = textView:getAnnotationIndex("org.texttechnologylab.annotation.type.DiarizedAudioToken")
 
     for sent in iterator(sentenceIdx) do
         table.insert(sentences, { begin = sent:getBegin(), ["end"] = sent:getEnd() })
     end
     for tok in iterator(tokenIdx) do
+        -- Extract the speakerId safely (it might be null if whisper failed to assign it)
+        local speaker = ""
+        if tok:getSpeakerId() ~= nil then
+            speaker = tok:getSpeakerId()
+        end
+
         table.insert(tokens, {
             begin = tok:getBegin(),
             ["end"] = tok:getEnd(),
-            timeStart = tok:getDoubleValue(tok:getType():getFeatureByBaseName("timeStart")),
-            timeEnd = tok:getDoubleValue(tok:getType():getFeatureByBaseName("timeEnd"))
+            timeStart = tok:getTimeStart(),
+            timeEnd = tok:getTimeEnd(),
+            speakerId = speaker
         })
     end
 
@@ -28,12 +36,11 @@ function deserialize(outputCas, inputStream, params)
     local response = json.decode(inputStream:readAllBytes())
 
     for _, as in ipairs(response.audio_sentences) do
-        -- Strictly using the package inferred from AudioSentenceAnnotator.java
         local audioSentAnno = textView:createAnnotation("org.texttechnologylab.annotation.type.AudioSentence", as.begin, as.end)
-
         audioSentAnno:setDoubleValue(audioSentAnno:getType():getFeatureByBaseName("timeStart"), as.timeStart)
         audioSentAnno:setDoubleValue(audioSentAnno:getType():getFeatureByBaseName("timeEnd"), as.timeEnd)
-        -- speakerId removed to comply with locked TypeSystem
+        -- We can now safely set speakerId if your XML supports it, or just use the bounds.
+        -- audioSentAnno:setStringValue(audioSentAnno:getType():getFeatureByBaseName("speakerId"), as.speakerId)
 
         textView:addFsToIndexes(audioSentAnno)
     end
