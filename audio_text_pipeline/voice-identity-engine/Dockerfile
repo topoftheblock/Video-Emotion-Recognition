@@ -15,15 +15,15 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code and Lua script
-COPY voice_identity_app.py .
-COPY voice_identity.lua .
+COPY src/main/python/voice_identity_app.py .
+COPY src/main/lua/voice_identity.lua .
 
 # Expose the port Uvicorn will run on
-EXPOSE 8000
+EXPOSE 9714
 
 # Set environment variable for HuggingFace Token (Required by pyannote)
 # You should pass this when running the container: docker run -e HF_TOKEN="your_token" ...
 ENV HF_TOKEN=""
 
 # Command to run the FastAPI application
-CMD ["uvicorn", "voice_identity_app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "voice_identity_app:app", "--host", "0.0.0.0", "--port", "9714"]

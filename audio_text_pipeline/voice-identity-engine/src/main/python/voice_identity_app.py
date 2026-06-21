@@ -7,7 +7,7 @@ from pydantic import BaseModel
 app = FastAPI(title="DUUI Voice Identity Engine")
 pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", use_auth_token="YOUR_HF_TOKEN")
 
-with open("voice_identity.lua", "r", encoding="utf-8") as f:
+with open("../lua/voice_identity.lua", "r", encoding="utf-8") as f:
     lua_script = f.read()
 
 class ProcessRequest(BaseModel):

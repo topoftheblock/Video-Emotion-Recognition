@@ -1,12 +1,12 @@
 StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
 
 function serialize(inputCas, outputStream, params)
-    local audioView = inputCas:getView("AudioView")
+    local audioView = inputCas:getView()
     outputStream:write(json.encode({ audio_base64 = audioView:getSofaDataString() }))
 end
 
 function deserialize(outputCas, inputStream, params)
-    local textView = outputCas:getView("TextView")
+    local textView = outputCas:getView()
     local response = json.decode(inputStream:readAllBytes())
 
     if response["segments"] ~= nil then

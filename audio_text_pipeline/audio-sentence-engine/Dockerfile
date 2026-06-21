@@ -9,11 +9,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code and Lua script
-COPY audio_sentence_app.py .
-COPY audio_sentence.lua .
+COPY src/main/python/audio_sentence_app.py .
+COPY src/main/lua/audio_sentence.lua .
 
 # Expose the port
-EXPOSE 8000
+EXPOSE 9714
 
 # Command to run the FastAPI application
-CMD ["uvicorn", "audio_sentence_app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "audio_sentence_app:app", "--host", "0.0.0.0", "--port", "9714"]

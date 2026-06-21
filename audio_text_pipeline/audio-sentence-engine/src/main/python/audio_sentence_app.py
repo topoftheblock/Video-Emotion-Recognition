@@ -6,7 +6,7 @@ from collections import Counter
 
 app = FastAPI(title="DUUI Audio Sentence Merger Engine")
 
-with open("audio_sentence.lua", "r", encoding="utf-8") as f:
+with open("../lua/audio_sentence.lua", "r", encoding="utf-8") as f:
     lua_script = f.read()
 
 class TokenData(BaseModel):

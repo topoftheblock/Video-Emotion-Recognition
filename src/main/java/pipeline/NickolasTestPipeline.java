@@ -40,9 +40,12 @@ public class NickolasTestPipeline {
 
         /** Docker image name of the audio-extraction component. */
         private static final String EXTRACT_AUDIO_TO_VIEW = "duui_extract_audio_to_view";
+        private static final String WHISPERX = "http://whisperx.service.component.duui.texttechnologylab.org/";
+
 
         /** Source view: the reader places each video's bytes in the initial view. */
         private static final String VIDEO_VIEW = "_InitialView";
+        private static final String TRANSCRIPT_VIEW = "transcriptView";
 
         /** Target view: the extracted audio Sofa is written here. */
         private static final String AUDIO_VIEW = "audioView";
@@ -79,10 +82,15 @@ public class NickolasTestPipeline {
                 // Reads the video from VIDEO_VIEW, writes the extracted audio into
                 // AUDIO_VIEW, and requests MP3 output. The input format is auto-detected
                 // by the component, so it is not specified here.
-                composer.add(new DUUIDockerDriver.Component(EXTRACT_AUDIO_TO_VIEW)
+//                composer.add(new DUUIDockerDriver.Component(EXTRACT_AUDIO_TO_VIEW)
+//                        .withSourceView(VIDEO_VIEW)
+//                        .withTargetView(AUDIO_VIEW)
+//                        .withParameter("output_format", "mp3"));
+
+                composer.add(new DUUIRemoteDriver.Component(WHISPERX)
+                        .withParameter("language", "de")
                         .withSourceView(VIDEO_VIEW)
-                        .withTargetView(AUDIO_VIEW)
-                        .withParameter("output_format", "mp3"));
+                        .withTargetView(TRANSCRIPT_VIEW));
 
                 // Stage 2: write the full CAS (all views, including the new audio view)
                 // to XMI. PRETTY_PRINT formats the XML; OVERWRITE allows re-runs to

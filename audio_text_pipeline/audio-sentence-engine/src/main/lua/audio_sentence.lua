@@ -1,7 +1,7 @@
 StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
 
 function serialize(inputCas, outputStream, params)
-    local textView = inputCas:getView("TextView")
+    local textView = inputCas:getView()
     local sentences = {}
     local tokens = {}
 
@@ -32,7 +32,7 @@ function serialize(inputCas, outputStream, params)
 end
 
 function deserialize(outputCas, inputStream, params)
-    local textView = outputCas:getView("TextView")
+    local textView = outputCas:getView()
     local response = json.decode(inputStream:readAllBytes())
 
     for _, as in ipairs(response.audio_sentences) do
