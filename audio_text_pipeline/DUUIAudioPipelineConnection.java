@@ -1,4 +1,4 @@
-package org.texttechnologylab.practical.pipeline;
+package audio_text_pipeline;
 
 import org.apache.uima.jcas.JCas;
 import org.texttechnologylab.DockerUnifiedUIMAInterface.DUUIComposer;
