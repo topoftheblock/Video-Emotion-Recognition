@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code and Lua script
 COPY src/main/python/audio_sentence_app.py .
-COPY src/main/lua/audio_sentence.lua .
+COPY src/main/lua/communication.lua .
 
 # Expose the port
 EXPOSE 9714
