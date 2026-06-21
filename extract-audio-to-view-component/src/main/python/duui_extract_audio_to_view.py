@@ -12,7 +12,7 @@ The service exposes the four endpoints DUUI expects:
   POST /v1/process              - does the actual audio extraction
 
 View routing (which view the video is read from and which view the audio is
-written to) is controlled entirely from the Java pipeline via .withView()
+written to) is controlled entirely from the Java pipeline via .withSourceView()
 and .withTargetView(); this service only deals with the JSON payloads.
 
 The component listens on port 9714 inside the container, as required by DUUI.

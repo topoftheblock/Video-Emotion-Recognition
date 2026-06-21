@@ -80,7 +80,7 @@ public class NickolasTestPipeline {
                 // AUDIO_VIEW, and requests MP3 output. The input format is auto-detected
                 // by the component, so it is not specified here.
                 composer.add(new DUUIDockerDriver.Component(EXTRACT_AUDIO_TO_VIEW)
-                        .withView(VIDEO_VIEW)
+                        .withSourceView(VIDEO_VIEW)
                         .withTargetView(AUDIO_VIEW)
                         .withParameter("output_format", "mp3"));
 

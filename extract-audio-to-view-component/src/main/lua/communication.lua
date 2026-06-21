@@ -10,7 +10,7 @@
 --                 back into the (target) CAS
 --
 -- View routing (which view is read from / written to) is controlled entirely
--- from the Java pipeline via .withView(...) and .withTargetView(...).
+-- from the Java pipeline via .withSourceView(...) and .withTargetView(...).
 --
 -- @author Nickolas Eickmann
 -- ============================================================================
@@ -23,7 +23,7 @@ StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
 -- ----------------------------------------------------------------------------
 -- serialize: CAS -> outgoing request body
 --
---   inputCas     : the source view's CAS (set via .withView in Java).
+--   inputCas     : the source view's CAS (set via .withSourceView in Java).
 --                  Its Sofa holds the input video as a (base64) string.
 --   outputStream : the stream whose contents become the POST body to Python.
 --   params       : key/value parameters defined in Java via .withParameter(...)
