@@ -1,27 +1,26 @@
+StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
+
 function serialize(inputCas, outputStream, params)
     local textView = inputCas:getView("TextView")
-
     local sentences = {}
     local tokens = {}
-    local speakers = {}
 
-    -- Extract all prerequisites from the index
     local sentenceIdx = textView:getAnnotationIndex("de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Sentence")
-    local tokenIdx = textView:getAnnotationIndex("org.texttechnologylab.annotation.AudioToken")
-    local speakerIdx = textView:getAnnotationIndex("org.texttechnologylab.annotation.SpeakerSegment")
+    local tokenIdx = textView:getAnnotationIndex("org.texttechnologylab.annotation.type.AudioToken")
 
-    -- Convert indexes to serializable tables
     for sent in iterator(sentenceIdx) do
         table.insert(sentences, { begin = sent:getBegin(), ["end"] = sent:getEnd() })
     end
     for tok in iterator(tokenIdx) do
-        table.insert(tokens, { begin = tok:getBegin(), ["end"] = tok:getEnd(), timeStart = tok:getFeatureValue("timeStart"), timeEnd = tok:getFeatureValue("timeEnd") })
-    end
-    for spk in iterator(speakerIdx) do
-        table.insert(speakers, { speakerId = spk:getFeatureValue("speakerId"), timeStart = spk:getFeatureValue("timeStart"), timeEnd = spk:getFeatureValue("timeEnd") })
+        table.insert(tokens, {
+            begin = tok:getBegin(),
+            ["end"] = tok:getEnd(),
+            timeStart = tok:getDoubleValue(tok:getType():getFeatureByBaseName("timeStart")),
+            timeEnd = tok:getDoubleValue(tok:getType():getFeatureByBaseName("timeEnd"))
+        })
     end
 
-    outputStream:write(json.encode({ sentences = sentences, tokens = tokens, speakers = speakers }))
+    outputStream:write(json.encode({ sentences = sentences, tokens = tokens }))
 end
 
 function deserialize(outputCas, inputStream, params)
@@ -29,10 +28,13 @@ function deserialize(outputCas, inputStream, params)
     local response = json.decode(inputStream:readAllBytes())
 
     for _, as in ipairs(response.audio_sentences) do
-        local audioSentAnno = textView:createAnnotation("org.texttechnologylab.annotation.AudioSentence", as.begin, as.end)
-        audioSentAnno:setFeatureValue("timeStart", as.timeStart)
-        audioSentAnno:setFeatureValue("timeEnd", as.timeEnd)
-        audioSentAnno:setFeatureValue("speakerId", as.speakerId)
+        -- Strictly using the package inferred from AudioSentenceAnnotator.java
+        local audioSentAnno = textView:createAnnotation("org.texttechnologylab.annotation.type.AudioSentence", as.begin, as.end)
+
+        audioSentAnno:setDoubleValue(audioSentAnno:getType():getFeatureByBaseName("timeStart"), as.timeStart)
+        audioSentAnno:setDoubleValue(audioSentAnno:getType():getFeatureByBaseName("timeEnd"), as.timeEnd)
+        -- speakerId removed to comply with locked TypeSystem
+
         textView:addFsToIndexes(audioSentAnno)
     end
 end
