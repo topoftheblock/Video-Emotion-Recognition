@@ -39,8 +39,8 @@ import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDesc
 public class NickolasTestPipeline {
 
         /** Docker image name of the audio-extraction component. */
-        private static final String EXTRACT_AUDIO_TO_VIEW = "duui_extract_audio_to_view";
-        private static final String WHISPERX = "http://whisperx.service.component.duui.texttechnologylab.org/";
+        private static final String EXTRACT_AUDIO_TO_VIEW = "duui_extract_audio_to_view:latest";
+        private static final String WHISPERX = "docker.texttechnologylab.org/duui-whisperx:latest";
 
 
         /** Source view: the reader places each video's bytes in the initial view. */
@@ -82,14 +82,14 @@ public class NickolasTestPipeline {
                 // Reads the video from VIDEO_VIEW, writes the extracted audio into
                 // AUDIO_VIEW, and requests MP3 output. The input format is auto-detected
                 // by the component, so it is not specified here.
-//                composer.add(new DUUIDockerDriver.Component(EXTRACT_AUDIO_TO_VIEW)
-//                        .withSourceView(VIDEO_VIEW)
-//                        .withTargetView(AUDIO_VIEW)
-//                        .withParameter("output_format", "mp3"));
-
-                composer.add(new DUUIRemoteDriver.Component(WHISPERX)
-                        .withParameter("language", "de")
+                composer.add(new DUUIDockerDriver.Component(EXTRACT_AUDIO_TO_VIEW)
                         .withSourceView(VIDEO_VIEW)
+                        .withTargetView(AUDIO_VIEW)
+                        .withParameter("output_format", "mp3"));
+
+                composer.add(new DUUIDockerDriver.Component(WHISPERX)
+                        .withParameter("language", "de")
+                        .withSourceView(AUDIO_VIEW)
                         .withTargetView(TRANSCRIPT_VIEW));
 
                 // Stage 2: write the full CAS (all views, including the new audio view)
