@@ -15,7 +15,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code and Lua script
-COPY src/main/python/voice_identity_app.py .
+COPY src/main/python/duui-audio-speaker-diarization.py .
 COPY src/main/lua/communication.lua .
 
 # Expose the port Uvicorn will run on

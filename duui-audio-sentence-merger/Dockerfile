@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code and Lua script
-COPY src/main/python/audio_sentence_app.py .
+COPY src/main/python/duui-audio-sentence-merger.py .
 COPY src/main/lua/communication.lua .
 
 # Expose the port
