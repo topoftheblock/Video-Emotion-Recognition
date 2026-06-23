@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
     <name>EmotionTypeSystem</name>
-    <description>
-        Multimodal Emotion TypeSystem
-    </description>
+    <description>Multimodal Emotion TypeSystem</description>
     <version>1.1</version>
-    <vendor>own</vendor>
     <imports>
         <import name="desc.type.TypeSystemModelMeta"/>
+        <import name="desc.type.TextTechnologyMultimedia"/>
     </imports>
 
     <types>
 
-        <!-- Ein Label/Score-Eintrag der Verteilung -->
         <typeDescription>
             <name>org.texttechnologylab.annotation.emotion.EmotionScore</name>
             <description>Ein Emotionslabel mit Score.</description>
@@ -20,43 +17,26 @@
             <features>
                 <featureDescription>
                     <name>label</name>
-                    <description>Emotionsname, z.B. "joy"</description>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>score</name>
-                    <description>Score</description>
                     <rangeTypeName>uima.cas.Double</rangeTypeName>
                 </featureDescription>
             </features>
         </typeDescription>
 
-        <!-- Emotionsannotation (erbt von standard annot, also mit begin,end -->
         <typeDescription>
             <name>org.texttechnologylab.annotation.emotion.Emotion</name>
-            <description>Emotion ueber einem Segment/Frame</description>
-            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <description>Emotion ueber einem Segment/Frame.</description>
+            <supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>
             <features>
-
-                <!-- KATEGORIAL -->
                 <featureDescription>
                     <name>scores</name>
                     <description>Volle Verteilung als EmotionScore-Liste.</description>
                     <rangeTypeName>uima.cas.FSArray</rangeTypeName>
                     <elementType>org.texttechnologylab.annotation.emotion.EmotionScore</elementType>
                 </featureDescription>
-                <featureDescription>
-                    <name>dominant</name>
-                    <description>Label mit hoechstem Score.</description>
-                    <rangeTypeName>uima.cas.String</rangeTypeName>
-                </featureDescription>
-                <featureDescription>
-                    <name>dominantScore</name>
-                    <description>Score des dominanten Labels.</description>
-                    <rangeTypeName>uima.cas.Double</rangeTypeName>
-                </featureDescription>
-
-                <!-- DIMENSIONAL (Valence, Arousal, Dominance) -->
                 <featureDescription>
                     <name>valence</name>
                     <rangeTypeName>uima.cas.Double</rangeTypeName>
@@ -66,74 +46,36 @@
                     <rangeTypeName>uima.cas.Double</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
-                    <name>dominance</name>
-                    <rangeTypeName>uima.cas.Double</rangeTypeName>
-                </featureDescription>
-
-                <!-- VERKNUEPFUNG -->
-                <featureDescription>
                     <name>reference</name>
-                    <description>Annotiertes Segment, bspw. ein AudioSentence (sinnvollerweise MultimediaElement Subtyp)
-                        aber auch auf Frame-Ebene, Image/Subimage.</description>
-                    <rangeTypeName>uima.tcas.Annotation</rangeTypeName>
-                </featureDescription>
-
-                <!-- ZEIT -->
-                <featureDescription>
-                    <name>timeStart</name>
-                    <description>Startzeit in Sekunden</description>
-                    <rangeTypeName>uima.cas.Double</rangeTypeName>
-                </featureDescription>
-                <featureDescription>
-                    <name>timeEnd</name>
-                    <description>Endzeit in Sekunden. Bei Einzelframe == timeStart.</description>
-                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                    <description>Annotiertes MultimediaElement (fester Zeitabschnitt); auch bei Aggregation/Fusion der groebere Span.</description>
+                    <rangeTypeName>org.texttechnologylab.annotation.type.MultimediaElement</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>frameIndex</name>
-                    <description>Optionaler Frame-Index als Zusatzinfo</description>
                     <rangeTypeName>uima.cas.Integer</rangeTypeName>
                 </featureDescription>
-
-                <!-- GRANULARITAET-->
-                <featureDescription>
-                    <name>granularity</name>
-                    <description>"sentence" = ueber einem Satz aggregiert,
-                        "frame" = einzelne Frame-/Crop-Emotion.</description>
-                    <rangeTypeName>uima.cas.String</rangeTypeName>
-                </featureDescription>
-
-                <!-- HERKUNFT DER AGGREGATION (somit auch FUSION ?) -->
                 <featureDescription>
                     <name>aggregatedFrom</name>
-                    <description>z.B welche Frame-emotionen waren Grundlage, auch multimodal möglich.
-                        Bei Frame-Emotionen leer.</description>
+                    <description>Quell-Emotionen (Aggregation/Fusion); sonst leer.</description>
                     <rangeTypeName>uima.cas.FSArray</rangeTypeName>
                     <elementType>org.texttechnologylab.annotation.emotion.Emotion</elementType>
                     <multipleReferencesAllowed>true</multipleReferencesAllowed>
                 </featureDescription>
-
-                <!-- HERKUNFT -->
                 <featureDescription>
                     <name>modality</name>
-                    <description>"text", "audio", "video", "fusion"
-                    bei direkter multimodaler Komponente mehrfachnennung </description>
+                    <description>text | audio | video | text,video.</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>granularity</name>
+                    <description>sentence | segment | shot | frame | window | video.</description>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>model</name>
                     <description>Verweis auf Modell-MetaData.</description>
-                    <rangeTypeName>org.texttechnologylab.annotation.model.MetaData</rangeTypeName>
+                    <rangeTypeName>org.texttechnologylab.annotation.MetaData</rangeTypeName>
                 </featureDescription>
-
-                <!-- MultimediaElement Zeit Spans (Segments) könnten konstanter Modalitätsspezifscher
-                Identity zugeordnet werden, (In einer seperaten Pipeline, produziert die relevanten Segmente
-                einsschließlich Bounding Boxes implizit. Bzgl Videosegmente/Image/Subimage noch nicht ganz durchdacht
-                und gäbe noch mehr Redundanzen als jetzt schon, aber work in progess, mal sehen.)
-                Diese bspw Audio/Voice Identity und Vision/Body/Face Identity werden dann einer Person zugeordnet.
-                CAS übergreifend und Verknüpfung mit Metadaten Infos wie Redner würden daran anknüpfen).
-                 Je nach Design könnten hier auch direkte Verweise auf diese Identites/Personen stehen.-->
-
             </features>
         </typeDescription>
 
