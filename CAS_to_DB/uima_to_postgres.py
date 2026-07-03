@@ -20,6 +20,8 @@ def get_db_connection():
 # --- 3. Helper: Get or Insert ID ---
 def get_or_insert_id(cursor, conn, table, column, value):
     """Get existing ID or insert and return new ID."""
+    if value is None:
+        return None
     cursor.execute(
         sql.SQL("SELECT {} FROM {} WHERE {} = %s").format(
             sql.Identifier(column),
@@ -32,7 +34,6 @@ def get_or_insert_id(cursor, conn, table, column, value):
     if result:
         return result[0]
     else:
-        new_id = str(uuid.uuid4())
         cursor.execute(
             sql.SQL("INSERT INTO {} ({}) VALUES (%s) RETURNING {}").format(
                 sql.Identifier(table),
@@ -41,22 +42,35 @@ def get_or_insert_id(cursor, conn, table, column, value):
             ),
             (value,)
         )
-        conn.commit()
-        return cursor.fetchone()[0]
+        return value
+
+def get_xmi_id(feature_struct):
+    """Safely extract the XMI ID from a cassis FeatureStructure."""
+    if feature_struct is None:
+        return None
+    if hasattr(feature_struct, "xmiID"):
+        return feature_struct.xmiID
+    return None
 
 # --- 4. Parse and Insert All Annotations ---
 def parse_and_insert(cas, cursor, conn):
-    # --- 4.1 Video (from MultimediaElement) ---
+    global_video_id = None
+    
+    # --- 4.1 Video (from MultimediaElement or DocumentMetaData) ---
     for multimedia in cas.select("org.texttechnologylab.annotation.type.MultimediaElement"):
-        video_id = get_or_insert_id(cursor, conn, "Video", "video_id", multimedia.xmi.id)
+        global_video_id = get_xmi_id(multimedia)
+        get_or_insert_id(cursor, conn, "Video", "video_id", global_video_id)
         cursor.execute(
             """
             INSERT INTO Video (video_id, filename, duration, processed_at, fps, width, height)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (video_id) DO NOTHING
+            ON CONFLICT (video_id) DO UPDATE SET
+                filename = EXCLUDED.filename, duration = EXCLUDED.duration, 
+                processed_at = EXCLUDED.processed_at, fps = EXCLUDED.fps, 
+                width = EXCLUDED.width, height = EXCLUDED.height
             """,
             (
-                video_id,
+                global_video_id,
                 getattr(multimedia, "filename", None),
                 getattr(multimedia, "duration", None),
                 getattr(multimedia, "processed_at", None),
@@ -65,10 +79,23 @@ def parse_and_insert(cas, cursor, conn):
                 getattr(multimedia, "height", None),
             )
         )
+        break
+    
+    if not global_video_id:
+        # Fallback if no MultimediaElement is present but DocumentMetaData is
+        for md in cas.select("de.tudarmstadt.ukp.dkpro.core.api.metadata.type.DocumentMetaData"):
+            global_video_id = get_xmi_id(md)
+            get_or_insert_id(cursor, conn, "Video", "video_id", global_video_id)
+            cursor.execute(
+                "INSERT INTO Video (video_id, filename) VALUES (%s, %s) ON CONFLICT (video_id) DO NOTHING",
+                (global_video_id, getattr(md, "documentTitle", None))
+            )
+            break
 
     # --- 4.2 Model ---
     for metadata in cas.select("org.texttechnologylab.annotation.MetaData"):
-        model_id = get_or_insert_id(cursor, conn, "Model", "model_id", metadata.xmi.id)
+        model_id = get_xmi_id(metadata)
+        get_or_insert_id(cursor, conn, "Model", "model_id", model_id)
         cursor.execute(
             """
             INSERT INTO Model (model_id, name, version, source)
@@ -77,16 +104,16 @@ def parse_and_insert(cas, cursor, conn):
             """,
             (
                 model_id,
-                getattr(metadata, "name", None),
-                getattr(metadata, "version", None),
-                getattr(metadata, "source", None),
+                getattr(metadata, "ModelName", getattr(metadata, "name", None)),
+                getattr(metadata, "ModelVersion", getattr(metadata, "version", None)),
+                getattr(metadata, "Source", getattr(metadata, "source", None)),
             )
         )
 
-    # --- 4.3 Segment (from Shot) ---
+    # --- 4.3 Segment (Shot & Sentence) ---
     for shot in cas.select("org.texttechnologylab.annotation.video.Shot"):
-        segment_id = get_or_insert_id(cursor, conn, "Segment", "segment_id", shot.xmi.id)
-        video_id = get_or_insert_id(cursor, conn, "Video", "video_id", shot.reference.xmi.id)
+        segment_id = get_xmi_id(shot)
+        get_or_insert_id(cursor, conn, "Segment", "segment_id", segment_id)
         cursor.execute(
             """
             INSERT INTO Segment (segment_id, video_id, kind, seg_index, start_time, end_time, begin, end)
@@ -95,39 +122,104 @@ def parse_and_insert(cas, cursor, conn):
             """,
             (
                 segment_id,
-                video_id,
+                global_video_id,
                 "shot",
-                shot.shotIndex,
-                shot.begin,
-                shot.end,
+                getattr(shot, "shotIndex", None),
+                getattr(shot, "timeStart", None),
+                getattr(shot, "timeEnd", None),
                 shot.begin,
                 shot.end,
             )
         )
 
-    # --- 4.4 Person ---
-    for person in cas.select("org.texttechnologylab.annotation.identity.Person"):
-        person_id = get_or_insert_id(cursor, conn, "Person", "person_id", person.xmi.id)
+    for sentence in cas.select("org.texttechnologylab.annotation.audio.SpeakerSentence"):
+        segment_id = get_xmi_id(sentence)
+        get_or_insert_id(cursor, conn, "Segment", "segment_id", segment_id)
+        
+        person_id = None
+        if hasattr(sentence, "speakerSegment") and sentence.speakerSegment:
+            if hasattr(sentence.speakerSegment, "voice") and sentence.speakerSegment.voice:
+                person_id = get_xmi_id(getattr(sentence.speakerSegment.voice, "person", None))
+
         cursor.execute(
             """
-            INSERT INTO Person (person_id, global_person_id, real_name, clip_label, match_score)
+            INSERT INTO Segment (segment_id, video_id, kind, start_time, end_time, begin, end, person_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (segment_id) DO NOTHING
+            """,
+            (
+                segment_id,
+                global_video_id,
+                "sentence",
+                getattr(sentence, "timeStart", None),
+                getattr(sentence, "timeEnd", None),
+                sentence.begin,
+                sentence.end,
+                person_id
+            )
+        )
+
+    # --- 4.3.1 LinguisticToken ---
+    for token in cas.select("org.texttechnologylab.annotation.type.DiarizedAudioToken"):
+        token_id = get_xmi_id(token)
+        get_or_insert_id(cursor, conn, "LinguisticToken", "token_id", token_id)
+        cursor.execute(
+            """
+            INSERT INTO LinguisticToken (token_id, video_id, segment_id, start_time, end_time, begin, end, word, pos_tag, ner_label)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (token_id) DO NOTHING
+            """,
+            (
+                token_id,
+                global_video_id,
+                get_xmi_id(getattr(token, "segment", None)),
+                getattr(token, "timeStart", None),
+                getattr(token, "timeEnd", None),
+                token.begin,
+                token.end,
+                getattr(token, "word", token.get_covered_text()),
+                getattr(token, "pos_tag", None),
+                getattr(token, "ner_label", None)
+            )
+        )
+
+    # --- GlobalPerson ---
+    for g_person in cas.select("org.texttechnologylab.annotation.identity.GlobalPerson"):
+        gp_id = get_xmi_id(g_person)
+        get_or_insert_id(cursor, conn, "GlobalPerson", "global_person_id", gp_id)
+        cursor.execute(
+            "INSERT INTO GlobalPerson (global_person_id, real_name) VALUES (%s, %s) ON CONFLICT (global_person_id) DO NOTHING",
+            (gp_id, getattr(g_person, "real_name", getattr(g_person, "name", None)))
+        )
+
+    # --- 4.4 Person ---
+    for person in cas.select("org.texttechnologylab.annotation.identity.Person"):
+        person_id = get_xmi_id(person)
+        get_or_insert_id(cursor, conn, "Person", "person_id", person_id)
+        
+        global_person_id = get_xmi_id(getattr(person, "globalPerson", None))
+        
+        cursor.execute(
+            """
+            INSERT INTO Person (person_id, video_id, global_person_id, clip_label, match_score)
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (person_id) DO NOTHING
             """,
             (
                 person_id,
-                getattr(person, "personId", None),
-                getattr(person, "label", None),
-                getattr(person, "clip_label", None),
+                global_video_id,
+                global_person_id,
+                getattr(person, "clip_label", getattr(person, "label", None)),
                 getattr(person, "match_score", None),
             )
         )
 
     # --- 4.5 FaceEmbedding ---
     for face in cas.select("org.texttechnologylab.annotation.identity.FaceIdentity"):
-        embedding_id = get_or_insert_id(cursor, conn, "FaceEmbedding", "embedding_id", face.xmi.id)
-        person_id = get_or_insert_id(cursor, conn, "Person", "person_id", face.person.xmi.id)
-        model_id = get_or_insert_id(cursor, conn, "Model", "model_id", face.model.xmi.id)
+        embedding_id = get_xmi_id(face)
+        get_or_insert_id(cursor, conn, "FaceEmbedding", "embedding_id", embedding_id)
+        person_id = get_xmi_id(getattr(face, "person", None))
+        model_id = get_xmi_id(getattr(face, "model", None))
         cursor.execute(
             """
             INSERT INTO FaceEmbedding (embedding_id, person_id, model_id, embedding)
@@ -144,9 +236,10 @@ def parse_and_insert(cas, cursor, conn):
 
     # --- 4.6 VoiceEmbedding ---
     for voice in cas.select("org.texttechnologylab.annotation.identity.VoiceIdentity"):
-        embedding_id = get_or_insert_id(cursor, conn, "VoiceEmbedding", "embedding_id", voice.xmi.id)
-        person_id = get_or_insert_id(cursor, conn, "Person", "person_id", voice.person.xmi.id)
-        model_id = get_or_insert_id(cursor, conn, "Model", "model_id", voice.model.xmi.id)
+        embedding_id = get_xmi_id(voice)
+        get_or_insert_id(cursor, conn, "VoiceEmbedding", "embedding_id", embedding_id)
+        person_id = get_xmi_id(getattr(voice, "person", None))
+        model_id = get_xmi_id(getattr(voice, "model", None))
         cursor.execute(
             """
             INSERT INTO VoiceEmbedding (embedding_id, person_id, model_id, embedding)
@@ -163,9 +256,14 @@ def parse_and_insert(cas, cursor, conn):
 
     # --- 4.7 Presence (from PersonTrack) ---
     for track in cas.select("org.texttechnologylab.annotation.video.PersonTrack"):
-        presence_id = get_or_insert_id(cursor, conn, "Presence", "presence_id", track.xmi.id)
-        person_id = get_or_insert_id(cursor, conn, "Person", "person_id", track.face.person.xmi.id)
-        video_id = get_or_insert_id(cursor, conn, "Video", "video_id", track.shot.reference.xmi.id)
+        presence_id = get_xmi_id(track)
+        get_or_insert_id(cursor, conn, "Presence", "presence_id", presence_id)
+        person_id = None
+        if hasattr(track, "face") and track.face:
+            person_id = get_xmi_id(getattr(track.face, "person", None))
+        elif hasattr(track, "person") and track.person:
+            person_id = get_xmi_id(track.person)
+
         cursor.execute(
             """
             INSERT INTO Presence (presence_id, person_id, video_id, modality, start_time, end_time, begin, end)
@@ -175,47 +273,70 @@ def parse_and_insert(cas, cursor, conn):
             (
                 presence_id,
                 person_id,
-                video_id,
+                global_video_id,
                 getattr(track, "modality", None),
-                track.begin,
-                track.end,
+                getattr(track, "timeStart", getattr(track, "start_time", None)),
+                getattr(track, "timeEnd", getattr(track, "end_time", None)),
                 track.begin,
                 track.end,
             )
         )
 
-    # --- 4.8 Detection ---
-    for detection in cas.select("org.texttechnologylab.annotation.video.Detection"):
-        detection_id = get_or_insert_id(cursor, conn, "Detection", "detection_id", detection.xmi.id)
-        presence_id = get_or_insert_id(cursor, conn, "Presence", "presence_id", detection.track.xmi.id)
-        person_id = get_or_insert_id(cursor, conn, "Person", "person_id", detection.track.face.person.xmi.id)
-        video_id = get_or_insert_id(cursor, conn, "Video", "video_id", detection.track.shot.reference.xmi.id)
+    # --- 4.8 FaceDetection ---
+    for detection in cas.select("org.texttechnologylab.annotation.video.FaceDetection"):
+        detection_id = get_xmi_id(detection)
+        get_or_insert_id(cursor, conn, "FaceDetection", "detection_id", detection_id)
+        presence_id = get_xmi_id(getattr(detection, "track", None))
+        person_id = None
+        if getattr(detection, "track", None) and getattr(detection.track, "face", None):
+             person_id = get_xmi_id(getattr(detection.track.face, "person", None))
+
         cursor.execute(
             """
-            INSERT INTO Detection (detection_id, presence_id, person_id, video_id, frame_index, t_time, x, y, w, h, detection_score)
+            INSERT INTO FaceDetection (detection_id, presence_id, person_id, video_id, frame_index, t_time, x, y, w, h, detection_score)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (detection_id) DO NOTHING
             """,
             (
-                detection_id,
-                presence_id,
-                person_id,
-                video_id,
-                getattr(detection, "frameIndex", None),
-                getattr(detection, "t_time", None),
-                detection.x,
-                detection.y,
-                detection.width,
-                detection.height,
+                detection_id, presence_id, person_id, global_video_id,
+                getattr(detection, "frameIndex", None), getattr(detection, "timeStart", None),
+                getattr(detection, "x", None), getattr(detection, "y", None),
+                getattr(detection, "width", None), getattr(detection, "height", None),
                 getattr(detection, "detectionScore", None),
             )
         )
 
-    # --- 4.9 BaseEmotion ---
+    # --- 4.8.1 PersonDetection ---
+    for detection in cas.select("org.texttechnologylab.annotation.video.PersonDetection"):
+        detection_id = get_xmi_id(detection)
+        get_or_insert_id(cursor, conn, "PersonDetection", "detection_id", detection_id)
+        presence_id = get_xmi_id(getattr(detection, "track", None))
+        person_id = None
+        if getattr(detection, "track", None) and getattr(detection.track, "face", None):
+             person_id = get_xmi_id(getattr(detection.track.face, "person", None))
+
+        cursor.execute(
+            """
+            INSERT INTO PersonDetection (detection_id, presence_id, person_id, video_id, frame_index, t_time, x, y, w, h, detection_score)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (detection_id) DO NOTHING
+            """,
+            (
+                detection_id, presence_id, person_id, global_video_id,
+                getattr(detection, "frameIndex", None), getattr(detection, "timeStart", None),
+                getattr(detection, "x", None), getattr(detection, "y", None),
+                getattr(detection, "width", None), getattr(detection, "height", None),
+                getattr(detection, "detectionScore", None),
+            )
+        )
+
+    # --- 4.9 BaseEmotion & EmotionScore ---
     for emotion in cas.select("org.texttechnologylab.annotation.emotion.Emotion"):
-        emotion_id = get_or_insert_id(cursor, conn, "BaseEmotion", "emotion_id", emotion.xmi.id)
-        person_id = get_or_insert_id(cursor, conn, "Person", "person_id", emotion.personId)
-        video_id = get_or_insert_id(cursor, conn, "Video", "video_id", emotion.reference.xmi.id)
+        emotion_id = get_xmi_id(emotion)
+        get_or_insert_id(cursor, conn, "BaseEmotion", "emotion_id", emotion_id)
+        
+        person_id = getattr(emotion, "personId", None)
+        
         cursor.execute(
             """
             INSERT INTO BaseEmotion (emotion_id, person_id, video_id, modality, granularity, start_time, end_time, begin, end, frame_index, x, y, w, h, valence, arousal, dominance, dominant_label)
@@ -225,11 +346,11 @@ def parse_and_insert(cas, cursor, conn):
             (
                 emotion_id,
                 person_id,
-                video_id,
+                global_video_id,
                 getattr(emotion, "modality", None),
                 getattr(emotion, "granularity", None),
-                emotion.begin,
-                emotion.end,
+                getattr(emotion, "timeStart", None),
+                getattr(emotion, "timeEnd", None),
                 emotion.begin,
                 emotion.end,
                 getattr(emotion, "frameIndex", None),
@@ -244,28 +365,25 @@ def parse_and_insert(cas, cursor, conn):
             )
         )
 
-    # --- 4.10 EmotionScore ---
-    for score in cas.select("org.texttechnologylab.annotation.emotion.EmotionScore"):
-        emotion_id = get_or_insert_id(cursor, conn, "BaseEmotion", "emotion_id", score.reference.xmi.id)
-        cursor.execute(
-            """
-            INSERT INTO EmotionScore (emotion_id, label, score)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (emotion_id, label) DO NOTHING
-            """,
-            (
-                emotion_id,
-                getattr(score, "label", None),
-                getattr(score, "score", None),
-            )
-        )
+        # 4.10 EmotionScore (Nested scores attribute in Emotion)
+        if hasattr(emotion, "scores") and emotion.scores:
+            for score in emotion.scores:
+                cursor.execute(
+                    """
+                    INSERT INTO EmotionScore (emotion_id, label, score)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (emotion_id, label) DO NOTHING
+                    """,
+                    (
+                        emotion_id,
+                        getattr(score, "label", None),
+                        getattr(score, "score", None),
+                    )
+                )
 
-    # --- 4.11 FusedEmotion ---
-    for fused in cas.select("org.texttechnologylab.annotation.emotion.Emotion"):
-        if hasattr(fused, "aggregatedFrom"):
-            fused_id = get_or_insert_id(cursor, conn, "FusedEmotion", "fused_id", fused.xmi.id)
-            video_id = get_or_insert_id(cursor, conn, "Video", "video_id", fused.reference.xmi.id)
-            person_id = get_or_insert_id(cursor, conn, "Person", "person_id", fused.personId)
+        # 4.11 FusedEmotion 
+        if hasattr(emotion, "aggregatedFrom") and emotion.aggregatedFrom:
+            fused_id = get_or_insert_id(cursor, conn, "FusedEmotion", "fused_id", emotion_id)
             cursor.execute(
                 """
                 INSERT INTO FusedEmotion (fused_id, video_id, person_id, fusion_method, target_modality, start_time, end_time, valence, arousal, dominant_label)
@@ -274,24 +392,22 @@ def parse_and_insert(cas, cursor, conn):
                 """,
                 (
                     fused_id,
-                    video_id,
+                    global_video_id,
                     person_id,
-                    getattr(fused, "fusion_method", None),
-                    getattr(fused, "target_modality", None),
-                    fused.begin,
-                    fused.end,
-                    getattr(fused, "valence", None),
-                    getattr(fused, "arousal", None),
-                    getattr(fused, "dominant_label", None),
+                    getattr(emotion, "fusion_method", None),
+                    getattr(emotion, "target_modality", None),
+                    getattr(emotion, "timeStart", None),
+                    getattr(emotion, "timeEnd", None),
+                    getattr(emotion, "valence", None),
+                    getattr(emotion, "arousal", None),
+                    getattr(emotion, "dominant_label", None),
                 )
             )
 
-    # --- 4.12 EmotionFusionReference ---
-    for ref in cas.select("org.texttechnologylab.annotation.emotion.Emotion"):
-        if hasattr(ref, "aggregatedFrom"):
-            fused_id = get_or_insert_id(cursor, conn, "FusedEmotion", "fused_id", ref.xmi.id)
-            for source_emotion in ref.aggregatedFrom:
-                source_emotion_id = get_or_insert_id(cursor, conn, "BaseEmotion", "emotion_id", source_emotion.xmi.id)
+            # 4.12 EmotionFusionReference
+            for source_emotion in emotion.aggregatedFrom:
+                source_emotion_id = get_xmi_id(source_emotion)
+                get_or_insert_id(cursor, conn, "BaseEmotion", "emotion_id", source_emotion_id)
                 cursor.execute(
                     """
                     INSERT INTO EmotionFusionReference (fused_id, source_emotion_id)
@@ -303,17 +419,10 @@ def parse_and_insert(cas, cursor, conn):
 
 # --- 5. Main ---
 if __name__ == "__main__":
-    # Load CAS
     cas = load_cas_from_xmi(XMI_FILE)
-
-    # Connect to DB
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    # Parse and insert
     parse_and_insert(cas, cursor, conn)
-
-    # Commit and close
     conn.commit()
     cursor.close()
     conn.close()
