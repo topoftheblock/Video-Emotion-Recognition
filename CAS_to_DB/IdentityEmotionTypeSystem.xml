@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <name>IdentityEmotionTypesystem</name>
+    <description>Zusammengefuehrt aus MultimodalIdentityTypeSystem+DiarizedAudioToken und EmotionTypeSystem.
+    </description>
+    <version>1.1</version>
+
+    <imports>
+        <import name="desc.type.TypeSystemModelMeta"/>
+        <import name="desc.type.TypeSystemModelAnnotation"/>
+        <import name="desc.type.TextTechnologyMultimedia"/>
+    </imports>
+
+    <types>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.type.DiarizedAudioToken</name>
+            <description>nicht enhalten in com.github.texttechnologylab UIMATypeSystem 3.0.14, je nach konkreter
+            definition in whisperX container ggf. ändern.</description>
+            <supertypeName>org.texttechnologylab.annotation.type.AudioToken</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>speakerName</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>speakerId</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.identity.Person</name>
+            <description>Dokumentlokale, view-uebergreifende Person-Entitaet (span-los).</description>
+            <supertypeName>uima.cas.TOP</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>personId</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>label</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.identity.VoiceIdentity</name>
+            <description>Audio-seitige Identitaet (view-bezogen, span-los).</description>
+            <supertypeName>uima.cas.AnnotationBase</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>voiceId</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>person</name>
+                    <rangeTypeName>org.texttechnologylab.annotation.identity.Person</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>embeddings</name>
+                    <description>Embeddings fuer CAS-uebergreifende Personen-Identifizierung.</description>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                    <elementType>org.texttechnologylab.uima.type.Embedding</elementType>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.identity.FaceIdentity</name>
+            <description>Video-seitige Identitaet (view-bezogen, span-los).</description>
+            <supertypeName>uima.cas.AnnotationBase</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>faceId</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>person</name>
+                    <rangeTypeName>org.texttechnologylab.annotation.identity.Person</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>embeddings</name>
+                    <description>Embeddings fuer CAS-uebergreifende Personen-Identifizierung.</description>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                    <elementType>org.texttechnologylab.uima.type.Embedding</elementType>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.video.Shot</name>
+            <description>Videoabschnitt ohne starken Schnitt.</description>
+            <supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>shotIndex</name>
+                    <rangeTypeName>uima.cas.Integer</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.video.PersonTrack</name>
+            <description>Koerper-Tracklet innerhalb eines Shots.</description>
+            <supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>trackId</name>
+                    <rangeTypeName>uima.cas.Integer</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>shot</name>
+                    <rangeTypeName>org.texttechnologylab.annotation.video.Shot</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>face</name>
+                    <rangeTypeName>org.texttechnologylab.annotation.identity.FaceIdentity</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.video.Detection</name>
+            <description>Frame-lokale Bbox-Detektion (Basis).</description>
+            <supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>frameIndex</name>
+                    <rangeTypeName>uima.cas.Integer</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>track</name>
+                    <rangeTypeName>org.texttechnologylab.annotation.video.PersonTrack</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>x</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>y</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>width</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>height</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>detectionScore</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.video.PersonDetection</name>
+            <description>Koerper-bbox in genau einem Frame.</description>
+            <supertypeName>org.texttechnologylab.annotation.video.Detection</supertypeName>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.video.FaceDetection</name>
+            <description>Gesichts-bbox in genau einem Frame.</description>
+            <supertypeName>org.texttechnologylab.annotation.video.Detection</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>landmarks</name>
+                    <description>5 SCRFD-Landmarks, flach (10 Werte), normiert 0..1.</description>
+                    <rangeTypeName>uima.cas.DoubleArray</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.audio.SpeakerSegment</name>
+            <description>Zusammenhaengender Sprech-Abschnitt eines Sprechers.</description>
+            <supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>speakerId</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>voice</name>
+                    <rangeTypeName>org.texttechnologylab.annotation.identity.VoiceIdentity</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.audio.SpeakerSentence</name>
+            <description>Satz, an SpeakerSegment-Grenzen geschnitten (genau ein Sprecher).</description>
+            <supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>speakerSegment</name>
+                    <rangeTypeName>org.texttechnologylab.annotation.audio.SpeakerSegment</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.emotion.EmotionScore</name>
+            <description>Ein Emotionslabel mit Score.</description>
+            <supertypeName>uima.cas.TOP</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>label</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>score</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.emotion.Emotion</name>
+            <description>Emotion ueber einem Segment/Frame.</description>
+            <supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>scores</name>
+                    <description>Volle Verteilung als EmotionScore-Liste.</description>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                    <elementType>org.texttechnologylab.annotation.emotion.EmotionScore</elementType>
+                </featureDescription>
+                <featureDescription>
+                    <name>valence</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>arousal</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>dominance</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>reference</name>
+                    <description>Annotiertes MultimediaElement (fester Zeitabschnitt); auch bei Aggregation/Fusion der groebere Span.</description>
+                    <rangeTypeName>org.texttechnologylab.annotation.type.MultimediaElement</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>frameIndex</name>
+                    <rangeTypeName>uima.cas.Integer</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>aggregatedFrom</name>
+                    <description>Quell-Emotionen (Aggregation/Fusion); sonst leer.</description>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                    <elementType>org.texttechnologylab.annotation.emotion.Emotion</elementType>
+                    <multipleReferencesAllowed>true</multipleReferencesAllowed>
+                </featureDescription>
+                <featureDescription>
+                    <name>modality</name>
+                    <description>text | audio | video | text,video.</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>granularity</name>
+                    <description>sentence | segment | shot | frame | window | video.</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>model</name>
+                    <description>Verweis auf Modell-MetaData.</description>
+                    <rangeTypeName>org.texttechnologylab.annotation.MetaData</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+    </types>
+</typeSystemDescription>

@@ -1,5 +1,5 @@
-from cassis import load_cas_from_xmi
-import psycopg2
+import io
+from cassis import load_cas_from_xmi, load_typesystem, merge_typesystems
 from psycopg2 import sql
 import uuid
 import os
@@ -417,12 +417,81 @@ def parse_and_insert(cas, cursor, conn):
                     (fused_id, source_emotion_id)
                 )
 
+def patch_and_load_ts(filepath, inject_base_types=False):
+    """Reads the XML file and patches missing Java imports in memory for Python."""
+    with open(filepath, 'r', encoding='utf-8') as f:
+        xml_content = f.read()
+    
+    # 1. Replace missing external Java supertypes with standard UIMA Annotations
+    xml_content = xml_content.replace(
+        "<supertypeName>org.texttechnologylab.annotation.type.AudioToken</supertypeName>",
+        "<supertypeName>uima.tcas.Annotation</supertypeName>"
+    )
+    xml_content = xml_content.replace(
+        "<supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>",
+        "<supertypeName>uima.tcas.Annotation</supertypeName>"
+    )
+
+    # 2. Inject the missing Base Types (so we don't lose Video Metadata)
+    if inject_base_types:
+        base_types_xml = """
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.type.MultimediaElement</name>
+            <description>Injected Base Type for Python</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription><name>filename</name><rangeTypeName>uima.cas.String</rangeTypeName></featureDescription>
+                <featureDescription><name>duration</name><rangeTypeName>uima.cas.Double</rangeTypeName></featureDescription>
+                <featureDescription><name>processed_at</name><rangeTypeName>uima.cas.String</rangeTypeName></featureDescription>
+                <featureDescription><name>fps</name><rangeTypeName>uima.cas.Double</rangeTypeName></featureDescription>
+                <featureDescription><name>width</name><rangeTypeName>uima.cas.Integer</rangeTypeName></featureDescription>
+                <featureDescription><name>height</name><rangeTypeName>uima.cas.Integer</rangeTypeName></featureDescription>
+            </features>
+        </typeDescription>
+        <typeDescription>
+            <name>de.tudarmstadt.ukp.dkpro.core.api.metadata.type.DocumentMetaData</name>
+            <description>Injected Base Type for Python</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription><name>documentTitle</name><rangeTypeName>uima.cas.String</rangeTypeName></featureDescription>
+            </features>
+        </typeDescription>
+        """
+        # Inject right before the closing </types> tag
+        xml_content = xml_content.replace("</types>", base_types_xml + "\n</types>")
+        
+    return load_typesystem(io.BytesIO(xml_content.encode('utf-8')))
+
+
 # --- 5. Main ---
 if __name__ == "__main__":
-    cas = load_cas_from_xmi(XMI_FILE)
+    # Your TypeSystem files
+    TS_FILE_1 = "IdentityEmotionTypeSystem.xml"
+    TS_FILE_2 = "MultimodalIdentityTypeSystem.xml"
+    TS_FILE_3 = "EmotionTypeSystem.xml"
+
+    # Load and patch the typesystems in memory
+    # We inject the missing base types ONLY into the first one to avoid duplicate errors
+    print("Loading and patching TypeSystems...")
+    ts1 = patch_and_load_ts(TS_FILE_1, inject_base_types=True)
+    ts2 = patch_and_load_ts(TS_FILE_2, inject_base_types=False)
+    ts3 = patch_and_load_ts(TS_FILE_3, inject_base_types=False)
+
+    merged_typesystem = merge_typesystems([ts1, ts2, ts3])
+
+    # Load the CAS using the patched TypeSystem
+    print("Loading CAS data from XMI...")
+    with open(XMI_FILE, 'rb') as f:
+        cas = load_cas_from_xmi(f, typesystem=merged_typesystem, lenient=True)
+
+    # Connect to DB and parse
+    print("Connecting to database and inserting data...")
     conn = get_db_connection()
     cursor = conn.cursor()
+
     parse_and_insert(cas, cursor, conn)
+
+    # Commit and close
     conn.commit()
     cursor.close()
     conn.close()
