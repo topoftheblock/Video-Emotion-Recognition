@@ -20,7 +20,7 @@ except ImportError:
 
 # --- File locations -------------------------------------------------
 
-XMI_FILE = os.environ.get("DUUI_XMI_FILE", "cas/bundestag_full.xmi")
+XMI_FILE = os.environ.get("DUUI_XMI_FILE", "cas/full_2sek_with_person.xmi")
 
 TYPESYSTEM_FILES = {
     "identity_emotion": os.environ.get(
@@ -31,6 +31,7 @@ TYPESYSTEM_FILES = {
     ),
     "emotion": os.environ.get("DUUI_TS_EMOTION", "typesystems/EmotionTypeSystem.xml"),
 }
+
 # --- Database ---------------------------------------------------------
 
 DB_CONFIG = {
