@@ -6,7 +6,6 @@ Sets context["global_video_id"] for downstream parsers.
 
 from ..cas_views import select_across_views, select_exact_type
 from ..config import TYPES
-from ..db import get_or_insert_id
 from ..typesystem import get_xmi_id
 
 
@@ -20,10 +19,9 @@ def parse(cas, cursor, conn, context):
     # of an actual top-level video record.
     for multimedia in select_exact_type(cas, TYPES["multimedia_element"]):
         global_video_id = get_xmi_id(multimedia)
-        get_or_insert_id(cursor, conn, "Video", "video_id", global_video_id)
         cursor.execute(
             """
-            INSERT INTO Video (video_id, filename, duration, processed_at, fps, width, height)
+            INSERT INTO videos (video_id, filename, duration, processed_at, fps, width, height)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (video_id) DO UPDATE SET
                 filename = EXCLUDED.filename, duration = EXCLUDED.duration,
@@ -32,7 +30,10 @@ def parse(cas, cursor, conn, context):
             """,
             (
                 global_video_id,
-                getattr(multimedia, "filename", None),
+                # videos.filename is NOT NULL -- fall back to a
+                # placeholder rather than letting the insert fail if a
+                # real MultimediaElement instance ever lacks one.
+                getattr(multimedia, "filename", None) or "unknown",
                 getattr(multimedia, "duration", None),
                 getattr(multimedia, "processed_at", None),
                 getattr(multimedia, "fps", None),
@@ -45,11 +46,10 @@ def parse(cas, cursor, conn, context):
     if not global_video_id:
         for md in select_across_views(cas, TYPES["document_meta_data"]):
             global_video_id = get_xmi_id(md)
-            get_or_insert_id(cursor, conn, "Video", "video_id", global_video_id)
             cursor.execute(
-                "INSERT INTO Video (video_id, filename) VALUES (%s, %s) "
+                "INSERT INTO videos (video_id, filename) VALUES (%s, %s) "
                 "ON CONFLICT (video_id) DO NOTHING",
-                (global_video_id, getattr(md, "documentTitle", None)),
+                (global_video_id, getattr(md, "documentTitle", None) or "unknown"),
             )
             break
 

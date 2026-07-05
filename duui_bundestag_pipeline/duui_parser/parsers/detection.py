@@ -6,7 +6,6 @@ single helper handles both tables.
 
 from ..cas_views import select_across_views
 from ..config import TYPES
-from ..db import get_or_insert_id
 from ..identity_resolution import resolve_person_id_via_face_fs
 from ..typesystem import get_xmi_id
 
@@ -21,7 +20,6 @@ def _resolve_detection_person_id(detection, context):
 def _parse_detections(cas, cursor, conn, uima_type, table_name, video_id, context):
     for detection in select_across_views(cas, uima_type):
         detection_id = get_xmi_id(detection)
-        get_or_insert_id(cursor, conn, table_name, "detection_id", detection_id)
         presence_id = get_xmi_id(getattr(detection, "track", None))
         person_id = _resolve_detection_person_id(detection, context)
 
@@ -50,8 +48,8 @@ def _parse_detections(cas, cursor, conn, uima_type, table_name, video_id, contex
 def parse(cas, cursor, conn, context):
     video_id = context.get("global_video_id")
     _parse_detections(
-        cas, cursor, conn, TYPES["face_detection"], "FaceDetection", video_id, context
+        cas, cursor, conn, TYPES["face_detection"], "face_detections", video_id, context
     )
     _parse_detections(
-        cas, cursor, conn, TYPES["person_detection"], "PersonDetection", video_id, context
+        cas, cursor, conn, TYPES["person_detection"], "person_detections", video_id, context
     )

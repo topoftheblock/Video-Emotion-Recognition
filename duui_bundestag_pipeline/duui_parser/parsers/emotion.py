@@ -15,7 +15,6 @@ falls back to walking that reference chain.
 
 from ..cas_views import select_across_views
 from ..config import TYPES
-from ..db import get_or_insert_id
 from ..identity_resolution import (
     resolve_person_id_via_face_fs,
     resolve_person_id_via_voice_fs,
@@ -79,13 +78,30 @@ def _dominant_label_from_scores(scores):
     return best_label
 
 
-def _insert_base_emotion(cursor, conn, emotion, emotion_id, person_id, video_id, scores):
-    get_or_insert_id(cursor, conn, "BaseEmotion", "emotion_id", emotion_id)
+def _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, scores):
+    """
+    Uses DO UPDATE (not DO NOTHING) deliberately: `_insert_fused_emotion`
+    below may need to pre-create a minimal stub row for a fusion
+    source that hasn't been visited by the main parse loop yet, to
+    satisfy the emotion_fusion_references FK constraint. DO UPDATE
+    guarantees that whenever *this* emotion's own real data does get
+    inserted -- whether that happens before or after such a stub was
+    created -- it always overwrites the stub with the real values,
+    rather than a DO NOTHING silently keeping an empty row forever.
+    """
     cursor.execute(
         """
-        INSERT INTO BaseEmotion (emotion_id, person_id, video_id, modality, granularity, start_time, end_time, begin, end, frame_index, x, y, w, h, valence, arousal, dominance, dominant_label)
+        INSERT INTO base_emotions (emotion_id, person_id, video_id, modality, granularity, start_time, end_time, begin_offset, end_offset, frame_index, x, y, w, h, valence, arousal, dominance, dominant_label)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (emotion_id) DO NOTHING
+        ON CONFLICT (emotion_id) DO UPDATE SET
+            person_id = EXCLUDED.person_id, video_id = EXCLUDED.video_id,
+            modality = EXCLUDED.modality, granularity = EXCLUDED.granularity,
+            start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time,
+            begin_offset = EXCLUDED.begin_offset, end_offset = EXCLUDED.end_offset,
+            frame_index = EXCLUDED.frame_index, x = EXCLUDED.x, y = EXCLUDED.y,
+            w = EXCLUDED.w, h = EXCLUDED.h, valence = EXCLUDED.valence,
+            arousal = EXCLUDED.arousal, dominance = EXCLUDED.dominance,
+            dominant_label = EXCLUDED.dominant_label
         """,
         (
             emotion_id,
@@ -114,7 +130,7 @@ def _insert_emotion_scores(cursor, scores, emotion_id):
     for score in scores:
         cursor.execute(
             """
-            INSERT INTO EmotionScore (emotion_id, label, score)
+            INSERT INTO emotion_scores (emotion_id, label, score)
             VALUES (%s, %s, %s)
             ON CONFLICT (emotion_id, label) DO NOTHING
             """,
@@ -122,7 +138,7 @@ def _insert_emotion_scores(cursor, scores, emotion_id):
         )
 
 
-def _insert_fused_emotion(cursor, conn, emotion, emotion_id, person_id, video_id):
+def _insert_fused_emotion(cursor, emotion, emotion_id, person_id, video_id):
     """
     Returns the fused_id if this emotion aggregates other emotions of
     the *same* type via an `aggregatedFrom` feature, otherwise None.
@@ -137,10 +153,13 @@ def _insert_fused_emotion(cursor, conn, emotion, emotion_id, person_id, video_id
     if not aggregated_from:
         return None
 
-    fused_id = get_or_insert_id(cursor, conn, "FusedEmotion", "fused_id", emotion_id)
+    # fused_id is always the same value as emotion_id (the fusion IS
+    # this Emotion instance, just wearing a second "FusedEmotion" hat)
+    # -- no DB round-trip needed to determine it.
+    fused_id = emotion_id
     cursor.execute(
         """
-        INSERT INTO FusedEmotion (fused_id, video_id, person_id, fusion_method, target_modality, start_time, end_time, valence, arousal, dominant_label)
+        INSERT INTO fused_emotions (fused_id, video_id, person_id, fusion_method, target_modality, start_time, end_time, valence, arousal, dominant_label)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (fused_id) DO NOTHING
         """,
@@ -160,10 +179,24 @@ def _insert_fused_emotion(cursor, conn, emotion, emotion_id, person_id, video_id
 
     for source_emotion in aggregated_from:
         source_emotion_id = get_xmi_id(source_emotion)
-        get_or_insert_id(cursor, conn, "BaseEmotion", "emotion_id", source_emotion_id)
+        # The source emotion may not have been visited by the main
+        # parse loop yet (iteration order isn't guaranteed to reach it
+        # before this fusion) -- pre-create a minimal stub so the FK
+        # constraint below doesn't fail. `_insert_base_emotion`'s own
+        # DO UPDATE ensures the source's real values win once its own
+        # turn in the main loop comes up, instead of leaving this
+        # stub in place forever.
         cursor.execute(
             """
-            INSERT INTO EmotionFusionReference (fused_id, source_emotion_id)
+            INSERT INTO base_emotions (emotion_id)
+            VALUES (%s)
+            ON CONFLICT (emotion_id) DO NOTHING
+            """,
+            (source_emotion_id,),
+        )
+        cursor.execute(
+            """
+            INSERT INTO emotion_fusion_references (fused_id, source_emotion_id)
             VALUES (%s, %s)
             ON CONFLICT (fused_id, source_emotion_id) DO NOTHING
             """,
@@ -181,6 +214,6 @@ def parse(cas, cursor, conn, context):
         person_id = _resolve_emotion_person_id(emotion, context)
         scores = as_list(getattr(emotion, "scores", None))
 
-        _insert_base_emotion(cursor, conn, emotion, emotion_id, person_id, video_id, scores)
+        _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, scores)
         _insert_emotion_scores(cursor, scores, emotion_id)
-        _insert_fused_emotion(cursor, conn, emotion, emotion_id, person_id, video_id)
+        _insert_fused_emotion(cursor, emotion, emotion_id, person_id, video_id)

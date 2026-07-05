@@ -8,7 +8,6 @@ under `.word`, others (confirmed in the real Bundestag CAS) under
 
 from ..cas_views import select_across_views
 from ..config import TYPES
-from ..db import get_or_insert_id
 from ..typesystem import get_xmi_id
 
 
@@ -25,10 +24,9 @@ def parse(cas, cursor, conn, context):
 
     for token in select_across_views(cas, TYPES["diarized_audio_token"]):
         token_id = get_xmi_id(token)
-        get_or_insert_id(cursor, conn, "LinguisticToken", "token_id", token_id)
         cursor.execute(
             """
-            INSERT INTO LinguisticToken (token_id, video_id, segment_id, start_time, end_time, begin, end, word, pos_tag, ner_label)
+            INSERT INTO linguistic_tokens (token_id, video_id, segment_id, start_time, end_time, begin_offset, end_offset, word, pos_tag, ner_label)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (token_id) DO NOTHING
             """,

@@ -2,17 +2,15 @@
 
 from ..cas_views import select_across_views
 from ..config import TYPES
-from ..db import get_or_insert_id
 from ..typesystem import get_xmi_id
 
 
 def _parse_shots(cas, cursor, conn, video_id):
     for shot in select_across_views(cas, TYPES["shot"]):
         segment_id = get_xmi_id(shot)
-        get_or_insert_id(cursor, conn, "Segment", "segment_id", segment_id)
         cursor.execute(
             """
-            INSERT INTO Segment (segment_id, video_id, kind, seg_index, start_time, end_time, begin, end)
+            INSERT INTO segments (segment_id, video_id, kind, seg_index, start_time, end_time, begin_offset, end_offset)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (segment_id) DO NOTHING
             """,
@@ -40,12 +38,11 @@ def _resolve_sentence_person_id(sentence):
 def _parse_sentences(cas, cursor, conn, video_id):
     for sentence in select_across_views(cas, TYPES["speaker_sentence"]):
         segment_id = get_xmi_id(sentence)
-        get_or_insert_id(cursor, conn, "Segment", "segment_id", segment_id)
         person_id = _resolve_sentence_person_id(sentence)
 
         cursor.execute(
             """
-            INSERT INTO Segment (segment_id, video_id, kind, start_time, end_time, begin, end, person_id)
+            INSERT INTO segments (segment_id, video_id, kind, start_time, end_time, begin_offset, end_offset, person_id)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (segment_id) DO NOTHING
             """,

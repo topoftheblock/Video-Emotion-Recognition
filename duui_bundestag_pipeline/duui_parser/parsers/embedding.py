@@ -19,12 +19,30 @@ DUUI component version produced the CAS.
 
 from ..cas_views import select_across_views
 from ..config import TYPES
-from ..db import get_or_insert_id
 from ..identity_resolution import (
     resolve_person_id_via_face_fs,
     resolve_person_id_via_voice_fs,
 )
 from ..typesystem import as_list, get_xmi_id
+
+
+def _to_pgvector_literal(embedding_repr):
+    """
+    Convert a raw embedding representation into the text literal
+    format pgvector expects on INSERT: `[v1,v2,v3]` -- bracketed,
+    comma-separated. cassis hands back a bare space-separated string
+    (or a plain sequence of numbers) from the underlying UIMA feature,
+    which pgvector's input parser rejects outright.
+    """
+    if embedding_repr is None:
+        return None
+    if isinstance(embedding_repr, str):
+        values = embedding_repr.split()
+    else:
+        values = list(embedding_repr)
+    if not values:
+        return None
+    return "[" + ",".join(str(v) for v in values) + "]"
 
 
 def _resolve_embedding_rows(identity_fs):
@@ -63,14 +81,13 @@ def _parse_face_embeddings(cas, cursor, conn, context):
         for embedding_id, derived_model_id, embedding_repr in _resolve_embedding_rows(item):
             if embedding_id is None:
                 continue
-            get_or_insert_id(cursor, conn, "FaceEmbedding", "embedding_id", embedding_id)
             cursor.execute(
                 """
-                INSERT INTO FaceEmbedding (embedding_id, person_id, model_id, embedding)
+                INSERT INTO face_embeddings (embedding_id, person_id, model_id, embedding)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (embedding_id) DO NOTHING
                 """,
-                (embedding_id, person_id, own_model_id or derived_model_id, embedding_repr),
+                (embedding_id, person_id, own_model_id or derived_model_id, _to_pgvector_literal(embedding_repr)),
             )
 
 
@@ -82,14 +99,13 @@ def _parse_voice_embeddings(cas, cursor, conn, context):
         for embedding_id, derived_model_id, embedding_repr in _resolve_embedding_rows(item):
             if embedding_id is None:
                 continue
-            get_or_insert_id(cursor, conn, "VoiceEmbedding", "embedding_id", embedding_id)
             cursor.execute(
                 """
-                INSERT INTO VoiceEmbedding (embedding_id, person_id, model_id, embedding)
+                INSERT INTO voice_embeddings (embedding_id, person_id, model_id, embedding)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (embedding_id) DO NOTHING
                 """,
-                (embedding_id, person_id, own_model_id or derived_model_id, embedding_repr),
+                (embedding_id, person_id, own_model_id or derived_model_id, _to_pgvector_literal(embedding_repr)),
             )
 
 

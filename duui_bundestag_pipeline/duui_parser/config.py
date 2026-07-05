@@ -31,7 +31,6 @@ TYPESYSTEM_FILES = {
     ),
     "emotion": os.environ.get("DUUI_TS_EMOTION", "typesystems/EmotionTypeSystem.xml"),
 }
-
 # --- Database ---------------------------------------------------------
 
 DB_CONFIG = {
@@ -49,10 +48,18 @@ TYPES = {
     "document_meta_data": "de.tudarmstadt.ukp.dkpro.core.api.metadata.type.DocumentMetaData",
     # NOTE: this lives under the `.model` subpackage, not directly under
     # `.annotation` -- confirmed against real DUUI-video-emotion output.
-    "model_meta_data": "org.texttechnologylab.annotation.model.MetaData",
+    # NOTE: canonical mapping doc (data_schema_with_types.md) specifies
+    # the bare `annotation.MetaData` type here, not `.model.MetaData`.
+    # Since `model.MetaData`/`model.HuggingfaceMetaData` both extend
+    # this bare type (see INJECTED_FALLBACK_TYPES), selecting the bare
+    # type already picks up every concrete subtype instance too --
+    # cassis's select() includes descendants -- so this single type
+    # name covers all real Model rows without a second select.
+    "model_meta_data": "org.texttechnologylab.annotation.MetaData",
     "huggingface_meta_data": "org.texttechnologylab.annotation.model.HuggingfaceMetaData",
     "shot": "org.texttechnologylab.annotation.video.Shot",
     "speaker_sentence": "org.texttechnologylab.annotation.audio.SpeakerSentence",
+    "speaker_segment": "org.texttechnologylab.annotation.audio.SpeakerSegment",
     "diarized_audio_token": "org.texttechnologylab.annotation.type.DiarizedAudioToken",
     "global_person": "org.texttechnologylab.annotation.identity.GlobalPerson",
     "person": "org.texttechnologylab.annotation.identity.Person",

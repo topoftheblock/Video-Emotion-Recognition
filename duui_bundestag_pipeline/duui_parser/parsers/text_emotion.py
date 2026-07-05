@@ -23,7 +23,6 @@ reference back to a speaker/segment), so person_id is left NULL here.
 
 from ..cas_views import select_across_views
 from ..config import TYPES
-from ..db import get_or_insert_id
 from ..typesystem import as_list, get_xmi_id
 
 
@@ -46,11 +45,10 @@ def _dominant_label_from_comments(comments):
     return best_label
 
 
-def _insert_text_emotion(cursor, conn, entry, emotion_id, video_id, dominant_label):
-    get_or_insert_id(cursor, conn, "BaseEmotion", "emotion_id", emotion_id)
+def _insert_text_emotion(cursor, entry, emotion_id, video_id, dominant_label):
     cursor.execute(
         """
-        INSERT INTO BaseEmotion (emotion_id, person_id, video_id, modality, granularity, start_time, end_time, begin, end, frame_index, x, y, w, h, valence, arousal, dominance, dominant_label)
+        INSERT INTO base_emotions (emotion_id, person_id, video_id, modality, granularity, start_time, end_time, begin_offset, end_offset, frame_index, x, y, w, h, valence, arousal, dominance, dominant_label)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (emotion_id) DO NOTHING
         """,
@@ -91,7 +89,7 @@ def _insert_text_emotion_scores(cursor, comments, emotion_id):
 
         cursor.execute(
             """
-            INSERT INTO EmotionScore (emotion_id, label, score)
+            INSERT INTO emotion_scores (emotion_id, label, score)
             VALUES (%s, %s, %s)
             ON CONFLICT (emotion_id, label) DO NOTHING
             """,
@@ -106,5 +104,5 @@ def parse(cas, cursor, conn, context):
         emotion_id = get_xmi_id(entry)
         comments = as_list(getattr(entry, "Emotions", None))
         dominant_label = _dominant_label_from_comments(comments)
-        _insert_text_emotion(cursor, conn, entry, emotion_id, video_id, dominant_label)
+        _insert_text_emotion(cursor, entry, emotion_id, video_id, dominant_label)
         _insert_text_emotion_scores(cursor, comments, emotion_id)
