@@ -15,6 +15,11 @@ const state = {
   data: null,
   personColor: new Map(),
   rafHandle: null,
+  // null = show every overlay (default browsing mode). Once a query
+  // result is opened, this becomes a Set of the overlay keys the
+  // agent picked as relevant to that question, and every render
+  // function below hides whatever isn't in it.
+  activeOverlays: null,
 };
 
 const el = {
@@ -22,6 +27,7 @@ const el = {
   player: document.getElementById("player"),
   overlay: document.getElementById("overlay"),
   stageFrame: document.getElementById("stageFrame"),
+  subtitleBar: document.getElementById("subtitleBar"),
   subtitleText: document.getElementById("subtitleText"),
   subtitleEmotion: document.getElementById("subtitleEmotion"),
   playBtn: document.getElementById("playBtn"),
@@ -33,7 +39,24 @@ const el = {
   arousalFill: document.getElementById("arousalFill"),
   personList: document.getElementById("personList"),
   activeList: document.getElementById("activeList"),
+  fusedPanel: document.getElementById("fusedPanel"),
+  fusedLabel: document.getElementById("fusedLabel"),
+  fusedValenceFill: document.getElementById("fusedValenceFill"),
+  fusedArousalFill: document.getElementById("fusedArousalFill"),
+  askForm: document.getElementById("askForm"),
+  askInput: document.getElementById("askInput"),
+  askSubmit: document.getElementById("askSubmit"),
+  askReset: document.getElementById("askReset"),
+  askStatus: document.getElementById("askStatus"),
+  askResults: document.getElementById("askResults"),
 };
+
+/** True if `key` (one of the OVERLAY_CHOICES from the backend) should
+ * currently be rendered -- everything is on by default; a query
+ * result narrows this down to what's relevant to that question. */
+function overlayEnabled(key) {
+  return state.activeOverlays === null || state.activeOverlays.has(key);
+}
 
 const ctx = el.overlay.getContext("2d");
 
@@ -115,20 +138,26 @@ function render() {
 
   renderSubtitle(data, t);
   renderVoicePanel(data, t);
+  renderFusedPanel(data, t);
   renderBoundingBoxes(data, t);
   updateTransport(t);
 }
 
 function renderSubtitle(data, t) {
+  const showTranscript = overlayEnabled("transcript");
+  const showTextEmotion = overlayEnabled("text_emotion");
+  el.subtitleBar.style.display = showTranscript || showTextEmotion ? "" : "none";
+
   const sentence = coveredBy(data.sentences, t)[0];
-  el.subtitleText.textContent = sentence ? sentence.text : "";
+  el.subtitleText.textContent = showTranscript && sentence ? sentence.text : "";
 
   const textEmotion = coveredBy(data.emotions.text, t)[0];
-  el.subtitleEmotion.textContent = textEmotion ? textEmotion.dominant_label || "" : "";
+  el.subtitleEmotion.textContent =
+    showTextEmotion && textEmotion ? textEmotion.dominant_label || "" : "";
 }
 
 function renderVoicePanel(data, t) {
-  const audioEmotion = coveredBy(data.emotions.audio, t)[0];
+  const audioEmotion = overlayEnabled("audio_emotion") ? coveredBy(data.emotions.audio, t)[0] : null;
   if (!audioEmotion) {
     el.voiceLabel.textContent = "\u2014";
     setBar(el.valenceFill, 0);
@@ -138,6 +167,17 @@ function renderVoicePanel(data, t) {
   el.voiceLabel.textContent = audioEmotion.dominant_label || "\u2014";
   setBar(el.valenceFill, audioEmotion.valence || 0);
   setBar(el.arousalFill, audioEmotion.arousal || 0);
+}
+
+function renderFusedPanel(data, t) {
+  const enabled = overlayEnabled("fused_emotion") && (data.fused_emotions || []).length > 0;
+  el.fusedPanel.style.display = enabled ? "" : "none";
+  if (!enabled) return;
+
+  const fused = coveredBy(data.fused_emotions, t)[0];
+  el.fusedLabel.textContent = fused ? fused.dominant_label || "\u2014" : "\u2014";
+  setBar(el.fusedValenceFill, fused ? fused.valence || 0 : 0);
+  setBar(el.fusedArousalFill, fused ? fused.arousal || 0 : 0);
 }
 
 /** Renders a signed value in [-1, 1] as a bar growing left/right from center. */
@@ -157,6 +197,12 @@ function renderBoundingBoxes(data, t) {
   syncCanvasSize();
   ctx.clearRect(0, 0, el.overlay.width, el.overlay.height);
 
+  if (!overlayEnabled("bounding_boxes")) {
+    renderActiveList([]);
+    return;
+  }
+
+  const showVideoEmotion = overlayEnabled("video_emotion");
   const tolerance = 0.15; // seconds -- detections are sampled per-frame, not continuous
   const faceBox = nearestByTime(data.detections.face, t, tolerance);
   const personBox = nearestByTime(data.detections.person, t, tolerance);
@@ -165,7 +211,7 @@ function renderBoundingBoxes(data, t) {
   for (const box of [faceBox, personBox]) {
     if (!box) continue;
     const color = state.personColor.get(box.person_id) || "#8b94a3";
-    const emotionLabel = findEmotionLabelForFrame(data, box);
+    const emotionLabel = showVideoEmotion ? findEmotionLabelForFrame(data, box) : null;
     drawBox(box, color, emotionLabel);
     if (box === faceBox) {
       const person = data.persons.find((p) => p.person_id === box.person_id);
@@ -302,5 +348,143 @@ window.addEventListener("resize", () => {
   syncCanvasSize();
   render();
 });
+
+// ---------------- Natural-language query panel ----------------
+
+function setAskStatus(message, isError) {
+  el.askStatus.textContent = message || "";
+  el.askStatus.classList.toggle("error", Boolean(isError));
+}
+
+function resetOverlaysToDefault() {
+  state.activeOverlays = null;
+  el.askResults.innerHTML = "";
+  setAskStatus("");
+  render();
+}
+
+function formatMeta(meta) {
+  return Object.entries(meta)
+    .filter(([, v]) => v !== null && v !== undefined && v !== "")
+    .map(([k, v]) => `${k}: ${typeof v === "number" ? Math.round(v * 1000) / 1000 : v}`)
+    .join(" · ");
+}
+
+function renderAskResults(result) {
+  const parts = [];
+
+  if (result.explanation) {
+    parts.push(`<div class="ask-explanation">${escapeHtml(result.explanation)}</div>`);
+  }
+  if (result.overlays && result.overlays.length) {
+    parts.push(
+      `<div class="ask-overlays">${result.overlays
+        .map((o) => `<span class="ask-overlay-tag">${escapeHtml(o)}</span>`)
+        .join("")}</div>`
+    );
+  }
+  if (result.sql) {
+    parts.push(`<div class="ask-sql">${escapeHtml(result.sql)}</div>`);
+  }
+
+  if (result.segments && result.segments.length) {
+    parts.push(
+      `<ul class="ask-segment-list">${result.segments
+        .map(
+          (seg, i) => `<li data-index="${i}">
+            <span class="ask-segment-time">video #${seg.video_id} · ${formatTime(seg.start_time)}–${formatTime(seg.end_time)}</span>
+            <span class="ask-segment-meta">${escapeHtml(formatMeta(seg.meta || {}))}</span>
+          </li>`
+        )
+        .join("")}</ul>`
+    );
+  } else if (result.rows && result.rows.length) {
+    const cols = result.columns;
+    parts.push(
+      `<table class="ask-table"><thead><tr>${cols
+        .map((c) => `<th>${escapeHtml(c)}</th>`)
+        .join("")}</tr></thead><tbody>${result.rows
+        .map(
+          (row) =>
+            `<tr>${cols.map((c) => `<td>${escapeHtml(String(row[c] ?? ""))}</td>`).join("")}</tr>`
+        )
+        .join("")}</tbody></table>`
+    );
+  } else {
+    parts.push('<div class="ask-explanation">No rows matched this question.</div>');
+  }
+
+  if (result.truncated) {
+    parts.push(`<div class="ask-status">Showing the first ${result.rows.length} rows.</div>`);
+  }
+
+  el.askResults.innerHTML = parts.join("");
+
+  el.askResults.querySelectorAll(".ask-segment-list li").forEach((li) => {
+    li.addEventListener("click", () => {
+      const seg = result.segments[Number(li.dataset.index)];
+      jumpToSegment(seg, result.overlays);
+    });
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function jumpToSegment(seg, overlays) {
+  state.activeOverlays = overlays && overlays.length ? new Set(overlays) : null;
+
+  const needsVideoSwitch = !state.data || state.data.video.video_id !== seg.video_id;
+  if (needsVideoSwitch) {
+    await loadVideo(seg.video_id);
+    el.videoSelect.value = String(seg.video_id);
+    el.player.addEventListener(
+      "loadedmetadata",
+      () => {
+        el.player.currentTime = seg.start_time;
+      },
+      { once: true }
+    );
+  } else {
+    el.player.currentTime = seg.start_time;
+  }
+  render();
+}
+
+el.askForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const question = el.askInput.value.trim();
+  if (!question) return;
+
+  el.askSubmit.disabled = true;
+  setAskStatus("Thinking…");
+  el.askResults.innerHTML = "";
+
+  try {
+    const response = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.detail || "The query agent could not answer that.");
+    }
+    setAskStatus(`${result.row_count} row(s).`);
+    renderAskResults(result);
+    if (result.segments && result.segments.length) {
+      jumpToSegment(result.segments[0], result.overlays);
+    }
+  } catch (err) {
+    setAskStatus(err.message, true);
+  } finally {
+    el.askSubmit.disabled = false;
+  }
+});
+
+el.askReset.addEventListener("click", resetOverlaysToDefault);
 
 loadVideoList();

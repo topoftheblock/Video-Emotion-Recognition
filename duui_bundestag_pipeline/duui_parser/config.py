@@ -34,6 +34,20 @@ TYPESYSTEM_FILES = {
 
 # --- Database ---------------------------------------------------------
 
+# --- Natural-language query agent -------------------------------------
+
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+QUERY_AGENT_MODEL = os.environ.get("DUUI_QUERY_MODEL", "claude-sonnet-5")
+QUERY_AGENT_MAX_ROWS = int(os.environ.get("DUUI_QUERY_MAX_ROWS", "500"))
+QUERY_AGENT_STATEMENT_TIMEOUT_MS = int(
+    os.environ.get("DUUI_QUERY_STATEMENT_TIMEOUT_MS", "8000")
+)
+QUERY_AGENT_MAX_TOOL_ITERATIONS = int(
+    os.environ.get("DUUI_QUERY_MAX_TOOL_ITERATIONS", "6")
+)
+
+# --- Database ---------------------------------------------------------
+
 DB_CONFIG = {
     "dbname": os.environ.get("DUUI_DB_NAME", "your_db"),
     "user": os.environ.get("DUUI_DB_USER", "your_user"),

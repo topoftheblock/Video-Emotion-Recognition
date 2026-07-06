@@ -167,6 +167,43 @@ frontend fetch a rolling window around the current playback time
 instead of everything up front -- happy to add that when you have a
 longer real file to test it against.
 
+## Natural-language query agent
+
+The "Ask" bar above the player lets you type a question like *"give me
+the video sequences where video emotion and text emotion diverge"*
+instead of writing SQL by hand. Under the hood (`duui_parser/query_agent/`):
+
+1. **`schema_context.py`** gives Claude a schema description with the
+   domain semantics that aren't recoverable from column names alone
+   (which modality pairs with which granularity, how to compare
+   emotions across modalities via the sentence they fall inside, how
+   to get a display name for a person, etc.), plus a worked example
+   for cross-modal "divergence" questions.
+2. **`agent.py`** runs a tool-use loop: Claude calls `run_sql` to
+   explore/validate candidate queries against a preview (20 rows +
+   count), then calls `submit_answer` once with the final query, a
+   plain-language explanation, and the set of display **overlays**
+   relevant to that question (`transcript`, `bounding_boxes`,
+   `video_emotion`, `audio_emotion`, `text_emotion`, `fused_emotion`).
+3. **`sql_guard.py`** re-executes only that final, validated query
+   itself (never trusting rows the model claims to have seen) --
+   single `SELECT`/`WITH` statement only, run inside a Postgres
+   `READ ONLY` transaction with a statement timeout and a row cap.
+
+`POST /api/ask {"question": "..."}` (see `webapp/server.py`) returns
+the SQL, explanation, overlays, and result rows; rows exposing
+`video_id`/`start_time`/`end_time` are turned into clickable "jump to
+this clip" segments. Clicking one seeks the player to that moment and
+switches the frontend into showing *only* the overlays the agent
+picked -- e.g. a divergence question shows the transcript plus the
+video- and text-emotion labels, and hides the voice panel and fused
+readout, since those weren't asked about. "Reset view" clears this and
+goes back to showing everything.
+
+Requires `ANTHROPIC_API_KEY` in `.env` (see `DUUI_QUERY_MODEL`,
+`DUUI_QUERY_MAX_ROWS`, `DUUI_QUERY_STATEMENT_TIMEOUT_MS` for the other
+knobs, all optional).
+
 ## Database schema
 
 `schema/schema.sql` is the authoritative schema (also documented in

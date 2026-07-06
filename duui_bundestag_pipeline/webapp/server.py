@@ -18,10 +18,12 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from psycopg2.extras import RealDictCursor
 
 from duui_parser.config import DB_CONFIG
 from duui_parser.db import get_db_connection
+from duui_parser.query_agent import QueryAgentError, answer_question
 
 VIDEO_DIR = Path(os.environ.get("DUUI_VIDEO_DIR", "cas")).resolve()
 VIDEO_DIR.mkdir(parents=True, exist_ok=True)
@@ -121,6 +123,13 @@ def get_video_data(video_id: int):
                 {"label": s["label"], "score": s["score"]}
             )
 
+    fused_emotions = _query(
+        "SELECT fused_id, person_id, fusion_method, target_modality, "
+        "start_time, end_time, valence, arousal, dominant_label "
+        "FROM fused_emotions WHERE video_id = %s ORDER BY start_time",
+        (video_id,),
+    )
+
     face_detections = _query(
         "SELECT detection_id, presence_id, person_id, frame_index, t_time, x, y, w, h, detection_score "
         "FROM face_detections WHERE video_id = %s ORDER BY t_time",
@@ -139,8 +148,53 @@ def get_video_data(video_id: int):
         "shots": shots,
         "emotions": emotions_by_modality,
         "emotion_scores": scores_by_emotion,
+        "fused_emotions": fused_emotions,
         "detections": {"face": face_detections, "person": person_detections},
     }
+
+
+class AskRequest(BaseModel):
+    question: str
+
+
+@app.post("/api/ask")
+def ask_question(payload: AskRequest):
+    """
+    Natural-language question -> SQL agent. Runs the question through
+    the Claude-backed NL->SQL agent (duui_parser.query_agent), which
+    explores the schema, writes a query, and picks which display
+    overlays (transcript/bounding boxes/emotion modalities) the
+    frontend should show for the results.
+    """
+    question = payload.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="question must not be empty")
+    try:
+        result = answer_question(question)
+    except QueryAgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    has_playable_columns = {"video_id", "start_time", "end_time"} <= set(result["columns"])
+    segments = []
+    if has_playable_columns:
+        for row in result["rows"]:
+            if row.get("video_id") is None or row.get("start_time") is None:
+                continue
+            meta = {
+                k: v
+                for k, v in row.items()
+                if k not in ("video_id", "start_time", "end_time")
+            }
+            segments.append(
+                {
+                    "video_id": row["video_id"],
+                    "start_time": row["start_time"],
+                    "end_time": row.get("end_time") or row["start_time"],
+                    "meta": meta,
+                }
+            )
+
+    return {**result, "segments": segments}
 
 
 app.mount("/media", StaticFiles(directory=VIDEO_DIR), name="media")

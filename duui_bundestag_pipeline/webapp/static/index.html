@@ -21,6 +21,17 @@
     </label>
   </header>
 
+  <section class="ask-panel">
+    <form id="askForm" class="ask-form">
+      <input id="askInput" class="ask-input" type="text"
+             placeholder="Ask a question, e.g. &quot;where do video emotion and text emotion diverge?&quot;" />
+      <button id="askSubmit" class="ask-submit" type="submit">Ask</button>
+      <button id="askReset" class="ask-reset" type="button" title="Clear results and show all overlays">Reset view</button>
+    </form>
+    <div id="askStatus" class="ask-status"></div>
+    <div id="askResults" class="ask-results"></div>
+  </section>
+
   <main class="layout">
     <section class="stage">
       <div class="stage-frame" id="stageFrame">
@@ -46,6 +57,17 @@
           <div class="vad-bars">
             <div class="vad-row"><span>valence</span><div class="vad-track"><div class="vad-fill" id="valenceFill"></div></div></div>
             <div class="vad-row"><span>arousal</span><div class="vad-track"><div class="vad-fill" id="arousalFill"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="fusedPanel" style="display:none;">
+        <h2 class="panel-title">Fused emotion</h2>
+        <div class="voice-readout" id="fusedReadout">
+          <span class="voice-label" id="fusedLabel">&mdash;</span>
+          <div class="vad-bars">
+            <div class="vad-row"><span>valence</span><div class="vad-track"><div class="vad-fill" id="fusedValenceFill"></div></div></div>
+            <div class="vad-row"><span>arousal</span><div class="vad-track"><div class="vad-fill" id="fusedArousalFill"></div></div></div>
           </div>
         </div>
       </div>
