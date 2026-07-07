@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DUUI Video Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="topbar-mark">DUUI</span>
+      <span class="topbar-title">Video Review</span>
+    </div>
+    <label class="video-picker">
+      <span>Video</span>
+      <select id="videoSelect"></select>
+    </label>
+  </header>
+
+  <section class="ask-panel">
+    <form id="askForm" class="ask-form">
+      <input id="askInput" class="ask-input" type="text"
+             placeholder="Ask a question, e.g. &quot;where do video emotion and text emotion diverge?&quot;" />
+      <button id="askSubmit" class="ask-submit" type="submit">Ask</button>
+      <button id="askReset" class="ask-reset" type="button" title="Clear results and show all overlays">Reset view</button>
+    </form>
+    <div id="askStatus" class="ask-status"></div>
+    <div id="askResults" class="ask-results"></div>
+  </section>
+
+  <main class="layout">
+    <section class="stage">
+      <div class="stage-frame" id="stageFrame">
+        <video id="player" playsinline></video>
+        <canvas id="overlay"></canvas>
+        <div class="subtitle-bar" id="subtitleBar">
+          <span class="subtitle-text" id="subtitleText"></span>
+          <span class="subtitle-emotion" id="subtitleEmotion"></span>
+        </div>
+      </div>
+      <div class="transport">
+        <button id="playBtn" class="transport-btn" aria-label="Play/Pause">▶</button>
+        <span class="time-readout"><span id="timeCurrent">0:00.0</span> / <span id="timeTotal">0:00.0</span></span>
+        <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0" step="1">
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="panel">
+        <h2 class="panel-title">Voice</h2>
+        <div class="voice-readout" id="voiceReadout">
+          <span class="voice-label" id="voiceLabel">&mdash;</span>
+          <div class="vad-bars">
+            <div class="vad-row"><span>valence</span><div class="vad-track"><div class="vad-fill" id="valenceFill"></div></div></div>
+            <div class="vad-row"><span>arousal</span><div class="vad-track"><div class="vad-fill" id="arousalFill"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="fusedPanel" style="display:none;">
+        <h2 class="panel-title">Fused emotion</h2>
+        <div class="voice-readout" id="fusedReadout">
+          <span class="voice-label" id="fusedLabel">&mdash;</span>
+          <div class="vad-bars">
+            <div class="vad-row"><span>valence</span><div class="vad-track"><div class="vad-fill" id="fusedValenceFill"></div></div></div>
+            <div class="vad-row"><span>arousal</span><div class="vad-track"><div class="vad-fill" id="fusedArousalFill"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">People</h2>
+        <ul class="person-list" id="personList"></ul>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">On screen now</h2>
+        <ul class="active-list" id="activeList">
+          <li class="empty-hint">No one detected at this frame.</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
