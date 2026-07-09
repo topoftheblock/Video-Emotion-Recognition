@@ -1,29 +1,31 @@
-# Use a standard Python image
+# pyannote runs on CPU or GPU. This slim image is CPU-friendly; for GPU,
+# swap to an nvidia/cuda base and install a CUDA-enabled torch wheel.
 FROM python:3.10-slim
 
-# Install system dependencies required for audio processing (ffmpeg)
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    libsndfile1 \
+# System deps for audio decoding.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
 WORKDIR /app
 
-# Copy requirements and install them
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code and Lua script
-COPY src/main/python/duui-audio-speaker-diarization.py .
-COPY src/main/lua/communication.lua .
+# Co-locate the module with the Lua + typesystem it reads at runtime so the
+# relative paths in the Python module resolve inside the image.
+COPY src/main/python/duui_audio_speaker_diarization.py ./duui_audio_speaker_diarization.py
+COPY src/main/lua/communication.lua ./communication.lua
+COPY src/main/resources/typesystem.xml ./typesystem.xml
 
-# Expose the port Uvicorn will run on
 EXPOSE 9714
 
-# Set environment variable for HuggingFace Token (Required by pyannote)
-# You should pass this when running the container: docker run -e HF_TOKEN="your_token" ...
-ENV HF_TOKEN=""
+# HuggingFace token is REQUIRED (pyannote/speaker-diarization-3.1 is gated).
+# Provide it at run time, never bake it into the image:
+#   docker run -e HF_TOKEN=hf_xxx -p 9714:9714 <image>
+# Optional overrides: DUUI_DIARIZATION_MODEL_NAME, DUUI_DIARIZATION_DEVICE.
+ENV HF_TOKEN="" \
+    HF_HOME=/app/.cache/huggingface
 
-# Command to run the FastAPI application
-CMD ["uvicorn", "voice_identity_app:app", "--host", "0.0.0.0", "--port", "9714"]
+CMD ["uvicorn", "duui_audio_speaker_diarization:app", "--host", "0.0.0.0", "--port", "9714"]

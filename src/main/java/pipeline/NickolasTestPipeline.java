@@ -38,6 +38,8 @@ import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDesc
  */
 public class NickolasTestPipeline {
 
+        private static final String HF_TOKEN = "";
+
         /** Docker image name of the audio-extraction component. */
         private static final String EXTRACT_AUDIO_TO_VIEW = "duui_extract_audio_to_view:latest";
         private static final String WHISPERX = "docker.texttechnologylab.org/duui-whisperx:latest";
@@ -87,10 +89,16 @@ public class NickolasTestPipeline {
                         .withTargetView(AUDIO_VIEW)
                         .withParameter("output_format", "mp3"));
 
-                composer.add(new DUUIDockerDriver.Component(WHISPERX)
-                        .withParameter("language", "de")
+                composer.add(new DUUIRemoteDriver.Component("http://localhost:9000")
+                        .withScale(1)
                         .withSourceView(AUDIO_VIEW)
-                        .withTargetView(TRANSCRIPT_VIEW));
+                        .withTargetView(TRANSCRIPT_VIEW)
+                        .withParameter("language", "de")
+                        .withParameter("model", "large-v3")
+                        .withParameter("hf_token", HF_TOKEN)
+                        .build()
+                        .withTimeout(1000000000L)
+                );
 
                 // Stage 2: write the full CAS (all views, including the new audio view)
                 // to XMI. PRETTY_PRINT formats the XML; OVERWRITE allows re-runs to
