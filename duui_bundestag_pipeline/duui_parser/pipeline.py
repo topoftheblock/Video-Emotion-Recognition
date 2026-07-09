@@ -32,7 +32,9 @@ def run(xmi_file=None):
 
     print("Loading CAS data from XMI...")
     with open(xmi_file, "rb") as f:
-        cas = load_cas_from_xmi(f, typesystem=merged_typesystem, lenient=True)
+        # trusted=True enables lxml's huge_tree parsing, needed for large
+        # multi-hour-session XMI exports that exceed lxml's default buffer.
+        cas = load_cas_from_xmi(f, typesystem=merged_typesystem, lenient=True, trusted=True)
 
     print("Connecting to database and inserting data...")
     conn = get_db_connection()

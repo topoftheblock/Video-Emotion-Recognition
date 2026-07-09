@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "duui-webapp",
+      "runtimeExecutable": ".venv/bin/uvicorn",
+      "runtimeArgs": ["webapp.server:app", "--reload", "--port", "8000"],
+      "port": 8000
+    }
+  ]
+}
