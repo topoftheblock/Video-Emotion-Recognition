@@ -65,7 +65,7 @@ def _assemble_sentence_text(sentence, tokens):
 @app.get("/api/videos")
 def list_videos():
     return _query(
-        "SELECT video_id, filename, duration, fps, width, height FROM videos ORDER BY video_id"
+        "SELECT video_id, filename, duration, fps, width, height FROM videos ORDER BY processed_at DESC"
     )
 
 

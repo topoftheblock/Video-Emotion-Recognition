@@ -1,0 +1,265 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{ragged2e}
+\emergencystretch=2em
+\sloppy
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  citecolor=black
+}
+
+\definecolor{codebg}{RGB}{246,246,246}
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  framerule=0.3pt,
+  rulecolor=\color{gray!40},
+  breaklines=true,
+  columns=fullflexible,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=8pt,
+  xrightmargin=8pt
+}
+
+\title{From UIMA CAS to a Video Player:\\ How the Bundestag Pipeline Fits Together}
+\author{Video-Emotion Recognition project notes}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{What this document is for}
+
+The Java DUUI pipeline that actually runs face detection, speaker diarization,
+transcription and the three emotion models is not part of this repository ---
+it lives elsewhere and hands us a single artifact: a UIMA CAS serialized as an
+\texttt{.xmi} file, together with the source video. Everything described here
+starts from that file. There are three moving parts: a Python parser that
+turns the CAS into rows in Postgres, the Postgres schema itself, and a small
+FastAPI + vanilla-JS viewer that plays the video back with everything overlaid
+in sync. This note walks through all three in the order data actually flows
+through them.
+
+\section{Why the CAS is annoying to parse}
+
+A UIMA CAS cannot be read without the typesystem that describes it --- an XML
+document listing every annotation type and its fields. The three typesystem
+files we were given
+(\texttt{IdentityEmotionTypeSystem.xml},
+\texttt{MultimodalIdentityTypeSystem.xml},
+\texttt{EmotionTypeSystem.xml}) turned out to be mostly copies of each other
+rather than complementary pieces, and between them they still reference a
+handful of types --- \texttt{MultimediaElement}, \texttt{Embedding}, the bare
+\texttt{MetaData}, \texttt{AudioToken} --- that none of the three actually
+define. Those come from external shared typesystem imports that never shipped
+with the export.
+
+\texttt{duui\_parser/typesystem.py} deals with this once, up front:
+\texttt{load\_merged\_typesystem()} concatenates the three files'
+type descriptions, drops exact duplicates by name, and injects hand-written
+fallback definitions for the types that are referenced but missing, based on
+what their fields actually look like on real annotation instances. Anything
+still undefined after that gets a generic featureless stub so loading
+succeeds instead of raising.
+
+Loading the CAS itself
+(\texttt{pipeline.py}) uses two non-default flags:
+
+\begin{lstlisting}[language=Python]
+cas = load_cas_from_xmi(f, typesystem=merged_typesystem,
+                         lenient=True, trusted=True)
+\end{lstlisting}
+
+\texttt{lenient=True} means an annotation whose type is not in the merged
+typesystem at all --- the DKPro linguistic layer (Token, Lemma, POS,
+Dependency, NamedEntity), which this pipeline never populates in a form we
+use --- is silently skipped rather than aborting the whole load.
+\texttt{trusted=True} switches on lxml's huge-tree parsing; a full-session
+export is a single-line XML document north of 40\,MB and lxml's default
+buffer limit rejects it otherwise.
+
+\section{The parser}
+
+\texttt{duui\_parser/parsers/} has one module per table family, and they run
+in a fixed order (\texttt{parsers/\_\_init\_\_.py}):
+
+\begin{lstlisting}[language=Python]
+PARSE_STEPS = [
+    video, model, person, segment, token,
+    embedding, presence, detection, emotion, text_emotion,
+]
+\end{lstlisting}
+
+The order is not arbitrary. \texttt{video} runs first because everything
+else needs the video's id. \texttt{person} runs early because the schema's
+foreign keys mean a \texttt{persons} row has to exist before anything that
+references \texttt{person\_id} can be inserted, and because it also builds
+two lookup dictionaries --- \texttt{face\_id\_to\_person\_id} and
+\texttt{voice\_id\_to\_person\_id} --- that every later step needs.
+
+Every module follows the same shape: walk every UIMA view with
+\texttt{select\_across\_views} (video-derived and transcript-derived
+annotations sit on separate sofas in this pipeline, so a plain
+\texttt{cas.select()} on one view would miss half the data), then run an
+\texttt{INSERT ... ON CONFLICT DO NOTHING/UPDATE} per instance. The XMI id
+of each annotation is reused directly as its Postgres primary key, which is
+what makes re-running the same file idempotent --- rerun it twice and you get
+the same rows, not duplicates. The whole import happens inside one
+transaction; anything raising partway through rolls the entire thing back,
+so a half-imported video should never exist.
+
+\subsection{Identity resolution}
+
+This is the part that took the most debugging. \texttt{FaceIdentity} and
+\texttt{VoiceIdentity} annotations each carry a bare string id
+(\texttt{faceId="face\_1"}, \texttt{voiceId="SPEAKER\_00"}). A separate
+\texttt{identity:Person} annotation is the only thing that actually links
+those strings to a person, via a pipe-delimited label:
+
+\begin{lstlisting}
+<identity:Person xmi:id="32539" personId="person_1"
+                  label="voice:SPEAKER_00|face:face_1|score:0.83"/>
+\end{lstlisting}
+
+\texttt{identity\_resolution.py} parses that label and, for every
+downstream annotation that only carries a bare \texttt{faceId}/\texttt{voiceId}
+(detections, embeddings, presences, emotions), looks it up against the maps
+built from \texttt{Person} rows. If a given CAS export has no
+\texttt{identity:Person} annotations at all --- which happened with one of
+the two full-session exports we were given, and not with the other --- every
+one of those lookups returns \texttt{None} for the whole file, regardless of
+how many \texttt{FaceIdentity}/\texttt{VoiceIdentity} records exist. That is
+a property of the source export, not a parser bug; the fix was getting a
+different \texttt{.xmi} that actually had the identity-linking stage run.
+
+The important guarantee here, worth stating explicitly because it is easy to
+assume otherwise: \emph{a failed identity lookup never drops the row}.
+Every detection, presence interval and emotion reading gets inserted with
+whatever \texttt{person\_id} it resolved to, including \texttt{NULL}. On the
+video currently loaded, that is the difference between 1970 face detections
+total and 1474 of them actually tagged with a person --- the other 496 are
+real, present rows for faces the pipeline saw but never linked to an
+identity.
+
+\section{The database}
+
+\texttt{schema/schema.sql} defines fifteen tables, which fall into three
+groups.
+
+\textbf{Metadata:} \texttt{videos} (one row per source file) and
+\texttt{models} (provenance --- which face/voice/emotion model produced a
+given row, since several are in play).
+
+\textbf{Identity:} \texttt{global\_persons} (cross-video identity, almost
+never populated in practice --- cross-video clustering is the exception) and
+\texttt{persons} (per-video identity, the one that actually matters day to
+day), backed by \texttt{face\_embeddings}/\texttt{voice\_embeddings}
+(native \texttt{pgvector} columns, 512-dim and 192-dim), with
+\texttt{presences} recording on-screen/speaking intervals and
+\texttt{face\_detections}/\texttt{person\_detections} carrying the actual
+per-frame bounding boxes, normalized to $[0,1]$ so they are resolution
+independent.
+
+\textbf{Content and emotion:} \texttt{segments} covers both camera shots and
+spoken sentences and, for sentences, carries both a time window and a
+character-offset window into the transcript --- the bridge that lets you
+map a moment in the video to a span of text. \texttt{linguistic\_tokens} is
+one row per spoken word; sentences do not store their own text, so the
+frontend reconstructs a subtitle by joining every token whose
+\texttt{start\_time} falls inside the sentence's window, deliberately not by
+foreign key, because the token-to-segment FK is not reliably populated by
+the real annotator. \texttt{base\_emotions} is the central table: one row
+per emotion reading, tagged by \texttt{modality} (video / audio / text) and
+\texttt{granularity}, with a genuinely different set of populated columns
+per modality --- video rows are per-frame with a real bounding box, audio
+rows carry a dominance score that text rows never have, and text rows in
+practice come from two different upstream annotators of differing
+completeness. \texttt{emotion\_scores} holds the full label distribution
+behind each reading's \texttt{dominant\_label}, and \texttt{fused\_emotions}
+holds an optional cross-modal aggregate that is empty for most runs,
+including the one currently loaded.
+
+A theme worth naming: nearly every foreign key in this schema is nullable
+on purpose, because real annotator output is incomplete in ways the schema
+has to tolerate rather than hide. Most \texttt{presences} rows have no
+resolved \texttt{person\_id}. \texttt{fused\_emotions} is routinely empty.
+Text-modality rows sometimes have no \texttt{start\_time} at all. None of
+this is a defect to fix; it is what the data actually looks like, and every
+consumer downstream --- the frontend, the query agent --- is written to
+expect it.
+
+\section{The frontend}
+
+\texttt{webapp/server.py} is deliberately thin. It exposes three things: a
+list of videos, one JSON payload per video containing every sentence, shot,
+emotion reading and detection for it, and the raw video bytes themselves
+served with range-request support so seeking works. The client fetches that
+one payload exactly once per video and never calls the API again during
+playback --- everything after that is a client-side lookup against
+in-memory arrays.
+
+\texttt{webapp/static/app.js} hooks the video element's \texttt{timeupdate}
+event when paused and \texttt{requestAnimationFrame} while playing, and on
+every tick asks two questions of the data it already has:
+
+\begin{lstlisting}
+// which rows genuinely span this instant
+function coveredBy(rows, t) {
+  return rows.filter(r => r.start_time <= t && t <= r.end_time);
+}
+
+// which frame-sampled row is closest, within tolerance
+function nearestByTime(rows, t, tolerance) {
+  // detections are sampled per frame, not continuous,
+  // so "covers this instant" doesn't apply to them
+}
+\end{lstlisting}
+
+Sentences and time-anchored emotions use the first kind of lookup; face and
+person detections use the second, since they are sampled at discrete frames
+rather than spanning a continuous interval. Boxes are drawn on a canvas
+overlaid on the video element, scaled from the stored $[0,1]$ coordinates to
+whatever size the video is actually rendered at, colored by
+\texttt{person\_id} through a small fixed palette (grey for anything
+unresolved), and tagged with a video-emotion label by joining on the shared
+\texttt{frame\_index} between a detection and the emotion reading computed
+from it.
+
+A natural-language ``Ask'' panel sits above the player and is worth
+mentioning separately because it is the one piece that talks to an external
+model rather than just Postgres. It sends the question to Claude along with
+a hand-written schema description --- the semantics above, not just column
+names, since things like ``compare emotions across modalities by valence
+rather than by label string'' are not recoverable from
+\texttt{information\_schema} alone --- Claude proposes and previews a SQL
+query through a tool-use loop, and only the final validated query is
+actually executed, inside a read-only transaction with a statement timeout
+and a row cap, never trusting rows the model claims to have already seen.
+
+\section{Putting it together}
+
+Concretely, going from a fresh \texttt{.xmi} to a working demo is:
+\texttt{python main.py cas/your\_file.xmi} to parse and commit, then
+\texttt{uvicorn webapp.server:app --reload} to serve it. Nothing is ever
+baked into the video file itself --- every overlay is computed at playback
+time from what is in Postgres, so improving a detection model, re-running
+identity resolution, or fixing a mislabeled emotion is always just a matter
+of re-parsing and reloading the page, never re-encoding video.
+
+\end{document}
