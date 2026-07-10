@@ -1,0 +1,62 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: duui_bundestag
+      POSTGRES_USER: duui
+      POSTGRES_PASSWORD: duui
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # Runs once, only on first init of an empty data dir -- creates
+      # the pgvector extension and all 15 tables before the webapp
+      # ever connects. Re-importing a CAS still has to happen
+      # separately (see comment at the bottom of this file).
+      - ./schema/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U duui -d duui_bundestag"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  webapp:
+    build:
+      context: .
+      dockerfile: webapp/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DUUI_DB_NAME: duui_bundestag
+      DUUI_DB_USER: duui
+      DUUI_DB_PASSWORD: duui
+      DUUI_DB_HOST: db
+      DUUI_VIDEO_DIR: /videos
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DUUI_QUERY_MODEL: ${DUUI_QUERY_MODEL:-claude-sonnet-5}
+    volumes:
+      # Video files only -- the DB never stores video bytes, so this
+      # just has to contain whatever videos.filename rows point to.
+      - ./cas:/videos:ro
+    ports:
+      - "8010:8000"
+
+volumes:
+  db_data:
+
+# First run on an empty volume:
+#   docker compose up -d db
+#   (wait for it to become healthy, schema.sql applies automatically)
+#   docker compose run --rm webapp python -c "..."   # see note below
+#   docker compose up -d webapp
+#
+# Loading a CAS file into this containerized DB from the host still
+# uses the regular parser (main.py), not a container -- it doesn't need
+# dkpro-cassis in the webapp image. Point it at the containerized
+# Postgres by running it on the host with DUUI_DB_HOST=localhost
+# (matching the exposed 5432 port above), e.g.:
+#   DUUI_DB_HOST=localhost DUUI_DB_USER=duui DUUI_DB_PASSWORD=duui \
+#     python main.py cas/your_file.xmi

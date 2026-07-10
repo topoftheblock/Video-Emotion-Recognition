@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.env
+cas/*.xmi
+cas/*.mp4
+architecture.pdf
+architecture.aux
+architecture.log
+architecture.out
+architecture.fls
+architecture.fdb_latexmk
