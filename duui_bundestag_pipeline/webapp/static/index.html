@@ -4,16 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DUUI Video Review</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Cpath d='M10 11l6 5-6 5V11z' fill='white'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="mesh-bg" aria-hidden="true"></div>
+
   <header class="topbar">
     <div class="topbar-brand">
       <span class="topbar-mark">DUUI</span>
       <span class="topbar-title">Video Review</span>
+      <span class="live-chip"><span class="live-dot"></span>Live sync</span>
     </div>
     <label class="video-picker">
       <span>Video</span>
@@ -22,14 +26,29 @@
   </header>
 
   <section class="ask-panel">
-    <form id="askForm" class="ask-form">
-      <input id="askInput" class="ask-input" type="text"
-             placeholder="Ask a question, e.g. &quot;where do video emotion and text emotion diverge?&quot;" />
-      <button id="askSubmit" class="ask-submit" type="submit">Ask</button>
-      <button id="askReset" class="ask-reset" type="button" title="Clear results and show all overlays">Reset view</button>
-    </form>
-    <div id="askStatus" class="ask-status"></div>
-    <div id="askResults" class="ask-results"></div>
+    <div class="ask-panel-inner">
+      <div class="ask-card">
+        <div class="ask-heading">
+          <span class="ask-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 4.9L19 9.8l-4.9 1.9L12 17l-1.9-5.3L5 9.8l5.1-1.9L12 3z" fill="currentColor"/><path d="M19 15l.9 2.3L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.7L19 15z" fill="currentColor"/></svg>
+          </span>
+          <div>
+            <h2 class="ask-title">Ask about this video</h2>
+            <p class="ask-subtitle">Natural-language questions over transcript, emotions, and on-screen presence.</p>
+          </div>
+        </div>
+        <form id="askForm" class="ask-form">
+          <input id="askInput" class="ask-input" type="text" autocomplete="off"
+                 placeholder="e.g. &quot;where do video emotion and text emotion diverge?&quot;" />
+          <button id="askSubmit" class="ask-submit" type="submit">
+            <span class="btn-label">Ask</span>
+          </button>
+          <button id="askReset" class="ask-reset" type="button" title="Clear results and show all overlays">Reset view</button>
+        </form>
+        <div id="askStatus" class="ask-status" role="status" aria-live="polite"></div>
+        <div id="askResults" class="ask-results"></div>
+      </div>
+    </div>
   </section>
 
   <main class="layout">
@@ -44,14 +63,14 @@
       </div>
       <div class="transport">
         <button id="playBtn" class="transport-btn" aria-label="Play/Pause">▶</button>
-        <span class="time-readout"><span id="timeCurrent">0:00.0</span> / <span id="timeTotal">0:00.0</span></span>
+        <span class="time-readout"><span id="timeCurrent">0:00.0</span> <span class="time-sep">/</span> <span id="timeTotal">0:00.0</span></span>
         <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0" step="1">
       </div>
     </section>
 
     <aside class="sidebar">
       <div class="panel">
-        <h2 class="panel-title">Voice</h2>
+        <h2 class="panel-title"><span class="panel-dot dot-voice"></span>Voice</h2>
         <div class="voice-readout" id="voiceReadout">
           <span class="voice-label" id="voiceLabel">&mdash;</span>
           <div class="vad-bars">
@@ -62,7 +81,7 @@
       </div>
 
       <div class="panel" id="fusedPanel" style="display:none;">
-        <h2 class="panel-title">Fused emotion</h2>
+        <h2 class="panel-title"><span class="panel-dot dot-fused"></span>Fused emotion</h2>
         <div class="voice-readout" id="fusedReadout">
           <span class="voice-label" id="fusedLabel">&mdash;</span>
           <div class="vad-bars">
@@ -73,12 +92,12 @@
       </div>
 
       <div class="panel">
-        <h2 class="panel-title">People</h2>
+        <h2 class="panel-title"><span class="panel-dot dot-people"></span>People</h2>
         <ul class="person-list" id="personList"></ul>
       </div>
 
       <div class="panel">
-        <h2 class="panel-title">On screen now</h2>
+        <h2 class="panel-title"><span class="panel-dot dot-live"></span>On screen now</h2>
         <ul class="active-list" id="activeList">
           <li class="empty-hint">No one detected at this frame.</li>
         </ul>
