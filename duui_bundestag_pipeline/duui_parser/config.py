@@ -35,9 +35,16 @@ TYPESYSTEM_FILES = {
 # --- Database ---------------------------------------------------------
 
 # --- Natural-language query agent -------------------------------------
+# Talks to an OpenAI-compatible chat-completions endpoint (this project
+# uses a university-hosted Open WebUI/Ollama gateway serving Qwen3-VL,
+# not Anthropic directly -- swap DUUI_QUERY_BASE_URL/DUUI_QUERY_MODEL to
+# point at a different OpenAI-compatible provider if needed).
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-QUERY_AGENT_MODEL = os.environ.get("DUUI_QUERY_MODEL", "claude-sonnet-5")
+QUERY_AGENT_API_KEY = os.environ.get("DUUI_QUERY_API_KEY", "")
+QUERY_AGENT_BASE_URL = os.environ.get(
+    "DUUI_QUERY_BASE_URL", "https://lehre.llm.texttechnologylab.org/api"
+)
+QUERY_AGENT_MODEL = os.environ.get("DUUI_QUERY_MODEL", "gondor.qwen3-vl:32b")
 QUERY_AGENT_MAX_ROWS = int(os.environ.get("DUUI_QUERY_MAX_ROWS", "500"))
 QUERY_AGENT_STATEMENT_TIMEOUT_MS = int(
     os.environ.get("DUUI_QUERY_STATEMENT_TIMEOUT_MS", "8000")

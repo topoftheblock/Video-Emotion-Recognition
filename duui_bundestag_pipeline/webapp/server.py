@@ -161,7 +161,7 @@ class AskRequest(BaseModel):
 def ask_question(payload: AskRequest):
     """
     Natural-language question -> SQL agent. Runs the question through
-    the Claude-backed NL->SQL agent (duui_parser.query_agent), which
+    the LLM-backed NL->SQL agent (duui_parser.query_agent), which
     explores the schema, writes a query, and picks which display
     overlays (transcript/bounding boxes/emotion modalities) the
     frontend should show for the results.

@@ -1,8 +1,11 @@
 """
 The natural-language -> SQL agent.
 
-`answer_question(question)` runs a tool-use loop against Claude:
-Claude explores the schema by calling `run_sql` (getting back a small
+`answer_question(question)` runs a tool-use loop against an
+OpenAI-compatible chat-completions endpoint (configured via
+QUERY_AGENT_BASE_URL/QUERY_AGENT_MODEL -- this project points it at a
+university-hosted Qwen3-VL gateway, not Anthropic): the model explores
+the schema by calling `run_sql` (getting back a small
 preview + row count so it can sanity-check and fix its own query),
 then finalizes with `submit_answer` once it's confident. We then
 re-execute that final SQL ourselves (never trusting rows the model
@@ -17,10 +20,11 @@ displays data the model merely claims exists.
 
 import json
 
-import anthropic
+import openai
 
 from ..config import (
-    ANTHROPIC_API_KEY,
+    QUERY_AGENT_API_KEY,
+    QUERY_AGENT_BASE_URL,
     QUERY_AGENT_MAX_TOOL_ITERATIONS,
     QUERY_AGENT_MODEL,
 )
@@ -74,36 +78,42 @@ via `run_sql` at least once.
 
 _TOOLS = [
     {
-        "name": "run_sql",
-        "description": (
-            "Run a read-only SELECT query against the database and get back "
-            "a preview (first 20 rows, columns, total row count, or an error "
-            "message). Use this to explore and validate queries before "
-            "submitting a final answer."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "sql": {"type": "string", "description": "A single SELECT (or WITH ... SELECT) statement."}
+        "type": "function",
+        "function": {
+            "name": "run_sql",
+            "description": (
+                "Run a read-only SELECT query against the database and get back "
+                "a preview (first 20 rows, columns, total row count, or an error "
+                "message). Use this to explore and validate queries before "
+                "submitting a final answer."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "sql": {"type": "string", "description": "A single SELECT (or WITH ... SELECT) statement."}
+                },
+                "required": ["sql"],
             },
-            "required": ["sql"],
         },
     },
     {
-        "name": "submit_answer",
-        "description": "Submit the final SQL query, explanation, and display overlays that answer the user's question.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "sql": {"type": "string", "description": "The final SELECT/WITH query, following the output contract."},
-                "explanation": {"type": "string", "description": "One or two sentences describing what the query answers, in plain language."},
-                "overlays": {
-                    "type": "array",
-                    "items": {"type": "string", "enum": OVERLAY_CHOICES},
-                    "description": "Which display overlays the frontend should enable for these results.",
+        "type": "function",
+        "function": {
+            "name": "submit_answer",
+            "description": "Submit the final SQL query, explanation, and display overlays that answer the user's question.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "sql": {"type": "string", "description": "The final SELECT/WITH query, following the output contract."},
+                    "explanation": {"type": "string", "description": "One or two sentences describing what the query answers, in plain language."},
+                    "overlays": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": OVERLAY_CHOICES},
+                        "description": "Which display overlays the frontend should enable for these results.",
+                    },
                 },
+                "required": ["sql", "explanation", "overlays"],
             },
-            "required": ["sql", "explanation", "overlays"],
         },
     },
 ]
@@ -142,27 +152,47 @@ def answer_question(question: str) -> dict:
     Raises QueryAgentError on failure (bad API key, model never
     submitted an answer, final SQL invalid, etc).
     """
-    if not ANTHROPIC_API_KEY:
+    if not QUERY_AGENT_API_KEY:
         raise QueryAgentError(
-            "ANTHROPIC_API_KEY is not configured (set it in .env)."
+            "DUUI_QUERY_API_KEY is not configured (set it in .env)."
         )
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    messages = [{"role": "user", "content": f"Question: {question}"}]
+    client = openai.OpenAI(api_key=QUERY_AGENT_API_KEY, base_url=QUERY_AGENT_BASE_URL)
+    messages = [
+        {"role": "system", "content": _SYSTEM_PROMPT},
+        {"role": "user", "content": f"Question: {question}"},
+    ]
 
     for _ in range(QUERY_AGENT_MAX_TOOL_ITERATIONS):
-        response = client.messages.create(
-            model=QUERY_AGENT_MODEL,
-            max_tokens=2048,
-            system=_SYSTEM_PROMPT,
-            tools=_TOOLS,
-            messages=messages,
+        try:
+            response = client.chat.completions.create(
+                model=QUERY_AGENT_MODEL,
+                max_tokens=2048,
+                tools=_TOOLS,
+                messages=messages,
+            )
+        except openai.APIError as exc:
+            # Covers auth failures, rate limits, bad model name, and
+            # network-level errors alike -- all of these are questions
+            # about the API call itself, not about the user's question,
+            # so they surface as a clean QueryAgentError (-> HTTP 422)
+            # instead of an unhandled 500.
+            raise QueryAgentError(f"LLM API call failed: {exc}") from exc
+
+        message = response.choices[0].message
+        # Qwen3's "thinking" trace comes back as a separate
+        # reasoning_content field alongside content/tool_calls -- never
+        # part of the OpenAI response schema itself, so it's simply
+        # ignored here rather than fed back into the conversation.
+        messages.append(
+            {
+                "role": "assistant",
+                "content": message.content or "",
+                "tool_calls": message.tool_calls,
+            }
         )
 
-        messages.append({"role": "assistant", "content": response.content})
-
-        tool_uses = [block for block in response.content if block.type == "tool_use"]
-        if not tool_uses:
+        if not message.tool_calls:
             # Model responded with plain text instead of using a tool --
             # nudge it back on track rather than failing outright.
             messages.append(
@@ -173,24 +203,25 @@ def answer_question(question: str) -> dict:
             )
             continue
 
-        submit_call = next((t for t in tool_uses if t.name == "submit_answer"), None)
+        submit_call = next(
+            (t for t in message.tool_calls if t.function.name == "submit_answer"), None
+        )
         if submit_call is not None:
-            return _finalize(submit_call.input)
+            return _finalize(json.loads(submit_call.function.arguments))
 
-        tool_results = []
-        for call in tool_uses:
-            if call.name == "run_sql":
-                result = _preview_tool_result(call.input.get("sql", ""))
+        for call in message.tool_calls:
+            if call.function.name == "run_sql":
+                args = json.loads(call.function.arguments)
+                result = _preview_tool_result(args.get("sql", ""))
             else:
-                result = {"ok": False, "error": f"Unknown tool {call.name}"}
-            tool_results.append(
+                result = {"ok": False, "error": f"Unknown tool {call.function.name}"}
+            messages.append(
                 {
-                    "type": "tool_result",
-                    "tool_use_id": call.id,
+                    "role": "tool",
+                    "tool_call_id": call.id,
                     "content": json.dumps(result),
                 }
             )
-        messages.append({"role": "user", "content": tool_results})
 
     raise QueryAgentError(
         "The agent could not settle on a final query within the allotted steps. "

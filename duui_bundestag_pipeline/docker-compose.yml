@@ -35,8 +35,9 @@ services:
       DUUI_DB_PASSWORD: duui
       DUUI_DB_HOST: db
       DUUI_VIDEO_DIR: /videos
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      DUUI_QUERY_MODEL: ${DUUI_QUERY_MODEL:-claude-sonnet-5}
+      DUUI_QUERY_API_KEY: ${DUUI_QUERY_API_KEY:-}
+      DUUI_QUERY_BASE_URL: ${DUUI_QUERY_BASE_URL:-https://lehre.llm.texttechnologylab.org/api}
+      DUUI_QUERY_MODEL: ${DUUI_QUERY_MODEL:-gondor.qwen3-vl:32b}
     volumes:
       # Video files only -- the DB never stores video bytes, so this
       # just has to contain whatever videos.filename rows point to.
@@ -44,19 +45,38 @@ services:
     ports:
       - "8010:8000"
 
+  # One-off CAS importer, not a long-running service -- excluded from
+  # `docker compose up` by the "import" profile, so it only runs when
+  # explicitly invoked (see README "Importing a CAS file" section):
+  #   docker compose run --rm importer cas/your_file.xmi
+  importer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["import"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DUUI_DB_NAME: duui_bundestag
+      DUUI_DB_USER: duui
+      DUUI_DB_PASSWORD: duui
+      DUUI_DB_HOST: db
+    volumes:
+      # Read-write: the parser only inserts into Postgres, but cassis
+      # opens the XMI file itself, which is simplest read-write even
+      # though nothing here actually gets modified on disk.
+      - ./cas:/app/cas
+      - ./typesystems:/app/typesystems:ro
+
 volumes:
   db_data:
 
 # First run on an empty volume:
 #   docker compose up -d db
 #   (wait for it to become healthy, schema.sql applies automatically)
-#   docker compose run --rm webapp python -c "..."   # see note below
+#   docker compose run --rm importer cas/your_file.xmi
 #   docker compose up -d webapp
 #
-# Loading a CAS file into this containerized DB from the host still
-# uses the regular parser (main.py), not a container -- it doesn't need
-# dkpro-cassis in the webapp image. Point it at the containerized
-# Postgres by running it on the host with DUUI_DB_HOST=localhost
-# (matching the exposed 5432 port above), e.g.:
-#   DUUI_DB_HOST=localhost DUUI_DB_USER=duui DUUI_DB_PASSWORD=duui \
-#     python main.py cas/your_file.xmi
+# See README "Importing a CAS file" for the full explanation of what
+# to mount and which env vars matter.

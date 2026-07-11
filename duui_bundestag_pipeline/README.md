@@ -8,6 +8,8 @@ Postgres database.
 ```
 .
 ├── main.py                # CLI entry point
+├── Dockerfile             # one-off CAS importer image (docker compose run importer)
+├── docker-compose.yml     # db + webapp + importer services
 ├── duui_parser/           # the parser package
 ├── webapp/                # video review viewer (subtitles, emotions, bounding boxes)
 ├── schema/                # database schema (schema.sql + docs)
@@ -167,24 +169,80 @@ frontend fetch a rolling window around the current playback time
 instead of everything up front -- happy to add that when you have a
 longer real file to test it against.
 
+## Importing a CAS file (Docker)
+
+If you're running the stack via `docker compose` (see `docker-compose.yml`)
+rather than a local venv, importing a new CAS doesn't need Python/
+`dkpro-cassis` installed on the host at all -- there's a dedicated
+`importer` service for it, built from the root `Dockerfile`.
+
+It's deliberately **not** part of the webapp container: `webapp/Dockerfile`
+only installs `webapp/requirements.txt` (FastAPI, psycopg2, openai --
+no `dkpro-cassis`/lxml) to keep that image small, since `webapp/server.py`
+never parses CAS files itself, only reads what's already in Postgres.
+The importer is a separate one-off job, not a long-running service, so
+it's excluded from `docker compose up` by the `import` profile and only
+runs when invoked explicitly.
+
+**What to mount** (already wired up in `docker-compose.yml`):
+- `./cas:/app/cas` -- both the `.xmi` file you're importing and the
+  matching video file live here; same directory the `webapp` service
+  mounts read-only as `/videos` (see step 4 below for why the names
+  have to match).
+- `./typesystems:/app/typesystems:ro` -- the three typesystem XML
+  files from step 3 above.
+
+**Env vars the importer container needs** (already set by
+`docker-compose.yml`'s `importer.environment` block -- only relevant
+if you're running the built image directly instead of through compose):
+- `DUUI_DB_HOST=db` -- the Postgres service's name on the compose
+  network, **not** `localhost` (that only works when running `main.py`
+  on the host against the container's exposed port 5432).
+- `DUUI_DB_NAME`, `DUUI_DB_USER`, `DUUI_DB_PASSWORD` -- must match the
+  `db` service's `POSTGRES_*` values (`duui_bundestag`/`duui`/`duui`).
+- `DUUI_TS_IDENTITY_EMOTION`, `DUUI_TS_MULTIMODAL_IDENTITY`,
+  `DUUI_TS_EMOTION` -- only needed if your typesystem filenames differ
+  from the defaults in `duui_parser/config.py` (`typesystems/*.xml`).
+
+**Entrypoint**: the image's `ENTRYPOINT` is `python main.py`, so you
+only ever pass the CAS path as the command:
+
+```bash
+docker compose up -d db                         # wait for it to become healthy
+docker compose run --rm importer cas/your_file.xmi
+docker compose up -d webapp
+```
+
+Re-running against a file you already imported is safe -- see the
+`UNIQUE (emotion_id, label)` / `ON CONFLICT ... DO NOTHING` note at the
+bottom of this README.
+
+**Filename matching still applies**: whatever file the CAS references
+as its source video needs to exist in `cas/` under that exact name --
+same requirement as the non-Docker path in "Web viewer" above, since
+`videos.filename` is what both the importer and the webapp key off of.
+
 ## Natural-language query agent
 
 The "Ask" bar above the player lets you type a question like *"give me
 the video sequences where video emotion and text emotion diverge"*
 instead of writing SQL by hand. Under the hood (`duui_parser/query_agent/`):
 
-1. **`schema_context.py`** gives Claude a schema description with the
+1. **`schema_context.py`** gives the model a schema description with the
    domain semantics that aren't recoverable from column names alone
    (which modality pairs with which granularity, how to compare
    emotions across modalities via the sentence they fall inside, how
    to get a display name for a person, etc.), plus a worked example
    for cross-modal "divergence" questions.
-2. **`agent.py`** runs a tool-use loop: Claude calls `run_sql` to
-   explore/validate candidate queries against a preview (20 rows +
-   count), then calls `submit_answer` once with the final query, a
-   plain-language explanation, and the set of display **overlays**
-   relevant to that question (`transcript`, `bounding_boxes`,
-   `video_emotion`, `audio_emotion`, `text_emotion`, `fused_emotion`).
+2. **`agent.py`** runs a tool-use loop against an OpenAI-compatible
+   chat-completions endpoint (`openai` SDK, custom `base_url` --
+   this project points it at a university-hosted Qwen3-VL gateway, not
+   Anthropic): the model calls `run_sql` to explore/validate candidate
+   queries against a preview (20 rows + count), then calls
+   `submit_answer` once with the final query, a plain-language
+   explanation, and the set of display **overlays** relevant to that
+   question (`transcript`, `bounding_boxes`, `video_emotion`,
+   `audio_emotion`, `text_emotion`, `fused_emotion`).
 3. **`sql_guard.py`** re-executes only that final, validated query
    itself (never trusting rows the model claims to have seen) --
    single `SELECT`/`WITH` statement only, run inside a Postgres
@@ -200,9 +258,14 @@ video- and text-emotion labels, and hides the voice panel and fused
 readout, since those weren't asked about. "Reset view" clears this and
 goes back to showing everything.
 
-Requires `ANTHROPIC_API_KEY` in `.env` (see `DUUI_QUERY_MODEL`,
-`DUUI_QUERY_MAX_ROWS`, `DUUI_QUERY_STATEMENT_TIMEOUT_MS` for the other
-knobs, all optional).
+Requires `DUUI_QUERY_API_KEY` in `.env`. `DUUI_QUERY_BASE_URL` and
+`DUUI_QUERY_MODEL` default to the university Qwen3-VL gateway this
+project was built against -- point them at a different OpenAI-compatible
+provider/model if needed (`DUUI_QUERY_MAX_ROWS`,
+`DUUI_QUERY_STATEMENT_TIMEOUT_MS` are the other, optional, knobs).
+Note this particular model is slow: a single question can take several
+minutes (multi-step tool use against a large model, no progress
+indicator in the UI yet) -- that's expected, not a hang.
 
 ## Database schema
 
