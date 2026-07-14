@@ -123,6 +123,22 @@ it, and see subtitles, per-modality emotions, and face/person
 bounding boxes rendered in sync with playback -- all read live from
 Postgres, nothing pre-rendered into the video file itself.
 
+**Screenshots** (desktop and mobile, real Bundestag sample data, no
+mockups):
+
+<p align="center">
+  <img src="docs/screenshots/overview.png" alt="Main viewer: video with face bounding box + emotion label, live subtitle, voice/people/on-screen panels" width="820"><br>
+  <sub>Playback in progress -- a face bounding box tagged <code>ANGER</code>, the current subtitle, a <code>JOY</code> text-emotion badge, and the sidebar's live voice/people/on-screen readouts, all resolved for this exact video timestamp.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/mobile.png" alt="Mobile layout: stacked cards, same data" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/ask-results.png" alt="Ask panel showing a natural-language query result with clickable jump-to-clip segments" width="500">
+  <br>
+  <sub>Left: the same view responsive on mobile. Right: a natural-language query's results -- SQL, explanation, overlay tags, and a scrollable list of clickable "jump to this clip" segments (see below).</sub>
+</p>
+
 **Setup:**
 
 1. Put the actual video file(s) in the directory named by
@@ -226,27 +242,74 @@ same requirement as the non-Docker path in "Web viewer" above, since
 
 The "Ask" bar above the player lets you type a question like *"give me
 the video sequences where video emotion and text emotion diverge"*
-instead of writing SQL by hand. Under the hood (`duui_parser/query_agent/`):
+instead of writing SQL by hand, and get back a clickable list of the
+exact clips that answer it. This is a genuine agent, not a canned
+query template: it explores the schema, writes real SQL, checks its
+own work, and decides which parts of the UI are relevant to show --
+all driven by `duui_parser/query_agent/`.
 
-1. **`schema_context.py`** gives the model a schema description with the
-   domain semantics that aren't recoverable from column names alone
-   (which modality pairs with which granularity, how to compare
-   emotions across modalities via the sentence they fall inside, how
-   to get a display name for a person, etc.), plus a worked example
-   for cross-modal "divergence" questions.
-2. **`agent.py`** runs a tool-use loop against an OpenAI-compatible
-   chat-completions endpoint (`openai` SDK, custom `base_url` --
-   this project points it at a university-hosted Qwen3-VL gateway, not
-   Anthropic): the model calls `run_sql` to explore/validate candidate
-   queries against a preview (20 rows + count), then calls
-   `submit_answer` once with the final query, a plain-language
-   explanation, and the set of display **overlays** relevant to that
-   question (`transcript`, `bounding_boxes`, `video_emotion`,
-   `audio_emotion`, `text_emotion`, `fused_emotion`).
-3. **`sql_guard.py`** re-executes only that final, validated query
-   itself (never trusting rows the model claims to have seen) --
-   single `SELECT`/`WITH` statement only, run inside a Postgres
-   `READ ONLY` transaction with a statement timeout and a row cap.
+### How a question actually gets answered
+
+```
+ "find the moments of highest anger"
+              │
+              ▼
+   ┌───────────────────────────────────────────────────────────┐
+   │  agent.py -- tool-use loop, up to 6 iterations              │
+   │  (openai SDK, OpenAI-compatible chat-completions endpoint)   │
+   └───────────────────────────────────────────────────────────┘
+              │                              ▲
+              │ 1. model calls run_sql(...)   │ 4. preview: columns,
+              ▼                                │    up to 20 rows,
+      ┌──────────────────┐                     │    row count, or an
+      │  sql_guard.py     │────────────────────┘    error message
+      │  validate + run   │  2. reject non-SELECT / DML / multi-statement
+      │  read-only,       │  3. execute inside READ ONLY transaction,
+      │  row-capped       │     statement_timeout, LIMIT wrapper
+      └──────────────────┘
+              │
+              │ 5. model repeats 1-4 to fix a bad query, then calls
+              │    submit_answer(sql, explanation, overlays) once
+              ▼
+   agent.py re-runs *that exact SQL* itself via sql_guard.py again --
+   never trusting rows the model merely claims to have seen -- and
+   returns {sql, explanation, overlays, columns, rows, row_count}
+```
+
+The three files, each with one job:
+
+1. **`schema_context.py`** is the system prompt: not just `information_schema`
+   (which can't tell you that `duration`/`fps` are almost always NULL, that
+   `global_persons` is essentially unused in practice, or that comparing
+   emotions across modalities means joining through the `segments` row
+   whose time window they fall inside). It's cross-checked against three
+   sources -- the intended schema doc, what the parser's INSERT statements
+   actually write, and a live query against a populated database for real
+   label vocabularies -- and includes one fully worked example query for
+   cross-modal "divergence" questions, since that pattern is the hardest
+   one to get right from column names alone.
+2. **`agent.py`** owns the loop and the two tools the model can call:
+   `run_sql` (a sandboxed preview -- 20 rows, total count, or an error to
+   learn from) to explore and validate candidate queries, and
+   `submit_answer` (final SQL + a plain-language explanation + which
+   **overlays** the frontend should show) to finish. If the model responds
+   with plain text instead of calling a tool, it gets nudged back on track
+   rather than the request failing outright. Any API-level failure (bad
+   key, rate limit, model timeout) is caught and surfaced as a clean `422`
+   with a real message, not a raw `500`.
+3. **`sql_guard.py`** is what actually keeps this safe to run against a
+   real database, in two independent layers -- because neither alone
+   would be trustworthy against a model that might emit something
+   unexpected: a syntactic check rejecting anything that isn't a single
+   `SELECT`/`WITH ... SELECT` statement (multi-statement input and any
+   DML/DDL keyword -- `INSERT`, `DROP`, `GRANT`, `COPY`, ... -- are blocked
+   before the query ever reaches Postgres), *and* Postgres's own
+   `SET TRANSACTION READ ONLY`, enforced by the engine regardless of what
+   slipped past the first check. On top of that, every query runs with a
+   statement timeout (`DUUI_QUERY_STATEMENT_TIMEOUT_MS`, default 8000ms --
+   catches e.g. a missing join condition blowing up into a huge cross
+   product) and a hard row cap (`DUUI_QUERY_MAX_ROWS`, default 500, applied
+   by wrapping the query in `SELECT * FROM (<query>) AS _sub LIMIT n`).
 
 `POST /api/ask {"question": "..."}` (see `webapp/server.py`) returns
 the SQL, explanation, overlays, and result rows; rows exposing
@@ -261,11 +324,59 @@ goes back to showing everything.
 Requires `DUUI_QUERY_API_KEY` in `.env`. `DUUI_QUERY_BASE_URL` and
 `DUUI_QUERY_MODEL` default to the university Qwen3-VL gateway this
 project was built against -- point them at a different OpenAI-compatible
-provider/model if needed (`DUUI_QUERY_MAX_ROWS`,
-`DUUI_QUERY_STATEMENT_TIMEOUT_MS` are the other, optional, knobs).
-Note this particular model is slow: a single question can take several
-minutes (multi-step tool use against a large model, no progress
-indicator in the UI yet) -- that's expected, not a hang.
+provider/model if needed. Note this particular model is slow: a single
+question can take anywhere from a few seconds to several minutes,
+depending on how many `run_sql` iterations it needs (multi-step tool use
+against a large model, no progress indicator in the UI yet) -- that's
+expected, not a hang.
+
+### Use cases (all validated against the real Bundestag sample data)
+
+These are questions we actually ran through the agent end-to-end, not
+hypothetical examples -- included to show the range of what "explore
+the schema and write real SQL" covers in practice:
+
+- **Cross-modal divergence** -- *"where do video emotion and text
+  emotion diverge?"* The motivating use case, and the one worked
+  example baked into the system prompt: join `base_emotions` rows from
+  the `video` and `text` modalities through the `segments` row whose
+  time window contains both, and surface sentences where the two
+  disagree. Overlays picked: `transcript`, `video_emotion`,
+  `text_emotion`, `bounding_boxes` (not `audio_emotion` or
+  `fused_emotion`, since the question never asked about those).
+- **Emotional highlights** -- *"find the moments of highest anger in
+  the video"*. The agent independently discovered it needed to check
+  all three modalities' differing label vocabularies for the same
+  emotion (`'Anger'` for video, `'angry'` for audio, `'anger'` for
+  text) rather than assuming one shared spelling, unioned them, joined
+  to `persons` for display names, and sorted by confidence score --
+  entirely without being told the vocabularies differ (that's
+  documented in `schema_context.py`, not hardcoded into the query).
+- **Speaker-focused** -- *"when is person_1 speaking, and what's their
+  tone?"* A `segments` (`kind = 'sentence'`) join to `persons` filtered
+  on `clip_label`, giving back every time window that speaker talks.
+- **On-screen presence** -- *"who is visible on screen throughout the
+  video?"* Reads `presences` (modality `'visible'`), left-joined to
+  `persons` so intervals with no resolved identity correctly come back
+  labeled `'unidentified'` rather than being silently dropped.
+- **Confidence-based** -- *"how confident was the model in the
+  Contempt reading at various points?"* Joins `base_emotions` to
+  `emotion_scores` for a specific label and ranks by `score` -- useful
+  for judging whether a labeled emotion is a strong or borderline read.
+- **Intensity ranking** -- *"rank the most emotionally intense
+  sentences by valence/arousal magnitude"*. Computes
+  `sqrt(valence^2 + arousal^2)` per sentence from the audio-modality
+  `base_emotions` row covering it, ranking "how strong," not just
+  "which label."
+- **Simple aggregates** -- *"how many sentences are in this video?"*
+  resolves in a single `run_sql` call with no exploration needed --
+  the loop only takes as many iterations as the question actually
+  requires.
+- **A deliberately malicious probe** -- `DELETE FROM videos WHERE
+  video_id = 16126` run directly through `sql_guard.run_read_only`
+  (bypassing the agent, to test the guard itself) was correctly
+  rejected with `"Query must start with SELECT or WITH."` before ever
+  reaching Postgres.
 
 ## Database schema
 

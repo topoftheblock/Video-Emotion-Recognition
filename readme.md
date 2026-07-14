@@ -10,6 +10,14 @@ parsed into Postgres and explored in a web viewer with synced
 subtitles, per-modality emotion readouts, face/person bounding boxes,
 and a natural-language query agent.
 
+<p align="center">
+  <img src="duui_bundestag_pipeline/docs/screenshots/overview.png" alt="Web viewer: video with face bounding box + emotion label, live subtitle, voice/people/on-screen panels" width="760">
+</p>
+
+More screenshots, a full use-case list for the query agent, and how
+its natural-language-to-SQL loop actually works are in
+[`duui_bundestag_pipeline/README.md`](duui_bundestag_pipeline/README.md#natural-language-query-agent).
+
 ## How it fits together
 
 ```
