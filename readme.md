@@ -84,6 +84,68 @@ setup, Docker, and the query agent.
 - **Pipeline components**: Python (FastAPI + a Lua communication-layer script per DUUI convention), wrapping WhisperX, spaCy, HuggingFace transformer emotion models, and `pyannote.audio`.
 - **Downstream (`duui_bundestag_pipeline/`)**: Python (`dkpro-cassis` for CAS parsing, FastAPI web viewer), PostgreSQL + `pgvector`, Docker/Docker Compose, vanilla HTML/CSS/JS frontend, an OpenAI-compatible LLM (Qwen3-VL via a university-hosted gateway) for the natural-language query agent.
 
+## AI agents in this project
+
+It's worth being precise about what "AI" means where in this repo,
+because most of it isn't agentic at all -- and the one part that is
+deserves a proper discussion rather than a one-line mention.
+
+**The pipeline components are models, not agents.** WhisperX, spaCy,
+the German-Emotions transformer, `pyannote.audio`, and (once finished)
+`video-phase2-docker`'s face/video-emotion detector are all single-shot
+ML inference: given input, produce an annotation, no decision-making
+about *what* to compute or *how* to get there. `DUUIComposer` decides
+the order; the models themselves don't reason about the task. Calling
+these "agents" would overstate what they do.
+
+**The one genuine agent is the natural-language query agent**
+(`duui_bundestag_pipeline/duui_parser/query_agent/`, detailed with a
+full request-flow diagram and real validated use cases in
+[its README section](duui_bundestag_pipeline/README.md#natural-language-query-agent)).
+What makes it an agent rather than "an API call to an LLM":
+
+- **It decides its own next step.** Given a question, it isn't
+  running a fixed query template with parameters filled in -- it
+  chooses what SQL to write, calls a `run_sql` tool to check the
+  result against the real schema, and iterates (up to 6 rounds) if the
+  shape looks wrong, entirely on its own judgment about when a query
+  is "done."
+- **It reasons about domain semantics it wasn't hardcoded with.**
+  E.g. discovering on its own that "anger" is spelled `'Anger'` in the
+  video modality, `'angry'` in audio, and `'anger'` in text, and that
+  a UNION across all three is needed to actually answer "highest
+  anger" -- that vocabulary difference is documented for it in
+  `schema_context.py`, but *using* it correctly to write a working
+  cross-modal query is the model's own reasoning, not a lookup table.
+- **It makes a UI decision, not just a data decision.** Every answer
+  also picks which of six display overlays (transcript, bounding
+  boxes, per-modality emotion, fused emotion) are relevant to *that
+  specific question*, so the frontend can hide everything else instead
+  of dumping all data on the user regardless of what they asked.
+- **We still don't trust it with the database.** Autonomy over what
+  query to write is not the same as autonomy over what runs against
+  production data: every candidate is sandboxed through a preview
+  tool, and even the final, agent-approved query is independently
+  re-validated and re-executed by our own code (`sql_guard.py`) before
+  its rows are ever shown to a user -- a read-only Postgres
+  transaction, a keyword blocklist, a statement timeout, and a row
+  cap, on top of never trusting rows the model merely *claims* to have
+  seen. The agent proposes; it never gets to just execute.
+
+**On the model itself**: this isn't Claude or GPT -- it's Qwen3-VL
+32B, self-hosted by the university and reached through an
+OpenAI-compatible gateway (`duui_parser/config.py`'s
+`DUUI_QUERY_BASE_URL`/`DUUI_QUERY_MODEL`), a practical access choice
+(a free institutional endpoint) rather than a capability-driven one.
+It's genuinely competent at this task -- every use case documented in
+the sub-README is a real, validated run, including it independently
+figuring out the cross-modal label-vocabulary problem above -- but
+it's also noticeably slow (shared GPU, no dedicated capacity), so a
+single question can take anywhere from a few seconds to several
+minutes depending on how many `run_sql` rounds it needs. That's the
+main practical cost of "agent that checks its own work" versus "one
+LLM call that hopes for the best": correctness over speed.
+
 ## Where the actual data comes from
 
 CAS XMI files are the handoff point between the two halves of this
