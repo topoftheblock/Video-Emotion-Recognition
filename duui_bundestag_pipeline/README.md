@@ -139,6 +139,52 @@ mockups):
   <sub>Left: the same view responsive on mobile. Right: a natural-language query's results -- SQL, explanation, overlay tags, and a scrollable list of clickable "jump to this clip" segments (see below).</sub>
 </p>
 
+**Using it** (once the stack is running, see Setup below):
+
+Open http://localhost:8010 (or wherever you're serving it):
+
+1. **Pick a video** -- the top-right dropdown lists every video that's
+   been imported (`videos.filename`). Selecting one loads its data and
+   starts the player.
+2. **Watch it play** -- standard controls (play/pause, scrubber, time
+   readout) at the bottom of the frame. Everything else on the page
+   updates live as the video plays, synced to `currentTime`:
+   - *Subtitles* burn in at the bottom of the frame, sentence by
+     sentence.
+   - *A text-emotion badge* appears next to the subtitle (e.g. `JOY`)
+     -- the dominant emotion detected from the words themselves.
+   - *Bounding boxes* are drawn over detected faces/people, each
+     labeled with that box's video-modality emotion (e.g. `ANGER`) if
+     available.
+   - *Voice panel* (sidebar) shows the current audio-modality emotion
+     plus valence/arousal bars -- emotion from tone of voice,
+     independent of what's being said.
+   - *Fused emotion panel* appears only if the pipeline computed a
+     combined score, hidden otherwise.
+   - *People panel* lists everyone identified in the video with a
+     confidence score; *On screen now* shows who's actually visible at
+     this exact instant, color-matched to their bounding box.
+3. **Ask a question** -- the box at the top skips manual scrubbing
+   entirely. Type something like *"find the moments of highest anger"*
+   or *"where do video and text emotion disagree?"* and hit **Ask**.
+   A few things worth knowing:
+   - It genuinely takes time -- anywhere from a few seconds to several
+     minutes, since it's an agent iterating on real SQL against a
+     shared, slow model, not a canned lookup (see "Natural-language
+     query agent" below). There's no progress bar yet, so don't
+     resubmit while it says "Thinking...".
+   - Results come back as a clickable list -- click any row and the
+     player jumps straight to that clip, automatically switching the
+     sidebar/overlays to show *only* what's relevant to your question
+     (e.g. asking about anger hides panels that question didn't ask
+     about).
+   - **"Reset view"** clears the query and goes back to showing
+     everything, for normal browsing.
+
+That's the whole loop: browse normally by picking a video and
+scrubbing, or let the query agent jump you straight to the moments you
+actually care about.
+
 **Setup:**
 
 1. Put the actual video file(s) in the directory named by
