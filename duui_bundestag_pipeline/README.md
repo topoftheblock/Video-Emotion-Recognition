@@ -116,6 +116,58 @@ If this grows into a real batch job, it's worth having `run()` accept
 an already-loaded typesystem instead of reloading it every call --
 happy to add that if you get there.
 
+## Post-processing: cross-video identity, emotion fusion, NLP
+
+Three properties of the database are computed by the parser itself,
+not read off the CAS, since the real Bundestag CAS never carries this
+information: they run as the last few steps in `PARSE_STEPS`
+(`duui_parser/parsers/__init__.py`), automatically on every import,
+each independently switchable via `.env`.
+
+**Vector-based global person linking across videos**
+(`duui_parser/parsers/global_identity.py`, `DUUI_ENABLE_GLOBAL_PERSON_LINKING`,
+default on). After a video's `persons`/`face_embeddings`/
+`voice_embeddings` are inserted, every person without a
+`global_person_id` yet is matched by pgvector cosine distance (`<=>`)
+between embedding centroids against every other already-imported
+video's persons (face embeddings first, voice as a fallback). A match
+below `DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD` /
+`DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD` (cosine distance, lower
+= stricter; defaults 0.30 / 0.35) joins an existing `global_persons`
+row or creates a new one shared by both sides. This is a similarity
+heuristic, not a verified identity match -- retune the thresholds
+against real cross-video duplicates in your own data before trusting
+it beyond suggestions. Requires the HNSW indexes in `schema.sql`
+(`face_embeddings_embedding_hnsw_idx` / `voice_embeddings_embedding_hnsw_idx`)
+to stay fast as more videos accumulate.
+
+**Emotion aggregation / fusion**
+(`duui_parser/parsers/emotion_fusion.py`, `DUUI_ENABLE_EMOTION_FUSION`,
+default on). Runs last, after every modality's `base_emotions` rows
+for the video exist. For each sentence, averages valence/arousal
+within each available modality (video's many per-frame readings first,
+down to one number), then across modalities, into one
+`fused_emotions` row (`fusion_method = 'mean-valence-arousal-v1'`).
+`dominant_label` is taken from whichever modality had the largest
+valence/arousal magnitude -- a cheap heuristic, not a trained fusion
+model. `emotion_fusion_references` links each fusion back to every
+`base_emotions` row that went into it.
+
+**NLP integration** (`duui_parser/parsers/nlp_enrichment.py`,
+`DUUI_ENABLE_NLP_ENRICHMENT`, default **off**). Backfills
+`linguistic_tokens.pos_tag`/`.ner_label` -- always NULL from the CAS
+itself -- by running a German spaCy model (`DUUI_SPACY_MODEL`, default
+`de_core_news_sm`) over each sentence's reconstructed text and mapping
+spaCy's token/entity spans back onto our WhisperX-derived tokens by
+character overlap (their tokenizations don't always agree exactly,
+e.g. "Dank." as one token vs spaCy's "Dank" + "."). Off by default
+because it needs an extra model download:
+```bash
+pip install -r requirements.txt -r requirements-nlp.txt
+```
+then set `DUUI_ENABLE_NLP_ENRICHMENT=true` in `.env` (or as an
+importer env var in Docker -- see `docker-compose.yml`).
+
 ## Web viewer
 
 `webapp/` is a small video review tool: pick an imported video, play
@@ -441,3 +493,19 @@ originally: `emotion_scores` now has `UNIQUE (emotion_id, label)`,
 since the parser relies on that for `ON CONFLICT (emotion_id, label)
 DO NOTHING` to make re-running the pipeline on the same file
 idempotent.
+
+A second addition: HNSW indexes on `face_embeddings.embedding` /
+`voice_embeddings.embedding` (`vector_cosine_ops`) -- the schema doc
+always described these as pgvector-HNSW-indexed, but the index
+statements themselves were missing until the cross-video person
+linking step (see above) actually needed them for real nearest
+-neighbor lookups. A few plain B-tree indexes were added alongside
+them for the join patterns the post-processing steps and the query
+agent use most (`base_emotions(video_id, modality)`,
+`segments(video_id, kind)`, `face_embeddings(person_id)`,
+`voice_embeddings(person_id)`). If your database predates this,
+re-running `psql -d duui_bundestag -f schema/schema.sql` picks up the
+new indexes without touching existing data -- the `CREATE TABLE`
+statements will each print a harmless "relation already exists" error
+and get skipped, since only the index statements at the end use
+`CREATE INDEX IF NOT EXISTS`; nothing gets dropped or overwritten.

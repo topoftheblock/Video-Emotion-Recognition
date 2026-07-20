@@ -62,6 +62,13 @@ services:
       DUUI_DB_USER: duui
       DUUI_DB_PASSWORD: duui
       DUUI_DB_HOST: db
+      # Post-processing steps (see duui_parser/config.py) -- defaults
+      # here match the Python-side defaults, spelled out so they're
+      # easy to override per run, e.g.:
+      #   DUUI_ENABLE_NLP_ENRICHMENT=true docker compose run --rm importer cas/x.xmi
+      DUUI_ENABLE_GLOBAL_PERSON_LINKING: ${DUUI_ENABLE_GLOBAL_PERSON_LINKING:-true}
+      DUUI_ENABLE_EMOTION_FUSION: ${DUUI_ENABLE_EMOTION_FUSION:-true}
+      DUUI_ENABLE_NLP_ENRICHMENT: ${DUUI_ENABLE_NLP_ENRICHMENT:-false}
     volumes:
       # Read-write: the parser only inserts into Postgres, but cassis
       # opens the XMI file itself, which is simplest read-write even

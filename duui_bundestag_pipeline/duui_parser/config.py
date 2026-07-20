@@ -53,6 +53,46 @@ QUERY_AGENT_MAX_TOOL_ITERATIONS = int(
     os.environ.get("DUUI_QUERY_MAX_TOOL_ITERATIONS", "6")
 )
 
+# --- Post-processing pipeline steps ------------------------------------
+# These run automatically as part of every `python main.py` import (see
+# duui_parser/parsers/__init__.py) -- each can be switched off
+# independently for a faster import or a constrained environment
+# without breaking the rest of the pipeline.
+
+def _bool_env(name, default):
+    return os.environ.get(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
+
+
+# Cross-video person identity (duui_parser/parsers/global_identity.py):
+# after a video's face/voice embeddings are inserted, each new local
+# person is matched via pgvector cosine distance against every other
+# video's persons; a match below the threshold links both to the same
+# global_persons row (creating one if neither side had one yet).
+ENABLE_GLOBAL_PERSON_LINKING = _bool_env("DUUI_ENABLE_GLOBAL_PERSON_LINKING", True)
+# Cosine distance (`<=>`, 0 = identical .. 2 = opposite) -- lower is
+# stricter. 0.30 is a conservative starting point for ArcFace-style
+# 512-dim face embeddings; retune against real cross-video duplicates
+# before trusting this for anything beyond suggestions.
+GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD = float(
+    os.environ.get("DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD", "0.30")
+)
+GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
+    os.environ.get("DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD", "0.35")
+)
+
+# Emotion fusion (duui_parser/parsers/emotion_fusion.py): computes one
+# multimodal fused_emotions row per sentence from whichever of
+# audio/video/text base_emotions are available for it.
+ENABLE_EMOTION_FUSION = _bool_env("DUUI_ENABLE_EMOTION_FUSION", True)
+
+# NLP enrichment (duui_parser/parsers/nlp_enrichment.py): runs spaCy
+# POS/NER over each sentence's reconstructed text and backfills
+# linguistic_tokens.pos_tag/ner_label, which the source CAS leaves
+# empty. Off by default -- unlike the other two steps this pulls in a
+# large model download (see requirements.txt), so it's opt-in.
+ENABLE_NLP_ENRICHMENT = _bool_env("DUUI_ENABLE_NLP_ENRICHMENT", False)
+SPACY_MODEL = os.environ.get("DUUI_SPACY_MODEL", "de_core_news_sm")
+
 # --- Database ---------------------------------------------------------
 
 DB_CONFIG = {

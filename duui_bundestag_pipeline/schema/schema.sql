@@ -74,6 +74,18 @@ CREATE TABLE voice_embeddings (
     embedding vector(192)
 );
 
+-- HNSW, cosine distance (`<=>`) -- the doc in data_schema_with_types.md
+-- has always described these embeddings as "pgvector HNSW-Index:
+-- cosine", but the index itself was never actually created until now.
+-- Drives both the cross-video global-person linking step
+-- (duui_parser/parsers/global_identity.py) and any similarity search
+-- the NL->SQL query agent writes. `vector_cosine_ops` matches the
+-- `<=>` operator used everywhere else in this codebase.
+CREATE INDEX IF NOT EXISTS face_embeddings_embedding_hnsw_idx
+    ON face_embeddings USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS voice_embeddings_embedding_hnsw_idx
+    ON voice_embeddings USING hnsw (embedding vector_cosine_ops);
+
 CREATE TABLE presences (
     presence_id BIGSERIAL PRIMARY KEY,
     person_id BIGINT REFERENCES persons(person_id) ON DELETE CASCADE,
@@ -161,3 +173,18 @@ CREATE TABLE emotion_fusion_references (
     source_emotion_id BIGINT REFERENCES base_emotions(emotion_id) ON DELETE CASCADE,
     PRIMARY KEY (fused_id, source_emotion_id)
 );
+
+-- 6. Supporting indexes
+-- Not required for correctness (every FK already has an implicit
+-- index on its own PK side), but these back the join/filter patterns
+-- the per-video post-processing steps run on every import
+-- (duui_parser/parsers/global_identity.py, emotion_fusion.py) and
+-- that the NL->SQL query agent tends to write.
+CREATE INDEX IF NOT EXISTS base_emotions_video_modality_idx
+    ON base_emotions (video_id, modality);
+CREATE INDEX IF NOT EXISTS segments_video_kind_idx
+    ON segments (video_id, kind);
+CREATE INDEX IF NOT EXISTS face_embeddings_person_idx
+    ON face_embeddings (person_id);
+CREATE INDEX IF NOT EXISTS voice_embeddings_person_idx
+    ON voice_embeddings (person_id);

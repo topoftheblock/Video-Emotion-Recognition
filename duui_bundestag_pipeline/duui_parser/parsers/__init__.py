@@ -22,10 +22,13 @@ from . import (
     segment,
     token,
     embedding,
+    global_identity,
     presence,
     detection,
     emotion,
     text_emotion,
+    emotion_fusion,
+    nlp_enrichment,
 )
 
 PARSE_STEPS = [
@@ -37,10 +40,17 @@ PARSE_STEPS = [
     segment,
     token,
     embedding,      # Face + Voice embeddings (uses the maps built by `person`)
+    global_identity, # cross-video person linking -- needs this video's persons
+                    # (person) + embeddings (embedding) already inserted, and reads
+                    # every other already-imported video's embeddings via pgvector.
     presence,       # uses the maps built by `person`
     detection,      # Face + Person detections (uses the maps built by `person`)
     emotion,        # video/audio BaseEmotion, EmotionScore, FusedEmotion, references
     text_emotion,   # text-based GoEmotions -> BaseEmotion + EmotionScore
+    emotion_fusion, # multimodal fusion per sentence -- must run last: needs every
+                    # modality's base_emotions rows for this video already inserted
+    nlp_enrichment, # POS/NER backfill onto linguistic_tokens -- only needs segment/token,
+                    # placed last alongside emotion_fusion since order doesn't matter for it
 ]
 
 __all__ = ["PARSE_STEPS"]

@@ -13,6 +13,11 @@ WORKDIR /app
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Uncomment to enable DUUI_ENABLE_NLP_ENRICHMENT=true in this image
+# (pulls in spaCy + a ~13MB German model -- see requirements-nlp.txt):
+# COPY requirements-nlp.txt ./requirements-nlp.txt
+# RUN pip install --no-cache-dir -r requirements-nlp.txt
+
 COPY duui_parser ./duui_parser
 COPY main.py ./main.py
 

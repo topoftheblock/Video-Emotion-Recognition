@@ -42,10 +42,21 @@ models(model_id PK, name, version, source)
     asks which model/version produced something.
 
 global_persons(global_person_id PK, real_name)
-    A person's identity *across* videos. In practice this is almost
-    always unpopulated (cross-video identity resolution is the
-    exception, not the norm) -- don't assume it's set; prefer `persons`
-    for anything scoped to one video.
+    A person's identity *across* videos. `real_name` is essentially
+    never set (nothing in this pipeline resolves a real name -- rows
+    exist purely to group persons together). Populated by
+    duui_parser/parsers/global_identity.py, a per-import step that
+    pgvector-matches each new person's face/voice embedding centroid
+    against every other already-imported video's persons and links
+    both sides to the same global_persons row below a cosine-distance
+    threshold (see config.py). This is a similarity HEURISTIC, not a
+    verified identity match, and the per-pair distance isn't stored
+    (no column for it) -- treat a shared global_person_id as
+    "probably the same person," not ground truth, and always check
+    whether any rows actually share one (`GROUP BY global_person_id
+    HAVING count(DISTINCT video_id) > 1`) before answering a
+    cross-video identity question, since a single-video dataset or one
+    where the step is disabled will have none.
 
 persons(person_id PK, video_id FK->videos, global_person_id FK->global_persons NULL,
          clip_label, match_score)
@@ -54,9 +65,12 @@ persons(person_id PK, video_id FK->videos, global_person_id FK->global_persons N
     look like `'person_1'` (lower snake_case + local index), not
     always a named speaker. `match_score` is a 0..1 confidence
     (e.g. 0.83). Prefer joining to `persons` for display names
-    (`COALESCE(p.clip_label, 'person ' || p.person_id::text)`);
-    `global_person_id` only matters for cross-video identity questions
-    and is usually NULL.
+    (`COALESCE(p.clip_label, 'person ' || p.person_id::text)`).
+    `global_person_id` is set only where global_identity.py found a
+    cross-video match (see global_persons above) -- still commonly
+    NULL (no other video to match against, or no confident match), so
+    always LEFT JOIN through it rather than assuming every person has
+    one.
 
 segments(segment_id PK, video_id FK, kind CHECK IN ('shot','sentence'),
           seg_index, start_time, end_time, begin_offset, end_offset,
@@ -78,9 +92,15 @@ linguistic_tokens(token_id PK, video_id FK, segment_id FK->segments NULL,
     One row per spoken word. To reconstruct a sentence's text, join on
     TIME OVERLAP (token.start_time BETWEEN segment.start_time AND
     segment.end_time), not segment_id -- segment_id is frequently NULL
-    (not reliably populated by the source annotator). `pos_tag` and
-    `ner_label` are frequently empty/NULL in real pipeline runs (the
-    linguistic annotation step isn't always run) -- check whether any
+    (not reliably populated by the source annotator). `pos_tag`
+    (universal POS tags, e.g. 'NOUN', 'VERB', 'DET') and `ner_label`
+    (e.g. 'PER', 'LOC', 'ORG', 'MISC') are backfilled by a separate
+    German spaCy NLP pass (duui_parser/parsers/nlp_enrichment.py) over
+    each sentence's reconstructed text -- ONLY when
+    DUUI_ENABLE_NLP_ENRICHMENT was turned on for that import (it's
+    opt-in, off by default, since it needs an extra model dependency).
+    So these columns are populated for some imported videos and NULL
+    for others depending on that setting -- check whether any
     non-empty values exist for the video(s) in question before relying
     on POS/NER filtering to answer a question; if they're empty, say
     so rather than silently returning zero rows.
@@ -212,15 +232,24 @@ emotion_scores(score_id PK, emotion_id FK->base_emotions, label, score)
 fused_emotions(fused_id PK, video_id FK, person_id FK NULL,
     fusion_method, target_modality CHECK IN ('multimodal','video-aggregated','text-aggregated'),
     start_time, end_time, valence, arousal, dominant_label)
-    A combined/aggregated emotion signal (e.g. cross-modal fusion of
-    audio+video+text). Use this for "overall"/"combined" emotion
-    questions rather than re-deriving a fusion yourself. In practice
-    this table is very often completely EMPTY (fusion is an optional
-    downstream step that many pipeline runs skip) -- always check
-    `SELECT count(*) FROM fused_emotions WHERE video_id = ...` (or just
-    LEFT JOIN and tolerate zero rows) before assuming it has data, and
-    say so plainly if it's empty rather than returning a silently
-    empty/wrong answer.
+    A combined/aggregated emotion signal. Populated automatically for
+    every sentence by duui_parser/parsers/emotion_fusion.py (unless
+    DUUI_ENABLE_EMOTION_FUSION was turned off for that import):
+    `fusion_method = 'mean-valence-arousal-v1'` rows average
+    valence/arousal across whichever of audio/video/text had data for
+    that sentence (video's per-frame readings are averaged first, then
+    across modalities), with `dominant_label` taken from whichever
+    modality had the largest valence/arousal magnitude -- a cheap
+    heuristic, not a trained classifier decision, so don't treat it as
+    more authoritative than the per-modality labels in base_emotions.
+    `target_modality`: 'video-aggregated' if only video contributed,
+    'text-aggregated' if only text, otherwise 'multimodal' (this
+    includes "only audio" -- there is no 'audio-aggregated' bucket in
+    the schema). Use this for "overall"/"combined" emotion questions
+    instead of re-deriving a fusion yourself. Can still be empty for a
+    given video (fusion was disabled for that import, or the video has
+    no sentence segments) -- LEFT JOIN and check row count rather than
+    assuming it has data.
 
 emotion_fusion_references(fused_id FK, source_emotion_id FK->base_emotions)
     n:m bridge from a fused_emotions row back to the base_emotions
