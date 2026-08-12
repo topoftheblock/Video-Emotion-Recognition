@@ -34,20 +34,24 @@ services:
       DUUI_DB_USER: duui
       DUUI_DB_PASSWORD: duui
       DUUI_DB_HOST: db
-      DUUI_VIDEO_DIR: /videos
+      DUUI_VIDEO_DIR: /media
       DUUI_QUERY_API_KEY: ${DUUI_QUERY_API_KEY:-}
       DUUI_QUERY_BASE_URL: ${DUUI_QUERY_BASE_URL:-https://lehre.llm.texttechnologylab.org/api}
       DUUI_QUERY_MODEL: ${DUUI_QUERY_MODEL:-gondor.qwen3-vl:32b}
     volumes:
-      # Video files only -- the DB never stores video bytes, so this
-      # just has to contain whatever videos.filename rows point to.
-      - ./cas:/videos:ro
+      # Read-only: the webapp only ever plays videos the importer put
+      # here (see `importer`'s /media mount below and
+      # duui_parser/media.py) -- it never reads straight from ./cas,
+      # so there's no dependency on that host directory's layout, and
+      # `videos.filename` is genuinely the join key to "does this
+      # video's file exist" (checked live -- see GET /api/videos).
+      - video_media:/media:ro
     ports:
       - "8010:8000"
 
   # One-off CAS importer, not a long-running service -- excluded from
   # `docker compose up` by the "import" profile, so it only runs when
-  # explicitly invoked (see README "Importing a CAS file" section):
+  # explicitly invoked (see README "Docker architecture" section):
   #   docker compose run --rm importer cas/your_file.xmi
   importer:
     build:
@@ -62,6 +66,10 @@ services:
       DUUI_DB_USER: duui
       DUUI_DB_PASSWORD: duui
       DUUI_DB_HOST: db
+      # Destination for the companion video file, shared with `webapp`
+      # (see its /media mount) -- NOT the /app/cas input mount below,
+      # which is only ever read from.
+      DUUI_VIDEO_DIR: /media
       # Post-processing steps (see duui_parser/config.py) -- defaults
       # here match the Python-side defaults, spelled out so they're
       # easy to override per run, e.g.:
@@ -70,14 +78,24 @@ services:
       DUUI_ENABLE_EMOTION_FUSION: ${DUUI_ENABLE_EMOTION_FUSION:-true}
       DUUI_ENABLE_NLP_ENRICHMENT: ${DUUI_ENABLE_NLP_ENRICHMENT:-false}
     volumes:
-      # Read-write: the parser only inserts into Postgres, but cassis
-      # opens the XMI file itself, which is simplest read-write even
-      # though nothing here actually gets modified on disk.
+      # Read-write, input side: where the pipeline's output (a CAS
+      # .xmi file plus its companion video, same filename the CAS
+      # itself carries) gets dropped for import -- read-write because
+      # cassis opens the .xmi file directly, which is simplest
+      # read-write even though nothing here actually gets modified.
       - ./cas:/app/cas
       - ./typesystems:/app/typesystems:ro
+      # Read-write, output side: after inserting this CAS's rows into
+      # Postgres, duui_parser/media.py copies the matching video file
+      # from /app/cas into here under the exact filename the `videos`
+      # row uses -- this is what lets `webapp` (mounted read-only
+      # above) know which video belongs to which DB data, without
+      # either container needing to share the raw /app/cas layout.
+      - video_media:/media
 
 volumes:
   db_data:
+  video_media:
 
 # First run on an empty volume:
 #   docker compose up -d db
@@ -85,5 +103,5 @@ volumes:
 #   docker compose run --rm importer cas/your_file.xmi
 #   docker compose up -d webapp
 #
-# See README "Importing a CAS file" for the full explanation of what
-# to mount and which env vars matter.
+# See README "Docker architecture" for the full explanation of what
+# each volume is for and which env vars matter.

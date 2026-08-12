@@ -43,6 +43,10 @@ const el = {
   fusedLabel: document.getElementById("fusedLabel"),
   fusedValenceFill: document.getElementById("fusedValenceFill"),
   fusedArousalFill: document.getElementById("fusedArousalFill"),
+  crossVideoPanel: document.getElementById("crossVideoPanel"),
+  crossVideoList: document.getElementById("crossVideoList"),
+  insightsPanel: document.getElementById("insightsPanel"),
+  insightsBody: document.getElementById("insightsBody"),
   askForm: document.getElementById("askForm"),
   askInput: document.getElementById("askInput"),
   askSubmit: document.getElementById("askSubmit"),
@@ -65,8 +69,14 @@ const ctx = el.overlay.getContext("2d");
 async function loadVideoList() {
   const videos = await fetch("/api/videos").then((r) => r.json());
   el.videoSelect.innerHTML = videos
-    .map((v) => `<option value="${v.video_id}">${v.filename} (#${v.video_id})</option>`)
+    .map(
+      (v) =>
+        `<option value="${v.video_id}">${v.filename} (#${v.video_id})${v.video_file_available ? "" : " — file missing"}</option>`
+    )
     .join("");
+  // Cross-video person clusters don't change per-video-load -- fetched
+  // once and filtered client-side in renderCrossVideoPanel() below.
+  state.globalPersonClusters = await fetch("/api/persons/global").then((r) => r.json()).catch(() => []);
   if (videos.length) {
     await loadVideo(videos[0].video_id);
   }
@@ -77,9 +87,119 @@ async function loadVideo(videoId) {
   state.data = data;
   assignPersonColors(data.persons);
   renderPersonList(data.persons);
+  renderCrossVideoPanel(data);
+  loadInsights(videoId);
 
   el.player.src = `/media/${encodeURIComponent(data.video.filename)}`;
   el.player.load();
+}
+
+/** "Also appears in" panel: for each person in this video, list every
+ * *other* video duui_parser/parsers/global_identity.py linked them to
+ * (see state.globalPersonClusters, fetched once at startup). */
+function renderCrossVideoPanel(data) {
+  const clusters = state.globalPersonClusters || [];
+  const rows = [];
+  for (const person of data.persons) {
+    const cluster = clusters.find((c) => c.members.some((m) => m.person_id === person.person_id));
+    if (!cluster) continue;
+    const others = cluster.members.filter((m) => m.person_id !== person.person_id);
+    if (!others.length) continue;
+    rows.push({ person, others });
+  }
+
+  if (!rows.length) {
+    el.crossVideoPanel.style.display = "none";
+    el.crossVideoList.innerHTML = "";
+    return;
+  }
+
+  el.crossVideoPanel.style.display = "";
+  el.crossVideoList.innerHTML = rows
+    .map(({ person, others }) => {
+      const color = state.personColor.get(person.person_id) || "#8b94a3";
+      const name = person.clip_label || `person ${person.person_id}`;
+      const otherList = others
+        .map((o) => escapeHtml(`${o.video_filename} (${o.clip_label || "person " + o.person_id})`))
+        .join(", ");
+      return `<li><span class="person-swatch" style="background:${color}"></span>${escapeHtml(name)}<span class="person-meta">${otherList}</span></li>`;
+    })
+    .join("");
+}
+
+// ---------------- Emotion insights (hardcoded stats) ----------------
+
+async function loadInsights(videoId) {
+  el.insightsPanel.style.display = "none";
+  try {
+    const stats = await fetch(`/api/stats/${videoId}`).then((r) => r.json());
+    renderInsights(stats);
+  } catch (err) {
+    // Non-critical panel -- a stats failure shouldn't block playback.
+    console.warn("Could not load emotion insights", err);
+  }
+}
+
+function renderInsights(stats) {
+  const parts = [];
+
+  const agreement = stats.modality_agreement;
+  parts.push('<div class="insights-section-title">Video vs. text agreement</div>');
+  if (agreement && agreement.n_compared > 0) {
+    parts.push(
+      `<div class="agreement-stat"><span class="agreement-value">${agreement.agreement_pct}%</span><span class="agreement-caption">of ${agreement.n_compared} sentence(s) agree on valence sign between video and text emotion</span></div>`
+    );
+  } else {
+    parts.push('<div class="empty-hint">Not enough overlapping data to compare yet.</div>');
+  }
+
+  parts.push('<div class="insights-section-title">Dominant-emotion distribution</div>');
+  const byModality = {};
+  for (const row of stats.emotion_distribution || []) {
+    (byModality[row.modality] = byModality[row.modality] || []).push(row);
+  }
+  const modalities = Object.keys(byModality);
+  if (!modalities.length) {
+    parts.push('<div class="empty-hint">No emotion readings for this video.</div>');
+  } else {
+    for (const modality of modalities) {
+      const rows = byModality[modality].slice(0, 4); // top 4, already sorted by count desc
+      const max = Math.max(...rows.map((r) => r.n));
+      parts.push(`<div class="dist-group"><div class="dist-group-label">${escapeHtml(modality)}</div>`);
+      for (const row of rows) {
+        const pct = max ? Math.round((row.n / max) * 100) : 0;
+        parts.push(
+          `<div class="dist-row"><span class="dist-row-label">${escapeHtml(row.dominant_label)}</span><div class="dist-track"><div class="dist-fill" style="width:${pct}%"></div></div><span class="dist-row-n">${row.n}</span></div>`
+        );
+      }
+      parts.push("</div>");
+    }
+  }
+
+  parts.push('<div class="insights-section-title">Average valence / arousal by person</div>');
+  const byPerson = {};
+  for (const row of stats.person_averages || []) {
+    (byPerson[row.person_id] = byPerson[row.person_id] || { clip_label: row.clip_label, modalities: [] }).modalities.push(
+      row
+    );
+  }
+  const personIds = Object.keys(byPerson);
+  if (!personIds.length) {
+    parts.push('<div class="empty-hint">No per-person emotion data for this video.</div>');
+  } else {
+    for (const pid of personIds) {
+      const entry = byPerson[pid];
+      const modalityText = entry.modalities
+        .map((m) => `${m.modality}: v${m.avg_valence.toFixed(2)} a${m.avg_arousal.toFixed(2)} (n=${m.n})`)
+        .join(" · ");
+      parts.push(
+        `<div class="person-avg-row"><span class="person-avg-name">${escapeHtml(entry.clip_label)}</span><span class="person-avg-modalities">${escapeHtml(modalityText)}</span></div>`
+      );
+    }
+  }
+
+  el.insightsBody.innerHTML = parts.join("");
+  el.insightsPanel.style.display = "";
 }
 
 function assignPersonColors(persons) {

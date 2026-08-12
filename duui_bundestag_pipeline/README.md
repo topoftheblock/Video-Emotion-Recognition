@@ -216,6 +216,14 @@ Open http://localhost:8010 (or wherever you're serving it):
    - *People panel* lists everyone identified in the video with a
      confidence score; *On screen now* shows who's actually visible at
      this exact instant, color-matched to their bounding box.
+   - *Also appears in* (sidebar) lists, for each person in this video,
+     every other video `global_identity.py` linked them to -- hidden
+     entirely if nothing was linked (see "Post-processing" above and
+     "Emotion statistics" below).
+   - *Emotion insights* (sidebar) shows three fixed statistics for the
+     current video -- video/text agreement, dominant-emotion
+     distribution, and per-person valence/arousal averages -- see
+     "Emotion statistics" below for what each one means.
 3. **Ask a question** -- the box at the top skips manual scrubbing
    entirely. Type something like *"find the moments of highest anger"*
    or *"where do video and text emotion disagree?"* and hit **Ask**.
@@ -239,13 +247,20 @@ actually care about.
 
 **Setup:**
 
-1. Put the actual video file(s) in the directory named by
-   `DUUI_VIDEO_DIR` in `.env` (defaults to `cas/`), with the filename
-   matching each row's `videos.filename` column exactly (e.g. if the
-   DB says `filename = 'first2.mp4'`, the file must be at
-   `cas/first2.mp4`). The database only stores metadata, never the
-   video bytes.
-2. Run the parser first (`python main.py`) so there's data to show.
+1. Put the actual video file(s) in the same directory as the `.xmi`
+   you're importing, named exactly as the CAS's own filename (e.g. if
+   the CAS says `filename = 'first2.mp4'`, the file must sit right next
+   to it as `cas/first2.mp4`). The database only stores metadata, never
+   the video bytes.
+2. Run the parser (`python main.py`) so there's data to show -- as of
+   the post-processing step in `duui_parser/media.py`, this also places
+   the video where the webapp expects it (`DUUI_VIDEO_DIR` in `.env`,
+   defaults to `cas/`), so with the default config there's normally
+   nothing further to do here: source and served directory are the
+   same directory, and the copy is skipped when it would be a no-op.
+   Only relevant if you point `DUUI_VIDEO_DIR` somewhere else (or are
+   using Docker -- see "Docker architecture" below, where the importer
+   and webapp containers deliberately use *different* directories).
 3. Start the viewer from the project root:
    ```bash
    uvicorn webapp.server:app --reload
@@ -283,28 +298,97 @@ frontend fetch a rolling window around the current playback time
 instead of everything up front -- happy to add that when you have a
 longer real file to test it against.
 
-## Importing a CAS file (Docker)
+## Emotion statistics
+
+Two extra sidebar panels surface data the webapp doesn't otherwise
+show, both backed by fixed SQL in `webapp/server.py` -- deliberately
+**not** routed through the NL->SQL query agent, so they're fast,
+deterministic, and available even without `DUUI_QUERY_API_KEY`
+configured:
+
+- **`GET /api/persons/global`** ("Also appears in" panel): every
+  `global_persons` cluster with 2+ members, i.e. cross-video person
+  identity (see "Post-processing" above) made visible in the UI rather
+  than only queryable. A person with no cross-video match doesn't
+  appear -- most persons, in practice, since it depends on the same
+  person genuinely recurring across your imported videos.
+- **`GET /api/stats/{video_id}`** ("Emotion insights" panel), three
+  fixed analyses per video:
+  1. *Video vs. text agreement* -- of the sentences with both a text
+     and a video emotion reading, what percentage agree on valence
+     sign (both positive or both negative)? A single summary number.
+     Uses valence sign rather than comparing `dominant_label` strings
+     across modalities directly -- see `schema_context.py`'s
+     "Cross-modality label comparison" note for why that would be
+     misleading.
+  2. *Dominant-emotion distribution* -- how often each `dominant_label`
+     occurred, per modality, top 4 shown per modality.
+  3. *Average valence/arousal by person* -- per modality, so you can
+     see e.g. "this person reads calmer on video than their words
+     suggest" at a glance.
+
+**Computed on demand, not written back to the database**: both
+endpoints run their SQL fresh on every request rather than caching a
+result in a new table. This was a deliberate choice for now -- always
+correct as new videos get imported, no cache-invalidation logic needed
+-- at the cost of recomputing on every page load. If a stats table
+ever becomes worth it (a much larger video library, or these stats
+feeding something other than this one UI), the natural next step is a
+small `video_stats`-style table these queries write into once, either
+as a further step in `PARSE_STEPS` or the query agent -- happy to add
+that when there's a concrete second consumer.
+
+## Docker architecture
 
 If you're running the stack via `docker compose` (see `docker-compose.yml`)
-rather than a local venv, importing a new CAS doesn't need Python/
-`dkpro-cassis` installed on the host at all -- there's a dedicated
-`importer` service for it, built from the root `Dockerfile`.
+rather than a local venv, this is the three-container shape and how a
+CAS goes from "file on disk" to "playable in the browser":
 
-It's deliberately **not** part of the webapp container: `webapp/Dockerfile`
-only installs `webapp/requirements.txt` (FastAPI, psycopg2, openai --
-no `dkpro-cassis`/lxml) to keep that image small, since `webapp/server.py`
-never parses CAS files itself, only reads what's already in Postgres.
-The importer is a separate one-off job, not a long-running service, so
-it's excluded from `docker compose up` by the `import` profile and only
-runs when invoked explicitly.
+```
+ pipeline output          importer (one-off)              webapp (long-running)
+ cas/x.xmi + cas/x.mp4 ─▶  1. parse x.xmi -> Postgres  ┐
+  (dropped on host,        2. copy x.mp4 -> video_media├─▶ reads Postgres +
+   ./cas bind mount)                                    │   video_media (ro)
+                                                          ┘
+```
+
+1. **What comes out of the pipeline**: a CAS (`.xmi`) plus its source
+   video, as a pair, same base handling as the non-Docker path in
+   step 4 above -- both get dropped into `cas/` on the host.
+2. **The importer** is a one-off container, not a long-running
+   service (`docker compose run --rm importer ...`, excluded from
+   `docker compose up` by the `import` profile) -- it parses the CAS
+   into Postgres *and* copies the matching video file into the
+   `video_media` named volume (see `duui_parser/media.py`), so nothing
+   manual has to happen afterwards to make the two line up. It's
+   deliberately **not** folded into the webapp container: keeping it
+   separate means `webapp/Dockerfile` never needs `dkpro-cassis`/lxml
+   (only `webapp/requirements.txt`, kept lean since `webapp/server.py`
+   never parses CAS files, only reads Postgres), and an import can be
+   scripted/re-run independently of the running webapp.
+3. **The webapp** mounts `video_media` **read-only** and never touches
+   `./cas` directly -- it only ever knows about a video because the
+   importer already placed it there under the exact `videos.filename`
+   value, which is the join key between "a row in Postgres" and "a
+   file it can stream". `GET /api/videos` reports `video_file_available`
+   per video by checking this live, so a DB row whose video hasn't
+   been placed yet (or was removed) is visible as such rather than
+   just 404ing when you try to play it.
+4. Point 4's `webapp` capabilities (transcript/emotions/bounding boxes,
+   the NL query agent, cross-video person view, emotion stats -- see
+   "Web viewer" and "Emotion statistics" below) are unchanged by this
+   -- this section is purely about how the two containers stay in sync
+   on what data exists.
 
 **What to mount** (already wired up in `docker-compose.yml`):
-- `./cas:/app/cas` -- both the `.xmi` file you're importing and the
-  matching video file live here; same directory the `webapp` service
-  mounts read-only as `/videos` (see step 4 below for why the names
-  have to match).
-- `./typesystems:/app/typesystems:ro` -- the three typesystem XML
-  files from step 3 above.
+- `./cas:/app/cas` (importer only, read-write) -- the pipeline's drop
+  zone: both the `.xmi` file you're importing and its companion video,
+  same filename the CAS itself carries.
+- `./typesystems:/app/typesystems:ro` (importer only) -- the three
+  typesystem XML files from step 3 above.
+- `video_media` (named volume) -- read-write on `importer`, read-only
+  on `webapp`. Never bind-mounted to the host directly; it only ever
+  gets content via the importer's copy step.
 
 **Env vars the importer container needs** (already set by
 `docker-compose.yml`'s `importer.environment` block -- only relevant
@@ -314,6 +398,8 @@ if you're running the built image directly instead of through compose):
   on the host against the container's exposed port 5432).
 - `DUUI_DB_NAME`, `DUUI_DB_USER`, `DUUI_DB_PASSWORD` -- must match the
   `db` service's `POSTGRES_*` values (`duui_bundestag`/`duui`/`duui`).
+- `DUUI_VIDEO_DIR=/media` -- where the companion video gets copied to
+  (the `video_media` mount point), **not** the `/app/cas` input mount.
 - `DUUI_TS_IDENTITY_EMOTION`, `DUUI_TS_MULTIMODAL_IDENTITY`,
   `DUUI_TS_EMOTION` -- only needed if your typesystem filenames differ
   from the defaults in `duui_parser/config.py` (`typesystems/*.xml`).
@@ -329,12 +415,28 @@ docker compose up -d webapp
 
 Re-running against a file you already imported is safe -- see the
 `UNIQUE (emotion_id, label)` / `ON CONFLICT ... DO NOTHING` note at the
-bottom of this README.
+bottom of this README; re-copying an already-placed video file is a
+no-op too (`duui_parser/media.py` checks the destination first).
 
-**Filename matching still applies**: whatever file the CAS references
-as its source video needs to exist in `cas/` under that exact name --
-same requirement as the non-Docker path in "Web viewer" above, since
-`videos.filename` is what both the importer and the webapp key off of.
+**If the video wasn't next to the CAS at import time**: the DB import
+still succeeds (data is more valuable than nothing), but you'll see a
+`[duui_parser] warning: no source video found at ...` in the importer's
+logs and `video_file_available: false` from the API for that video.
+Placing the file afterwards just needs it copied into the
+`video_media` volume under the exact `videos.filename` value, e.g.:
+```bash
+docker run --rm -v duui_bundestag_pipeline_video_media:/media -v "$(pwd)/cas:/src:ro" alpine \
+  cp /src/your_file.mp4 /media/your_file.mp4
+```
+(adjust the volume name if `docker compose config --volumes` reports a
+different project prefix).
+
+**Alternative considered**: folding the import step directly into the
+webapp container (e.g. an upload endpoint) instead of a separate
+one-off container -- rejected for now to keep the webapp image free of
+the CAS-parsing dependency chain and to keep "import a file" scriptable
+as a plain CLI invocation, but worth revisiting if imports need to be
+triggerable from the browser rather than a terminal with host access.
 
 ## Natural-language query agent
 

@@ -1,11 +1,15 @@
 """High-level orchestration: load a CAS, run every parser step against
-it inside one DB transaction, and commit.
+it inside one DB transaction, commit, then place the companion video
+file where the webapp expects it.
 """
+
+from pathlib import Path
 
 from cassis import load_cas_from_xmi
 
 from .config import XMI_FILE
 from .db import get_db_connection
+from .media import place_video_file
 from .parsers import PARSE_STEPS
 from .typesystem import load_merged_typesystem
 
@@ -17,14 +21,18 @@ def parse_and_insert(cas, cursor, conn):
     `context` is threaded through every step so later steps (Segment,
     Person, Presence, Detection, Emotion, ...) can read
     context["global_video_id"], which the video step resolves first.
+    Returned so `run()` can use context["video_filename"] afterwards.
     """
     context = {}
     for step in PARSE_STEPS:
         step.parse(cas, cursor, conn, context)
+    return context
 
 
 def run(xmi_file=None):
-    """Load typesystem + CAS, parse, and commit to the database."""
+    """Load typesystem + CAS, parse, commit to the database, and place
+    the video file that came alongside the CAS (same directory, same
+    filename as the `videos` row) into VIDEO_MEDIA_DIR."""
     xmi_file = xmi_file or XMI_FILE
 
     print("Loading and patching TypeSystems...")
@@ -40,7 +48,7 @@ def run(xmi_file=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        parse_and_insert(cas, cursor, conn)
+        context = parse_and_insert(cas, cursor, conn)
         conn.commit()
         cursor.close()
     except Exception:
@@ -48,5 +56,10 @@ def run(xmi_file=None):
         raise
     finally:
         conn.close()
+
+    # A CAS always arrives paired with its source video in the same
+    # input directory (see README "Docker architecture") -- look for
+    # it right next to the .xmi file just parsed.
+    place_video_file(context.get("video_filename"), Path(xmi_file).parent)
 
     print("Parser completed successfully!")

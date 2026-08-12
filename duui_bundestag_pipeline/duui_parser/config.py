@@ -93,6 +93,18 @@ ENABLE_EMOTION_FUSION = _bool_env("DUUI_ENABLE_EMOTION_FUSION", True)
 ENABLE_NLP_ENRICHMENT = _bool_env("DUUI_ENABLE_NLP_ENRICHMENT", False)
 SPACY_MODEL = os.environ.get("DUUI_SPACY_MODEL", "de_core_news_sm")
 
+# --- Video media -------------------------------------------------------
+# Where served video files live -- the one place both the importer
+# (writes into it, see duui_parser/media.py) and the webapp (reads from
+# it, see webapp/server.py) agree a video for `videos.filename = X`
+# lives at `<VIDEO_MEDIA_DIR>/X`. Same variable, same default ("cas")
+# for both: on a native (non-Docker) setup this collapses source and
+# served directory into one, so nothing changes from before this was
+# centralized here. In Docker, importer and webapp instead point this
+# at a shared named volume, decoupled from the raw CAS input directory
+# -- see docker-compose.yml.
+VIDEO_MEDIA_DIR = os.environ.get("DUUI_VIDEO_DIR", "cas")
+
 # --- Database ---------------------------------------------------------
 
 DB_CONFIG = {

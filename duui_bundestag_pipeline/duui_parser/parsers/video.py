@@ -1,7 +1,11 @@
 """Parses the Video row from MultimediaElement, falling back to
 DocumentMetaData if no MultimediaElement annotation is present.
 
-Sets context["global_video_id"] for downstream parsers.
+Sets context["global_video_id"] and context["video_filename"] for
+downstream steps -- the latter is what pipeline.py uses after commit
+to place the companion video file where the webapp expects it (see
+duui_parser/media.py), so it stays in lockstep with whatever filename
+actually ended up in the `videos` row, rather than being re-derived.
 """
 
 from ..cas_views import select_across_views, select_exact_type
@@ -11,6 +15,7 @@ from ..typesystem import get_xmi_id
 
 def parse(cas, cursor, conn, context):
     global_video_id = None
+    video_filename = None
 
     # `select_exact_type`, not `select_across_views`: MultimediaElement
     # is the common supertype of most time-bounded annotations in this
@@ -19,6 +24,10 @@ def parse(cas, cursor, conn, context):
     # of an actual top-level video record.
     for multimedia in select_exact_type(cas, TYPES["multimedia_element"]):
         global_video_id = get_xmi_id(multimedia)
+        # videos.filename is NOT NULL -- fall back to a placeholder
+        # rather than letting the insert fail if a real
+        # MultimediaElement instance ever lacks one.
+        video_filename = getattr(multimedia, "filename", None) or "unknown"
         cursor.execute(
             """
             INSERT INTO videos (video_id, filename, duration, processed_at, fps, width, height)
@@ -30,10 +39,7 @@ def parse(cas, cursor, conn, context):
             """,
             (
                 global_video_id,
-                # videos.filename is NOT NULL -- fall back to a
-                # placeholder rather than letting the insert fail if a
-                # real MultimediaElement instance ever lacks one.
-                getattr(multimedia, "filename", None) or "unknown",
+                video_filename,
                 getattr(multimedia, "duration", None),
                 getattr(multimedia, "processed_at", None),
                 getattr(multimedia, "fps", None),
@@ -46,11 +52,13 @@ def parse(cas, cursor, conn, context):
     if not global_video_id:
         for md in select_across_views(cas, TYPES["document_meta_data"]):
             global_video_id = get_xmi_id(md)
+            video_filename = getattr(md, "documentTitle", None) or "unknown"
             cursor.execute(
                 "INSERT INTO videos (video_id, filename) VALUES (%s, %s) "
                 "ON CONFLICT (video_id) DO NOTHING",
-                (global_video_id, getattr(md, "documentTitle", None) or "unknown"),
+                (global_video_id, video_filename),
             )
             break
 
     context["global_video_id"] = global_video_id
+    context["video_filename"] = video_filename
