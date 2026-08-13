@@ -18,6 +18,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 ## Metadaten & Video Layer
 
 **Video** (The Master File)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | video_id | bigint | PK | Unique ID of the video |
@@ -29,6 +30,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | height | int | | Video height in pixels |
 
 **Model** (Embedding Provenance)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | model_id | bigint | PK | Unique ID of the model |
@@ -41,6 +43,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 ## Text & Segmente
 
 **Segment** (Zeitliche und textliche Einteilung)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | segment_id | bigint | PK | Unique ID of the segment |
@@ -54,6 +57,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | person_id | bigint | FK | Sprecher des Satzes (nullable, nur bei `'sentence'`) |
 
 **LinguisticToken** (NLP Text Connection)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | token_id | bigint | PK | Unique ID of the word/token |
@@ -72,12 +76,14 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 ## Identity, Embeddings & Presence Layer
 
 **GlobalPerson**
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | global_person_id | bigint | PK | Cross-video person (e.g., via global clustering) |
 | real_name | text | | Real name of the person (if known) |
 
 **Person**
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | person_id | bigint | PK | Unique ID of the person in the video (local) |
@@ -87,6 +93,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | match_score | double | | Confidence of the match (nullable, aus Label geparst) |
 
 **FaceEmbedding** (pgvector HNSW-Index: cosine)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | embedding_id | bigint | PK | Unique ID of the vector |
@@ -95,6 +102,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | embedding | vector(512) | | z. B. ArcFace w600k_r50 |
 
 **VoiceEmbedding** (pgvector HNSW-Index: cosine)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | embedding_id | bigint | PK | Unique ID of the vector |
@@ -103,6 +111,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | embedding | vector(192) | | z. B. CAM++ 3D-Speaker common-200k |
 
 **Presence** (Track-Merge Intervalle)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | presence_id | bigint | PK | Unique ID of the presence interval |
@@ -115,6 +124,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | end | int | | Text-offset end (nullable, nur bei `'speech'`) |
 
 **FaceDetection**
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | detection_id | bigint | PK | Unique ID of the face bounding box |
@@ -127,6 +137,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | detection_score| double | | Confidence score of the detection |
 
 **PersonDetection**
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | detection_id | bigint | PK | Unique ID of the person bounding box |
@@ -143,6 +154,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 ## Emotion Layer
 
 **BaseEmotion** (Starting point for raw data from containers)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | emotion_id | bigint | PK | Unique ID of the base emotion |
@@ -162,6 +174,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | dominant_label | text | | Strongest class (argmax) |
 
 **EmotionScore** (Distribution for BaseEmotion)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | emotion_id | bigint | FK | Reference to BaseEmotion |
@@ -169,6 +182,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | score | double | | Probability / Confidence |
 
 **FusedEmotion** (Aggregated / Calculated Emotions)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | fused_id | bigint | PK | Unique ID of the fusion emotion |
@@ -183,6 +197,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | dominant_label | text | | Resulting strongest class |
 
 **EmotionFusionReference** (n:m bridge for the origin of the fusion)
+
 | Column | Type | Key | Description |
 | :--- | :--- | :--- | :--- |
 | fused_id | bigint | FK | Reference to FusedEmotion |
