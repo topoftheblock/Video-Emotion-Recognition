@@ -7,7 +7,10 @@ one place, instead of being buried in the middle of a `__main__` block.
 """
 
 import io
+import re
+import warnings
 import xml.etree.ElementTree as ET
+from contextlib import contextmanager
 
 from cassis import load_typesystem
 
@@ -35,7 +38,39 @@ except ImportError:
         "uima.cas.Sofa", "uima.cas.NULL",
     }
 
-from .config import INJECTED_FALLBACK_TYPES, TYPESYSTEM_FILES
+from .config import (
+    IGNORED_ABSENT_TYPES,
+    INJECTED_FALLBACK_TYPES,
+    TYPESYSTEM_FILES,
+)
+
+# How cassis phrases the warning it raises (cassis/xmi.py) when the XMI
+# references a type the typesystem doesn't define. Matched literally,
+# per type name, so nothing else gets swallowed by accident.
+_ABSENT_TYPE_WARNING = "Type with name [{name}] not found!"
+
+
+@contextmanager
+def loading_cas_quietly(type_names=IGNORED_ABSENT_TYPES):
+    """
+    Silence cassis's "Type with name [X] not found!" warning for exactly
+    the types in `type_names`, and nothing else.
+
+    A real CAS carries whole annotation layers this importer has no use
+    for (see IGNORED_ABSENT_TYPES). cassis is right to warn -- it is
+    dropping annotations -- but for those layers dropping them is the
+    intent, and a dozen expected warnings per file hide the one that
+    would actually matter. Filtering by exact message keeps every other
+    UserWarning, from cassis or anywhere else, visible.
+    """
+    with warnings.catch_warnings():
+        for name in type_names:
+            warnings.filterwarnings(
+                "ignore",
+                message=re.escape(_ABSENT_TYPE_WARNING.format(name=name)),
+                category=UserWarning,
+            )
+        yield
 
 
 def get_xmi_id(feature_struct):

@@ -302,3 +302,39 @@ INJECTED_FALLBACK_TYPES = {
 </typeDescription>
 """,
 }
+
+# Types a real CAS carries that this importer deliberately does not read.
+#
+# The DUUI pipeline runs an NLP stage over the transcript sofa and stamps
+# provenance on everything it touches, so the .xmi references DKPro's
+# text-layer types and TTLab's annotator-metadata types. None of them is
+# in TYPES above and no parser step selects them: the transcript comes
+# from `DiarizedAudioToken` (the audio layer), and POS/NER are backfilled
+# from spaCy by the optional nlp_enrichment step, not read from the CAS.
+#
+# cassis warns once per unknown type while loading the XMI and skips the
+# annotation -- correct behaviour, but for these twelve it is noise that
+# buries anything real, so `loading_cas_quietly` filters exactly these
+# messages. Declaring them here instead of stubbing them in
+# INJECTED_FALLBACK_TYPES is deliberate: a featureless stub would make
+# cassis materialise thousands of annotations nobody reads, and then
+# complain about their unknown features instead.
+#
+# Nothing outside this set is silenced. A type that goes missing because
+# a typesystem file was dropped or renamed still warns loudly.
+IGNORED_ABSENT_TYPES = frozenset({
+    # DKPro text layer -- tokens/POS/NER on the transcript sofa.
+    "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Sentence",
+    "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Token",
+    "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma",
+    "de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS",
+    "de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.morph.MorphologicalFeatures",
+    "de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency",
+    "de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.ROOT",
+    "de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity",
+    # TTLab provenance -- who annotated what, with which tool version.
+    "org.texttechnologylab.duui.ReproducibleAnnotation",
+    "org.texttechnologylab.annotation.DocumentModification",
+    "org.texttechnologylab.annotation.AnnotatorMetaData",
+    "org.texttechnologylab.annotation.SpacyAnnotatorMetaData",
+})

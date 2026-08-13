@@ -17,7 +17,7 @@ from .config import INPUT_DIR, XMI_FILE
 from .db import get_db_connection
 from .media import place_video_file
 from .parsers import PARSE_STEPS
-from .typesystem import load_merged_typesystem
+from .typesystem import load_merged_typesystem, loading_cas_quietly
 
 
 def parse_and_insert(cas, cursor, conn):
@@ -161,7 +161,7 @@ def run(xmi_file=None, typesystem=None):
         typesystem = load_merged_typesystem()
 
     print(f"Loading CAS data from {xmi_file}...")
-    with open(xmi_file, "rb") as f:
+    with open(xmi_file, "rb") as f, loading_cas_quietly():
         # trusted=True enables lxml's huge_tree parsing, needed for large
         # multi-hour-session XMI exports that exceed lxml's default buffer.
         cas = load_cas_from_xmi(f, typesystem=typesystem, lenient=True, trusted=True)

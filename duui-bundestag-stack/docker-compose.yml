@@ -62,9 +62,11 @@ x-importer-common: &importer-common
     # CAS's companion video here, named exactly as the `videos.filename`
     # row it just wrote -- which is how the webapp (same store, mounted
     # read-only) knows which file belongs to which database rows.
-    # `z` as above -- needed once DUUI_VIDEO_STORE is a host path, since
-    # the store is then a bind mount shared with the webapp.
-    - ${DUUI_VIDEO_STORE:-video_media}:/data/videos:z
+    # No `z` here: by default this is a named volume, which Docker
+    # already labels container_file_t. If you point DUUI_VIDEO_STORE at
+    # a host path on an SELinux system, add `,z` here and on the
+    # webapp's copy of this mount.
+    - ${DUUI_VIDEO_STORE:-video_media}:/data/videos
 
 services:
   db:
@@ -143,7 +145,7 @@ services:
       # Same video store as the importer, read-only: the viewer only ever
       # plays videos the importer already placed, and never touches your
       # input folder at all.
-      - ${DUUI_VIDEO_STORE:-video_media}:/data/videos:ro,z
+      - ${DUUI_VIDEO_STORE:-video_media}:/data/videos:ro
     ports:
       - "${DUUI_WEBAPP_HOST_PORT:-8010}:8000"
     healthcheck:
