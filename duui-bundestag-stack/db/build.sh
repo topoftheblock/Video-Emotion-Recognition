@@ -12,6 +12,6 @@ cd "$(dirname "$0")"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 IMAGE_NAME="${IMAGE_NAME:-duui-db}"
 
-echo "Building ${IMAGE_NAME}:${IMAGE_TAG} ..."
+echo "Building ${IMAGE_NAME}:${IMAGE_TAG} (context: $(pwd)) ..."
 docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" .
 echo "Done: ${IMAGE_NAME}:${IMAGE_TAG}"
