@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+# `shared` first so `import duui_parser` resolves the same way it does
+# inside the containers (where shared/duui_parser is copied to
+# /app/duui_parser); `.` so tests/ itself is importable.
+pythonpath = ["shared", "."]
+testpaths = ["tests"]

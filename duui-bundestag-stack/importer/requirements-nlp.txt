@@ -1,0 +1,14 @@
+# Optional -- only needed if DUUI_ENABLE_NLP_ENRICHMENT=true (see
+# duui_parser/parsers/nlp_enrichment.py and the README's "NLP
+# integration" section). Kept out of requirements.txt so a plain
+# `pip install -r requirements.txt` never depends on a GitHub-hosted
+# model download succeeding.
+#
+#   pip install -r requirements.txt -r requirements-nlp.txt
+#
+# Swap the wheel URL for a different DUUI_SPACY_MODEL (e.g.
+# de_core_news_lg for better NER at the cost of a much larger
+# download) -- versions must stay in the spaCy 3.7.x compatibility
+# range together.
+spacy>=3.7,<3.8
+https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.7.0/de_core_news_sm-3.7.0-py3-none-any.whl

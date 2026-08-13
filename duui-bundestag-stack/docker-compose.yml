@@ -1,0 +1,115 @@
+# Convenience wrapper around the three images (each of which can also be
+# built and run on its own -- see README "Running without compose").
+#
+#   docker compose up -d db                 # 1. database
+#   docker compose run --rm importer        # 2. import (one-off, then exits)
+#   docker compose up -d webapp             # 3. viewer -> http://localhost:8010
+#
+# The ONE thing you normally need to set is where your CAS files and
+# videos already live. You do NOT move them -- point at them in place:
+#
+#   echo "DUUI_INPUT_HOST_DIR=/absolute/path/to/pipeline/output" >> .env
+#
+# See README "Where do my .xmi files and videos have to be?".
+
+services:
+  db:
+    build:
+      context: ./db
+    image: duui-db:latest
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DUUI_DB_NAME:-duui_bundestag}
+      POSTGRES_USER: ${DUUI_DB_USER:-duui}
+      POSTGRES_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
+    volumes:
+      # The database itself. schema.sql is baked into the image and runs
+      # automatically the first time this volume is created (empty).
+      - db_data:/var/lib/postgresql/data
+    ports:
+      # Host port only -- the other containers reach Postgres as
+      # db:5432 on the compose network regardless of this. Change it if
+      # you already run Postgres locally on 5432.
+      - "${DUUI_DB_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DUUI_DB_USER:-duui} -d ${DUUI_DB_NAME:-duui_bundestag}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-off job, not a server: excluded from `docker compose up` by the
+  # "import" profile, so it only runs when you ask for it explicitly.
+  #   docker compose run --rm importer                 # whole input dir
+  #   docker compose run --rm importer one_file.xmi    # a single file
+  importer:
+    build:
+      context: .
+      dockerfile: importer/Dockerfile
+    image: duui-importer:latest
+    profiles: ["import"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
+      DUUI_DB_USER: ${DUUI_DB_USER:-duui}
+      DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
+      DUUI_DB_HOST: db
+      # Container-side paths (what the mounts below land on).
+      DUUI_INPUT_DIR: /data/input
+      DUUI_VIDEO_DIR: /data/videos
+      # Post-processing steps -- see README "Post-processing".
+      DUUI_ENABLE_GLOBAL_PERSON_LINKING: ${DUUI_ENABLE_GLOBAL_PERSON_LINKING:-true}
+      DUUI_ENABLE_EMOTION_FUSION: ${DUUI_ENABLE_EMOTION_FUSION:-true}
+      DUUI_ENABLE_NLP_ENRICHMENT: ${DUUI_ENABLE_NLP_ENRICHMENT:-false}
+    volumes:
+      # INPUT (read-only): your existing folder of .xmi files + their
+      # videos, mounted in place. Nothing here is ever modified, hence
+      # :ro -- your pipeline output is safe.
+      - ${DUUI_INPUT_HOST_DIR:-./sample-input}:/data/input:ro
+      # OUTPUT (read-write): the video store. The importer copies each
+      # CAS's companion video here, named exactly as the `videos.filename`
+      # row it just wrote -- which is how the webapp (same store, mounted
+      # read-only) knows which file belongs to which database rows.
+      - ${DUUI_VIDEO_STORE:-video_media}:/data/videos
+
+  webapp:
+    build:
+      context: .
+      dockerfile: webapp/Dockerfile
+    image: duui-webapp:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
+      DUUI_DB_USER: ${DUUI_DB_USER:-duui}
+      DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
+      DUUI_DB_HOST: db
+      DUUI_VIDEO_DIR: /data/videos
+      # Optional "Ask" panel (natural-language questions -> SQL). Leave
+      # the key empty and the rest of the app works unchanged.
+      DUUI_QUERY_API_KEY: ${DUUI_QUERY_API_KEY:-}
+      DUUI_QUERY_BASE_URL: ${DUUI_QUERY_BASE_URL:-https://lehre.llm.texttechnologylab.org/api}
+      DUUI_QUERY_MODEL: ${DUUI_QUERY_MODEL:-gondor.qwen3-vl:32b}
+    volumes:
+      # Same video store as the importer, read-only: the viewer only ever
+      # plays videos the importer already placed, and never touches your
+      # input folder at all.
+      - ${DUUI_VIDEO_STORE:-video_media}:/data/videos:ro
+    ports:
+      - "${DUUI_WEBAPP_HOST_PORT:-8010}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  db_data:
+  # Used only while DUUI_VIDEO_STORE is left at its default. Setting it
+  # to a host path turns the mounts above into bind mounts and leaves
+  # this declaration unused (harmless).
+  video_media:

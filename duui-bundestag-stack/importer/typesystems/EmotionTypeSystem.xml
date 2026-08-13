@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <name>EmotionTypeSystem</name>
+    <description>Multimodal Emotion TypeSystem</description>
+    <version>1.1</version>
+    <imports>
+        <import name="desc.type.TypeSystemModelMeta"/>
+        <import name="desc.type.TextTechnologyMultimedia"/>
+    </imports>
+
+    <types>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.emotion.EmotionScore</name>
+            <description>Ein Emotionslabel mit Score.</description>
+            <supertypeName>uima.cas.TOP</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>label</name>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>score</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <typeDescription>
+            <name>org.texttechnologylab.annotation.emotion.Emotion</name>
+            <description>Emotion ueber einem Segment/Frame.</description>
+            <supertypeName>org.texttechnologylab.annotation.type.MultimediaElement</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>scores</name>
+                    <description>Volle Verteilung als EmotionScore-Liste.</description>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                    <elementType>org.texttechnologylab.annotation.emotion.EmotionScore</elementType>
+                </featureDescription>
+                <featureDescription>
+                    <name>valence</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>arousal</name>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>reference</name>
+                    <description>Annotiertes MultimediaElement (fester Zeitabschnitt); auch bei Aggregation/Fusion der groebere Span.</description>
+                    <rangeTypeName>org.texttechnologylab.annotation.type.MultimediaElement</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>frameIndex</name>
+                    <rangeTypeName>uima.cas.Integer</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>aggregatedFrom</name>
+                    <description>Quell-Emotionen (Aggregation/Fusion); sonst leer.</description>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                    <elementType>org.texttechnologylab.annotation.emotion.Emotion</elementType>
+                    <multipleReferencesAllowed>true</multipleReferencesAllowed>
+                </featureDescription>
+                <featureDescription>
+                    <name>modality</name>
+                    <description>text | audio | video | text,video.</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>granularity</name>
+                    <description>sentence | segment | shot | frame | window | video.</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>model</name>
+                    <description>Verweis auf Modell-MetaData.</description>
+                    <rangeTypeName>org.texttechnologylab.annotation.MetaData</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+    </types>
+</typeSystemDescription>
