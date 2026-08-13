@@ -1,5 +1,9 @@
 .env
 __pycache__/
 *.pyc
-sample-input/*.xmi
-!sample-input/.gitkeep
+.pytest_cache/
+
+# Working data: full-session CAS exports and their videos. Big, and
+# reproducible from the pipeline -- kept out of git. sample-input/ is
+# the small tracked demo pair instead (see README Quickstart).
+local-data/
