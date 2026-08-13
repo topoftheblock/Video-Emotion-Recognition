@@ -113,6 +113,33 @@ Steps 1 and 3 are one-time. Step 2 is what you re-run whenever your
 pipeline produces new files — the viewer picks them up without a restart
 (just reload the page).
 
+### Everyday commands
+
+All of these run from this directory (`cd` here first):
+
+```bash
+docker compose ps                 # status -- db and webapp should say (healthy)
+docker compose logs -f webapp     # follow the viewer's log (or: db)
+
+docker compose stop               # stop, keep containers
+docker compose down               # stop and remove containers -- DATA IS KEPT
+docker compose down -v            # ...and delete the database + video store too
+
+docker compose build              # rebuild images after changing code
+docker compose up -d --build webapp   # rebuild and restart just the viewer
+```
+
+Importing more data later is always the same one command — no restart
+needed:
+
+```bash
+docker compose run --rm importer
+DUUI_INPUT_HOST_DIR=/other/folder docker compose run --rm importer   # different source
+```
+
+If port 8010 or 5432 is already in use, set `DUUI_WEBAPP_HOST_PORT` /
+`DUUI_DB_HOST_PORT` in `.env` (see "Configuration reference").
+
 ---
 
 ## The three jobs in detail
@@ -320,18 +347,6 @@ running the images by hand):
 | `DUUI_DB_USER` | `duui` | |
 | `DUUI_DB_PASSWORD` | `duui` | Change it for anything beyond a local/internal deployment |
 | `DUUI_DB_HOST` | `localhost` | Compose sets `db` (the service name) inside containers |
-
-> **Careful with `.env` and Docker**: Compose reads `.env` from this
-> directory for variable interpolation, so `DUUI_DB_USER` /
-> `DUUI_DB_PASSWORD` there also configure the **database container** on
-> its first start (they become its `POSTGRES_USER`/`POSTGRES_PASSWORD`).
-> If you keep an `.env` written for a *native* Postgres (a personal
-> username, an empty password), the container is created with those same
-> credentials -- consistent, but surprising if you then try to connect as
-> `duui`. Either keep `.env` free of `DUUI_DB_*` and let the defaults
-> apply, or remember that the values there are what the container uses.
-> Changing them later has no effect on an existing `db_data` volume --
-> Postgres only reads them when initialising an empty one.
 
 **Natural-language "Ask" panel** (optional — empty key = feature off,
 everything else unaffected):
