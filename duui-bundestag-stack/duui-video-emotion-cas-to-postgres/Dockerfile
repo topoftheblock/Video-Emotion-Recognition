@@ -29,9 +29,10 @@ ENV PYTHONPATH=/app/src
 
 # Input and output defaults, both overridable at run time. These are
 # container paths -- what you mount ONTO them is up to you (see README).
-ENV DUUI_INPUT_DIR=/data/input
+ENV DUUI_INPUT_XMI_DIR=/data/input/xmi
+ENV DUUI_INPUT_VIDEO_DIR=/data/input/videos
 ENV DUUI_VIDEO_DIR=/data/videos
 
 # Args are paths (files and/or directories); no args = import everything
-# in DUUI_INPUT_DIR.
+# in DUUI_INPUT_XMI_DIR.
 ENTRYPOINT ["python", "-m", "main"]

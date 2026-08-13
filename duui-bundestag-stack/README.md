@@ -27,37 +27,80 @@ YOUR pipeline output folder      duui-video-emotion-cas-to-postgres           du
 
 **Wherever they already are. You do not move or copy anything.**
 
-You point the stack at that folder once, and it gets mounted **read-only**
+You point the stack at two folders once — one holding the `.xmi`
+files, one holding the videos — and both get mounted **read-only**
 into the importer, in place:
 
 ```bash
 cp .env.example .env
 # then edit .env:
-DUUI_INPUT_HOST_DIR=/absolute/path/to/your/pipeline/output
+DUUI_INPUT_XMI_DIR=/absolute/path/to/your/xmi
+DUUI_INPUT_VIDEO_DIR=/absolute/path/to/your/videos
 ```
 
 Or without an `.env` file at all, per command:
 
 ```bash
-DUUI_INPUT_HOST_DIR=/absolute/path/to/output docker compose run --rm importer
+DUUI_INPUT_XMI_DIR=/path/to/xmi DUUI_INPUT_VIDEO_DIR=/path/to/videos \
+  docker compose run --rm importer
 ```
 
-The only requirement on that folder: **each `.xmi` sits next to the
-video file it references.** The CAS records its own video's filename
-internally, and the importer looks for that filename in the same
-directory as the `.xmi`. So this is fine:
+**Set both to the same path if your `.xmi` files and videos sit side
+by side** — that is the common case, and mounting one folder twice is
+fine:
+
+```bash
+DUUI_INPUT_XMI_DIR=/my/pipeline/output
+DUUI_INPUT_VIDEO_DIR=/my/pipeline/output
+```
+
+The pairing never depends on the layout: the CAS records its own
+video's filename internally, and the importer looks for exactly that
+filename in `DUUI_INPUT_VIDEO_DIR`. So both of these work:
 
 ```
-/my/pipeline/output/
-├── session1.xmi        ← references "session1.mp4"
-├── session1.mp4
-├── session2.xmi        ← references "session2.mp4"
+side by side                      kept apart
+/my/pipeline/output/              /my/xmi/            /my/videos/
+├── session1.xmi ← "session1.mp4" ├── session1.xmi    ├── session1.mp4
+├── session1.mp4                  └── session2.xmi    └── session2.mp4
+├── session2.xmi
 ├── session2.mp4
-└── notes.txt           ← ignored
+└── notes.txt   ← ignored
 ```
 
 Everything else — subfolders, unrelated files, other formats — is
-ignored. The folder is never written to.
+ignored. Neither folder is ever written to.
+
+### What if I only have the `.xmi`?
+
+**Then you need nothing else.** DUUI pipelines carry the video itself
+inside the CAS, base64-encoded in a `video/*` sofa (normally
+`_InitialView` — set `DUUI_VIDEO_VIEW` if your pipeline routes it to a
+different view). When no file named `videos.filename` is found in
+`DUUI_INPUT_VIDEO_DIR`, the importer decodes that sofa and writes the
+video straight into the video store:
+
+```
+[duui_parser] warning: no source video file at /data/input/videos/session1.mp4
+[duui_parser] extracted video from CAS sofa '_InitialView' (video/mp4, 25885815 bytes) -> /data/videos/session1.mp4
+```
+
+The result is byte-identical to the original file, so a CAS exported
+with its sofa intact is fully self-sufficient — `DUUI_INPUT_VIDEO_DIR`
+can be left at its default. A companion file on disk is still
+preferred when present, purely because copying is cheaper than
+decoding tens of megabytes.
+
+`DUUI_VIDEO_VIEW` only has to be set when the CAS holds **several**
+video sofas and the right one isn't `_InitialView` — with a single
+video sofa it is found either way, and a name that matches no view
+falls back to whichever sofa is labelled `video/*` (with a warning, so
+a typo is visible). Pointing it at an audio or text view is refused
+rather than writing an unplayable file.
+
+If a CAS has *neither* (its video sofa was stripped and no file is
+around), the import still completes — only playback is affected, and
+the viewer says so per video instead of showing a black frame.
 
 > **Longer term**: mounting is the pull model. The push model — an
 > upload endpoint or a watched drop directory hands each CAS+video to
@@ -67,10 +110,11 @@ ignored. The folder is never written to.
 ### And where do the extracted videos end up?
 
 **The importer handles this for you.** After it writes a CAS's rows into
-Postgres, it copies that CAS's video into the *video store* under
-exactly the filename recorded in the database. The viewer mounts the
-same store read-only. That's the whole mechanism — you never place,
-rename or move a video by hand.
+Postgres, it puts that CAS's video into the *video store* under exactly
+the filename recorded in the database — copying the companion file if
+there is one, otherwise decoding the copy embedded in the CAS (see
+above). The viewer mounts the same store read-only. That's the whole
+mechanism — you never place, rename or move a video by hand.
 
 By default the store is a Docker-managed named volume (`video_media`),
 so there's nothing to set up. To have it as a normal folder you can
@@ -98,11 +142,11 @@ That's it — open **http://localhost:8010** and the shipped sample video
 is playing. The first run builds the images (~1-2 min), then starts the
 database, **runs the import**, and starts the viewer.
 
-To use your own data instead of the sample, set the input folder once
+To use your own data instead of the sample, set the input folders once
 first (you do not move your files — see the section above):
 
 ```bash
-cp .env.example .env && $EDITOR .env      # set DUUI_INPUT_HOST_DIR
+cp .env.example .env && $EDITOR .env      # set DUUI_INPUT_XMI_DIR + DUUI_INPUT_VIDEO_DIR
 docker compose up -d
 ```
 
@@ -143,7 +187,9 @@ reload the page:
 
 ```bash
 docker compose run --rm importer
-DUUI_INPUT_HOST_DIR=/other/folder docker compose run --rm importer   # different source
+# different source:
+DUUI_INPUT_XMI_DIR=/other/xmi DUUI_INPUT_VIDEO_DIR=/other/videos \
+  docker compose run --rm importer
 ```
 
 If port 8010 or 5432 is already in use, set `DUUI_WEBAPP_HOST_PORT` /
@@ -171,16 +217,17 @@ docker compose ps            # STATUS should say (healthy)
 ### 2. Run the import job
 
 ```bash
-docker compose run --rm importer                               # everything in the input folder
-docker compose run --rm importer /data/input/session1.xmi      # one specific file
-docker compose run --rm importer /data/input/sub /data/input/a.xmi   # any mix of dirs and files
+docker compose run --rm importer                                   # everything in the .xmi folder
+docker compose run --rm importer /data/input/xmi/session1.xmi      # one specific file
+docker compose run --rm importer /data/input/xmi/sub /data/input/xmi/a.xmi   # any mix of dirs and files
 ```
 
-Paths are interpreted **inside** the container, where your input folder
-is mounted at `/data/input` — so they have to be written as container
-paths, not as paths on your machine. Relative paths resolve against the
+Paths are interpreted **inside** the container, where your `.xmi`
+folder is mounted at `/data/input/xmi` (and your video folder at
+`/data/input/videos`) — so they have to be written as container paths,
+not as paths on your machine. Relative paths resolve against the
 image's working directory (`/app`), not against the input folder, so
-prefix them with `/data/input/`.
+prefix them with `/data/input/xmi/`.
 
 What one run does, per `.xmi`:
 
@@ -188,7 +235,8 @@ What one run does, per `.xmi`:
    transaction** (video, persons, segments, transcript tokens,
    detections, all three emotion modalities, embeddings).
 2. Runs the post-processing steps (see below).
-3. Copies the CAS's video into the video store.
+3. Puts the CAS's video into the video store — the companion file if
+   one exists, otherwise the video embedded in the CAS itself.
 
 Useful behaviour when importing a whole folder:
 
@@ -210,8 +258,8 @@ If the import reports **`No .xmi files found`**, the line under it says
 which of the three causes it was:
 
 ```
-No .xmi files found in: /data/input
-  - /data/input: directory exists but cannot be read (Permission denied) -- check the mount's permissions
+No .xmi files found in: /data/input/xmi
+  - /data/input/xmi: directory exists but cannot be read (Permission denied) -- check the mount's permissions
 ```
 
 - *cannot be read* — SELinux. On openSUSE/Fedora/RHEL the container runs
@@ -219,7 +267,7 @@ No .xmi files found in: /data/input
   mount is invisible even to root inside the container. The `z` flag on
   the input mount in `docker-compose.yml` handles this by relabelling
   the folder; if you mount input yourself, add `:ro,z` too.
-- *is empty* — `DUUI_INPUT_HOST_DIR` points somewhere that doesn't
+- *is empty* — `DUUI_INPUT_XMI_DIR` points somewhere that doesn't
   exist. Docker creates the missing path as an empty directory rather
   than failing. Note an exported shell variable overrides `.env`.
 - *none named `*.xmi`* — right folder, no CAS in it (the entries it did
@@ -347,7 +395,8 @@ docker run -d --name duui-db --network duui \
 docker run --rm --network duui \
   -e DUUI_DB_HOST=duui-db -e DUUI_DB_NAME=duui_bundestag \
   -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
-  -v /my/pipeline/output:/data/input:ro \
+  -v /my/xmi:/data/input/xmi:ro \
+  -v /my/videos:/data/input/videos:ro \
   -v duui_videos:/data/videos \
   duui-video-emotion-cas-to-postgres:latest
 
@@ -380,7 +429,8 @@ store — and compose passes the same values to both services.
 
 | Variable | Default | What it is |
 | :--- | :--- | :--- |
-| `DUUI_INPUT_HOST_DIR` | `./duui-video-emotion-cas-to-postgres/src/resources/sample-input` | **Your** folder of `.xmi` files + videos. Mounted read-only; never modified |
+| `DUUI_INPUT_XMI_DIR` | `./duui-video-emotion-cas-to-postgres/src/resources/sample-input` | **Your** folder of `.xmi` files. Mounted read-only; never modified |
+| `DUUI_INPUT_VIDEO_DIR` | `./duui-video-emotion-cas-to-postgres/src/resources/sample-input` | **Your** folder of the videos those `.xmi` files reference. Same path as above if they sit side by side |
 | `DUUI_VIDEO_STORE` | `video_media` | Where imported videos live. Plain name = Docker volume; host path = bind mount |
 | `DUUI_WEBAPP_HOST_PORT` | `8010` | Host port for the viewer (container always listens on 8000) |
 | `DUUI_DB_HOST_PORT` | `5432` | Host port for Postgres. Change if you run one locally |
@@ -390,9 +440,11 @@ running the images by hand):
 
 | Variable | Default in image | What it is |
 | :--- | :--- | :--- |
-| `DUUI_INPUT_DIR` | `/data/input` | Directory the importer reads |
+| `DUUI_INPUT_XMI_DIR` | `/data/input/xmi` | Directory the importer reads `.xmi` files from |
+| `DUUI_INPUT_VIDEO_DIR` | `/data/input/videos` | Directory the importer looks for source videos in |
 | `DUUI_VIDEO_DIR` | `/data/videos` | Directory the importer writes videos to / the viewer serves from |
 | `DUUI_XMI_FILE` | *(unset)* | If set, a no-argument import does just this one file |
+| `DUUI_VIDEO_VIEW` | `_InitialView` | CAS view holding the video, used when it has to be recovered from the CAS rather than a file |
 | `DUUI_TS_IDENTITY_EMOTION`<br>`DUUI_TS_MULTIMODAL_IDENTITY`<br>`DUUI_TS_EMOTION` | `src/resources/typesystems/*.xml` | Only if your typesystem filenames differ |
 
 **Database**:

@@ -38,7 +38,7 @@ except ImportError:
 # Defaults to "cas" -- the same default the importer uses for its input
 # directory -- so a native (non-Docker) setup collapses the two into one
 # directory and the importer's copy step is a harmless no-op. In Docker
-# they're genuinely different: the importer reads /data/input and writes
+# they're genuinely different: the importer reads /data/input/xmi and writes
 # /data/videos, and the webapp mounts /data/videos read-only (see
 # docker-compose.yml).
 VIDEO_MEDIA_DIR = os.environ.get("DUUI_VIDEO_DIR", "cas")

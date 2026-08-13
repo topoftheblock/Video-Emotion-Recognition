@@ -30,17 +30,35 @@ except ImportError:
 
 # --- File locations -------------------------------------------------
 
-# Where the pipeline drops its output: CAS .xmi files, each next to the
-# video file it references. `python -m main`/`run_many()` with no explicit
-# path argument import everything in here, so this is the "just run the
-# importer" default for a whole batch. Distinct from VIDEO_MEDIA_DIR
-# below: this is the *input* side and is only ever read from.
-INPUT_DIR = os.environ.get("DUUI_INPUT_DIR", "cas")
+# Where the pipeline drops its CAS .xmi files. `python -m main`/
+# `run_many()` with no explicit path argument import everything in
+# here, so this is the "just run the importer" default for a whole
+# batch. Read-only as far as this importer is concerned.
+INPUT_XMI_DIR = os.environ.get("DUUI_INPUT_XMI_DIR", "cas")
+
+# Where the video files those CAS files reference live. A separate
+# setting from INPUT_XMI_DIR because the two do not have to sit
+# together: point both at the same folder for the side-by-side layout,
+# or at different folders when the pipeline keeps them apart. Either
+# way a CAS is matched to its video by the exact filename the CAS
+# records (see media.py), never by position.
+INPUT_VIDEO_DIR = os.environ.get("DUUI_INPUT_VIDEO_DIR", "cas")
 
 # Optional single-file default, kept for compatibility with the older
 # one-CAS-at-a-time workflow: if DUUI_XMI_FILE is set explicitly, a
-# no-argument run imports just that file instead of all of INPUT_DIR.
+# no-argument run imports just that file instead of all of
+# INPUT_XMI_DIR.
 XMI_FILE = os.environ.get("DUUI_XMI_FILE")
+
+# Which CAS view/sofa holds the video, for the case where no video file
+# exists in INPUT_VIDEO_DIR and it has to be recovered from the CAS
+# itself (see media.py). DUUI pipelines put the video on the
+# `_InitialView` sofa and derive the other views from it, so that is
+# the default; set DUUI_VIDEO_VIEW when a pipeline routes it elsewhere
+# (e.g. a dedicated `videoView`, the way audio lands on `audioView`).
+# Any other `video/*` sofa is still used as a fallback, so this only
+# has to be set when the named view is genuinely different.
+VIDEO_VIEW = os.environ.get("DUUI_VIDEO_VIEW", "_InitialView")
 
 # Bundled, non-code assets (the UIMA typesystem descriptors, the demo
 # CAS) live under the source root's `resources/`, not in the `main`
@@ -95,14 +113,14 @@ GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
 # (copies into it, see src/main/media.py) and the webapp (reads from
 # it, see webapp/duui_webapp/config.py's copy of this setting) agree a
 # video for `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. This
-# is the output side, deliberately separate from INPUT_DIR above so the
+# is the output side, deliberately separate from the input dirs above so the
 # webapp only ever sees videos that belong to a committed DB row, and
 # never depends on how the raw pipeline drop directory is laid out.
 #
-# Defaults to "cas" -- the same as INPUT_DIR -- so a native (non-Docker)
+# Defaults to "cas" -- the same as the input dirs -- so a native (non-Docker)
 # setup collapses the two into one directory and the copy step is a
 # harmless no-op. In Docker they're genuinely different: the importer
-# reads /data/input and writes /data/videos, and the webapp mounts
+# reads /data/input/xmi and writes /data/videos, and the webapp mounts
 # /data/videos read-only (see docker-compose.yml).
 VIDEO_MEDIA_DIR = os.environ.get("DUUI_VIDEO_DIR", "cas")
 

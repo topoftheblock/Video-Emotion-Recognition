@@ -13,9 +13,9 @@ from pathlib import Path
 
 from cassis import load_cas_from_xmi
 
-from .config import INPUT_DIR, XMI_FILE
+from .config import INPUT_VIDEO_DIR, INPUT_XMI_DIR, XMI_FILE
 from .db import get_db_connection
-from .media import place_video_file
+from .media import ensure_video_available
 from .parsers import PARSE_STEPS
 from .typesystem import load_merged_typesystem, loading_cas_quietly
 
@@ -39,10 +39,10 @@ def default_input_paths():
     """
     What to import when no path is passed on the command line: the
     single file named by DUUI_XMI_FILE if it's set (the older
-    one-CAS-at-a-time workflow), otherwise the whole DUUI_INPUT_DIR
+    one-CAS-at-a-time workflow), otherwise the whole DUUI_INPUT_XMI_DIR
     directory.
     """
-    return [XMI_FILE] if XMI_FILE else [INPUT_DIR]
+    return [XMI_FILE] if XMI_FILE else [INPUT_XMI_DIR]
 
 
 def resolve_xmi_paths(paths):
@@ -179,10 +179,13 @@ def run(xmi_file=None, typesystem=None):
     finally:
         conn.close()
 
-    # A CAS always arrives paired with its source video in the same
-    # input directory (see README "Docker architecture") -- look for
-    # it right next to the .xmi file just parsed.
-    place_video_file(context.get("video_filename"), Path(xmi_file).parent)
+    # The video is looked up by the exact filename the CAS records, in
+    # DUUI_INPUT_VIDEO_DIR (see README "Docker architecture") -- which
+    # may or may not be the same directory the .xmi came from, so the
+    # configured location is used rather than the .xmi's own parent.
+    # `cas` is passed so a CAS that embeds its own video can supply it
+    # when no companion file exists (see media.py).
+    ensure_video_available(context.get("video_filename"), INPUT_VIDEO_DIR, cas)
 
     print(f"Finished {xmi_file}")
 
