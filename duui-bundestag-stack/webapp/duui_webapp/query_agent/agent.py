@@ -37,7 +37,6 @@ OVERLAY_CHOICES = [
     "video_emotion",
     "audio_emotion",
     "text_emotion",
-    "fused_emotion",
 ]
 
 _SYSTEM_PROMPT = SCHEMA_CONTEXT + """
@@ -64,12 +63,11 @@ isn't shown noise:
   - "audio_emotion"    -> the question involves voice/prosody emotion
   - "bounding_boxes"   -> the question is about who/where someone is on screen,
                           or video_emotion is selected (labels render on the boxes)
-  - "fused_emotion"    -> the question involves an overall/combined/aggregated emotion
 
 A "divergence between video and text emotion" question should select
 ["transcript", "video_emotion", "text_emotion", "bounding_boxes"], for
-example -- not audio_emotion or fused_emotion, since those aren't what
-the user asked about.
+example -- not audio_emotion, since that isn't what the user asked
+about.
 
 If `run_sql` returns an error, read it, fix the query, and try again.
 Never call `submit_answer` with a query you haven't successfully run

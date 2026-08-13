@@ -160,13 +160,6 @@ def get_video_data(video_id: int):
                 {"label": s["label"], "score": s["score"]}
             )
 
-    fused_emotions = _query(
-        "SELECT fused_id, person_id, fusion_method, target_modality, "
-        "start_time, end_time, valence, arousal, dominant_label "
-        "FROM fused_emotions WHERE video_id = %s ORDER BY start_time",
-        (video_id,),
-    )
-
     face_detections = _query(
         "SELECT detection_id, presence_id, person_id, frame_index, t_time, x, y, w, h, detection_score "
         "FROM face_detections WHERE video_id = %s ORDER BY t_time",
@@ -185,7 +178,6 @@ def get_video_data(video_id: int):
         "shots": shots,
         "emotions": emotions_by_modality,
         "emotion_scores": scores_by_emotion,
-        "fused_emotions": fused_emotions,
         "detections": {"face": face_detections, "person": person_detections},
     }
 

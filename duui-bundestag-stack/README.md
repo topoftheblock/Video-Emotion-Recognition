@@ -422,14 +422,13 @@ everything else unaffected):
 | `DUUI_QUERY_STATEMENT_TIMEOUT_MS` | `8000` |
 | `DUUI_QUERY_MAX_TOOL_ITERATIONS` | `6` |
 
-**Post-processing** (all run during import):
+**Post-processing** (runs during import):
 
 | Variable | Default | What it does |
 | :--- | :--- | :--- |
 | `DUUI_ENABLE_GLOBAL_PERSON_LINKING` | `true` | Links the same person across videos via pgvector similarity on face/voice embeddings |
 | `DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD` | `0.30` | Cosine distance; lower = stricter |
 | `DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD` | `0.35` | |
-| `DUUI_ENABLE_EMOTION_FUSION` | `true` | One fused emotion row per sentence, averaged across available modalities |
 
 ---
 
@@ -440,7 +439,6 @@ everything else unaffected):
   with that frame's video-modality emotion.
 - **Voice panel**: the audio-modality emotion at the current instant
   plus valence/arousal bars (tone of voice, independent of the words).
-- **Fused emotion panel**: the combined multimodal reading.
 - **People / On screen now**: who was identified in the video, and who
   is visible at this exact frame, colour-matched to their box.
 - **Also appears in**: for each person, other videos they were linked
@@ -459,8 +457,8 @@ everything else unaffected):
 
 ## Post-processing during import
 
-Two things are computed by the importer rather than read from the CAS,
-because the CAS doesn't contain them:
+One thing is computed by the importer rather than read from the CAS,
+because the CAS doesn't contain it:
 
 1. **Cross-video person identity** — each new person's face/voice
    embedding centroid is compared (pgvector cosine distance) against
@@ -468,11 +466,8 @@ because the CAS doesn't contain them:
    both to one global person. This is a **similarity heuristic, not
    verified identity** — tune the thresholds against your own data
    before relying on it.
-2. **Emotion fusion** — per sentence, valence/arousal are averaged
-   within each modality and then across modalities into one
-   `fused_emotions` row.
 
-Each can be switched off independently (see the table above).
+It can be switched off (see the table above).
 
 ---
 
@@ -532,9 +527,9 @@ cd importer && pytest        # or: cd webapp && pytest
 
 Covers the read-only SQL guard the Ask panel's generated queries pass
 through (including that the `READ ONLY` transaction itself blocks
-writes, not just the keyword check), the cross-video linking and emotion
-fusion logic against a real database, the video-placement logic, and
-batch path resolution.
+writes, not just the keyword check), the cross-video linking logic
+against a real database, the video-placement logic, and batch path
+resolution.
 
 Database-backed tests are **skipped**, not failed, when no Postgres is
 reachable, so the suite runs anywhere. To run them fully, start the db

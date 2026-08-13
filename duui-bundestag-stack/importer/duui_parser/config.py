@@ -78,11 +78,6 @@ GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
     os.environ.get("DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD", "0.35")
 )
 
-# Emotion fusion (duui_parser/parsers/emotion_fusion.py): computes one
-# multimodal fused_emotions row per sentence from whichever of
-# audio/video/text base_emotions are available for it.
-ENABLE_EMOTION_FUSION = _bool_env("DUUI_ENABLE_EMOTION_FUSION", True)
-
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
 # (copies into it, see duui_parser/media.py) and the webapp (reads from

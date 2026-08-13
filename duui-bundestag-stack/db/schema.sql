@@ -155,31 +155,12 @@ CREATE TABLE emotion_scores (
     UNIQUE (emotion_id, label)
 );
 
-CREATE TABLE fused_emotions (
-    fused_id BIGSERIAL PRIMARY KEY,
-    video_id BIGINT REFERENCES videos(video_id) ON DELETE CASCADE,
-    person_id BIGINT REFERENCES persons(person_id) ON DELETE SET NULL,
-    fusion_method TEXT,
-    target_modality TEXT CHECK (target_modality IN ('multimodal', 'video-aggregated', 'text-aggregated')),
-    start_time DOUBLE PRECISION,
-    end_time DOUBLE PRECISION,
-    valence DOUBLE PRECISION,
-    arousal DOUBLE PRECISION,
-    dominant_label TEXT
-);
-
-CREATE TABLE emotion_fusion_references (
-    fused_id BIGINT REFERENCES fused_emotions(fused_id) ON DELETE CASCADE,
-    source_emotion_id BIGINT REFERENCES base_emotions(emotion_id) ON DELETE CASCADE,
-    PRIMARY KEY (fused_id, source_emotion_id)
-);
-
 -- 6. Supporting indexes
 -- Not required for correctness (every FK already has an implicit
 -- index on its own PK side), but these back the join/filter patterns
--- the per-video post-processing steps run on every import
--- (importer/duui_parser/parsers/global_identity.py, emotion_fusion.py) and
--- that the NL->SQL query agent tends to write.
+-- the per-video post-processing step runs on every import
+-- (importer/duui_parser/parsers/global_identity.py) and that the
+-- NL->SQL query agent tends to write.
 CREATE INDEX IF NOT EXISTS base_emotions_video_modality_idx
     ON base_emotions (video_id, modality);
 CREATE INDEX IF NOT EXISTS segments_video_kind_idx

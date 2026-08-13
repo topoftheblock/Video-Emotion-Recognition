@@ -1,9 +1,7 @@
-"""Parses Emotion annotations into four related tables:
+"""Parses Emotion annotations into two related tables:
 
 - BaseEmotion            one row per Emotion annotation
 - EmotionScore           nested per-label scores on an Emotion
-- FusedEmotion           present only if the emotion aggregates others
-- EmotionFusionReference links a FusedEmotion back to its source emotions
 
 Person linkage: some pipelines set `.personId` directly on the
 Emotion FS. The real Bundestag video-emotion CAS doesn't -- instead
@@ -80,14 +78,10 @@ def _dominant_label_from_scores(scores):
 
 def _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, scores):
     """
-    Uses DO UPDATE (not DO NOTHING) deliberately: `_insert_fused_emotion`
-    below may need to pre-create a minimal stub row for a fusion
-    source that hasn't been visited by the main parse loop yet, to
-    satisfy the emotion_fusion_references FK constraint. DO UPDATE
-    guarantees that whenever *this* emotion's own real data does get
-    inserted -- whether that happens before or after such a stub was
-    created -- it always overwrites the stub with the real values,
-    rather than a DO NOTHING silently keeping an empty row forever.
+    Uses DO UPDATE (not DO NOTHING) deliberately: emotion_id comes from
+    the CAS's own xmi:id space, so re-importing the same file must
+    overwrite the existing row with the re-parsed values rather than
+    silently keeping whatever was written first.
     """
     cursor.execute(
         """
@@ -138,74 +132,6 @@ def _insert_emotion_scores(cursor, scores, emotion_id):
         )
 
 
-def _insert_fused_emotion(cursor, emotion, emotion_id, person_id, video_id):
-    """
-    Returns the fused_id if this emotion aggregates other emotions of
-    the *same* type via an `aggregatedFrom` feature, otherwise None.
-
-    NOTE: this only covers same-type fusion. A separate, differently
-    structured aggregation pattern (a distinct `annotation.Emotion`
-    type wrapping `AnnotationComment` label/score pairs, used for
-    text-based GoEmotions in the real Bundestag CAS) is handled by
-    parsers/text_emotion.py instead, since it doesn't fit this shape.
-    """
-    aggregated_from = as_list(getattr(emotion, "aggregatedFrom", None))
-    if not aggregated_from:
-        return None
-
-    # fused_id is always the same value as emotion_id (the fusion IS
-    # this Emotion instance, just wearing a second "FusedEmotion" hat)
-    # -- no DB round-trip needed to determine it.
-    fused_id = emotion_id
-    cursor.execute(
-        """
-        INSERT INTO fused_emotions (fused_id, video_id, person_id, fusion_method, target_modality, start_time, end_time, valence, arousal, dominant_label)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (fused_id) DO NOTHING
-        """,
-        (
-            fused_id,
-            video_id,
-            person_id,
-            getattr(emotion, "fusion_method", None),
-            getattr(emotion, "target_modality", None),
-            getattr(emotion, "timeStart", None),
-            getattr(emotion, "timeEnd", None),
-            getattr(emotion, "valence", None),
-            getattr(emotion, "arousal", None),
-            getattr(emotion, "dominant_label", None),
-        ),
-    )
-
-    for source_emotion in aggregated_from:
-        source_emotion_id = get_xmi_id(source_emotion)
-        # The source emotion may not have been visited by the main
-        # parse loop yet (iteration order isn't guaranteed to reach it
-        # before this fusion) -- pre-create a minimal stub so the FK
-        # constraint below doesn't fail. `_insert_base_emotion`'s own
-        # DO UPDATE ensures the source's real values win once its own
-        # turn in the main loop comes up, instead of leaving this
-        # stub in place forever.
-        cursor.execute(
-            """
-            INSERT INTO base_emotions (emotion_id)
-            VALUES (%s)
-            ON CONFLICT (emotion_id) DO NOTHING
-            """,
-            (source_emotion_id,),
-        )
-        cursor.execute(
-            """
-            INSERT INTO emotion_fusion_references (fused_id, source_emotion_id)
-            VALUES (%s, %s)
-            ON CONFLICT (fused_id, source_emotion_id) DO NOTHING
-            """,
-            (fused_id, source_emotion_id),
-        )
-
-    return fused_id
-
-
 def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
 
@@ -216,4 +142,3 @@ def parse(cas, cursor, context):
 
         _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, scores)
         _insert_emotion_scores(cursor, scores, emotion_id)
-        _insert_fused_emotion(cursor, emotion, emotion_id, person_id, video_id)

@@ -32,7 +32,6 @@ from . import (
     detection,
     emotion,
     text_emotion,
-    emotion_fusion,
 )
 
 PARSE_STEPS = [
@@ -49,10 +48,8 @@ PARSE_STEPS = [
                     # every other already-imported video's embeddings via pgvector.
     presence,       # uses the maps built by `person`
     detection,      # Face + Person detections (uses the maps built by `person`)
-    emotion,        # video/audio BaseEmotion, EmotionScore, FusedEmotion, references
+    emotion,        # video/audio BaseEmotion + EmotionScore
     text_emotion,   # text-based GoEmotions -> BaseEmotion + EmotionScore
-    emotion_fusion, # multimodal fusion per sentence -- must run last: needs every
-                    # modality's base_emotions rows for this video already inserted
 ]
 
 __all__ = ["PARSE_STEPS"]

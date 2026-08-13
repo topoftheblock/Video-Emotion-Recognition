@@ -39,7 +39,6 @@ x-importer-common: &importer-common
     DUUI_VIDEO_DIR: /data/videos
     # Post-processing steps -- see README "Post-processing".
     DUUI_ENABLE_GLOBAL_PERSON_LINKING: ${DUUI_ENABLE_GLOBAL_PERSON_LINKING:-true}
-    DUUI_ENABLE_EMOTION_FUSION: ${DUUI_ENABLE_EMOTION_FUSION:-true}
   volumes:
     # INPUT (read-only): your existing folder of .xmi files + their
     # videos, mounted in place. Nothing here is ever modified, hence

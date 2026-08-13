@@ -39,10 +39,6 @@ const el = {
   arousalFill: document.getElementById("arousalFill"),
   personList: document.getElementById("personList"),
   activeList: document.getElementById("activeList"),
-  fusedPanel: document.getElementById("fusedPanel"),
-  fusedLabel: document.getElementById("fusedLabel"),
-  fusedValenceFill: document.getElementById("fusedValenceFill"),
-  fusedArousalFill: document.getElementById("fusedArousalFill"),
   crossVideoPanel: document.getElementById("crossVideoPanel"),
   crossVideoList: document.getElementById("crossVideoList"),
   insightsPanel: document.getElementById("insightsPanel"),
@@ -305,7 +301,6 @@ function render() {
 
   renderSubtitle(data, t);
   renderVoicePanel(data, t);
-  renderFusedPanel(data, t);
   renderBoundingBoxes(data, t);
   updateTransport(t);
 }
@@ -334,17 +329,6 @@ function renderVoicePanel(data, t) {
   el.voiceLabel.textContent = audioEmotion.dominant_label || "\u2014";
   setBar(el.valenceFill, audioEmotion.valence || 0);
   setBar(el.arousalFill, audioEmotion.arousal || 0);
-}
-
-function renderFusedPanel(data, t) {
-  const enabled = overlayEnabled("fused_emotion") && (data.fused_emotions || []).length > 0;
-  el.fusedPanel.style.display = enabled ? "" : "none";
-  if (!enabled) return;
-
-  const fused = coveredBy(data.fused_emotions, t)[0];
-  el.fusedLabel.textContent = fused ? fused.dominant_label || "\u2014" : "\u2014";
-  setBar(el.fusedValenceFill, fused ? fused.valence || 0 : 0);
-  setBar(el.fusedArousalFill, fused ? fused.arousal || 0 : 0);
 }
 
 /** Renders a signed value in [-1, 1] as a bar growing left/right from center. */

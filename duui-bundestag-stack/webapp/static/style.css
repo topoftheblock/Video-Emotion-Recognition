@@ -399,7 +399,6 @@ body { position: relative; isolation: isolate; }
 }
 
 .panel:has(.dot-voice)::before { --panel-accent: linear-gradient(90deg, var(--warm), var(--warm-2)); }
-.panel:has(.dot-fused)::before { --panel-accent: var(--gradient-brand); }
 .panel:has(.dot-people)::before { --panel-accent: linear-gradient(90deg, #16a34a, #4ade80); }
 .panel:has(.dot-live)::before { --panel-accent: linear-gradient(90deg, var(--danger), #f87171); }
 
@@ -425,7 +424,6 @@ body { position: relative; isolation: isolate; }
 }
 
 .dot-voice { background: var(--warm); color: var(--warm); }
-.dot-fused { background: var(--signal); color: var(--signal); }
 .dot-people { background: var(--green); color: var(--green); }
 .dot-live { background: var(--danger); color: var(--danger); }
 .dot-cross { background: #0891b2; color: #0891b2; }

@@ -225,33 +225,6 @@ emotion_scores(score_id PK, emotion_id FK->base_emotions, label, score)
     probabilities (e.g. "how confident was the sadness reading"), not
     just the dominant label.
 
-fused_emotions(fused_id PK, video_id FK, person_id FK NULL,
-    fusion_method, target_modality CHECK IN ('multimodal','video-aggregated','text-aggregated'),
-    start_time, end_time, valence, arousal, dominant_label)
-    A combined/aggregated emotion signal. Populated automatically for
-    every sentence by importer/duui_parser/parsers/emotion_fusion.py (unless
-    DUUI_ENABLE_EMOTION_FUSION was turned off for that import):
-    `fusion_method = 'mean-valence-arousal-v1'` rows average
-    valence/arousal across whichever of audio/video/text had data for
-    that sentence (video's per-frame readings are averaged first, then
-    across modalities), with `dominant_label` taken from whichever
-    modality had the largest valence/arousal magnitude -- a cheap
-    heuristic, not a trained classifier decision, so don't treat it as
-    more authoritative than the per-modality labels in base_emotions.
-    `target_modality`: 'video-aggregated' if only video contributed,
-    'text-aggregated' if only text, otherwise 'multimodal' (this
-    includes "only audio" -- there is no 'audio-aggregated' bucket in
-    the schema). Use this for "overall"/"combined" emotion questions
-    instead of re-deriving a fusion yourself. Can still be empty for a
-    given video (fusion was disabled for that import, or the video has
-    no sentence segments) -- LEFT JOIN and check row count rather than
-    assuming it has data.
-
-emotion_fusion_references(fused_id FK, source_emotion_id FK->base_emotions)
-    n:m bridge from a fused_emotions row back to the base_emotions
-    rows it was computed from. Rarely needed unless the question asks
-    "what was fused into X". Empty whenever fused_emotions is empty.
-
 ## Key semantic patterns
 
 **Comparing modalities / "divergence" questions** (e.g. "where do video
