@@ -215,6 +215,25 @@ Useful behaviour when importing a whole folder:
 - `--rm` deletes the finished container. Without it you accumulate
   exited containers; nothing else differs.
 
+If the import reports **`No .xmi files found`**, the line under it says
+which of the three causes it was:
+
+```
+No .xmi files found in: /data/input
+  - /data/input: directory exists but cannot be read (Permission denied) -- check the mount's permissions
+```
+
+- *cannot be read* — SELinux. On openSUSE/Fedora/RHEL the container runs
+  as `container_t` and may not read files labelled `user_home_t`, so the
+  mount is invisible even to root inside the container. The `z` flag on
+  the input mount in `docker-compose.yml` handles this by relabelling
+  the folder; if you mount input yourself, add `:ro,z` too.
+- *is empty* — `DUUI_INPUT_HOST_DIR` points somewhere that doesn't
+  exist. Docker creates the missing path as an empty directory rather
+  than failing. Note an exported shell variable overrides `.env`.
+- *none named `*.xmi`* — right folder, no CAS in it (the entries it did
+  find are listed, so a wrong subfolder is obvious).
+
 ### 3. Start the viewer
 
 ```bash
@@ -383,7 +402,7 @@ defined.
 
 | Variable | Default | What it is |
 | :--- | :--- | :--- |
-| `DUUI_INPUT_HOST_DIR` | `./sample-input` | **Your** folder of `.xmi` files + videos. Mounted read-only; never modified |
+| `DUUI_INPUT_HOST_DIR` | `./importer/sample-input` | **Your** folder of `.xmi` files + videos. Mounted read-only; never modified |
 | `DUUI_VIDEO_STORE` | `video_media` | Where imported videos live. Plain name = Docker volume; host path = bind mount |
 | `DUUI_WEBAPP_HOST_PORT` | `8010` | Host port for the viewer (container always listens on 8000) |
 | `DUUI_DB_HOST_PORT` | `5432` | Host port for Postgres. Change if you run one locally |
@@ -550,10 +569,10 @@ suite is safe against a populated database and needs no cleanup.
 ├── .env.example           every setting, with defaults
 ├── db/                    Dockerfile, build.sh, schema.sql
 ├── importer/              Dockerfile, build.sh, main.py, typesystems/
+│   └── sample-input/      small demo .xmi + video (the default input)
 ├── webapp/                Dockerfile, build.sh, server.py, static/
 ├── shared/duui_parser/    application code used by importer AND webapp
 ├── tests/                 pytest suite
-├── sample-input/          small demo .xmi + video (the default input)
 └── docs/                  schema reference, screenshots
 ```
 

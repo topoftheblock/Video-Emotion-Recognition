@@ -10,7 +10,7 @@ __pycache__/
 .pytest_cache/
 tests/
 docs/
-sample-input/
+importer/sample-input/
 README.md
 *.md
 build-all.sh

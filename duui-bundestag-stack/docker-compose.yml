@@ -46,12 +46,25 @@ x-importer-common: &importer-common
     # INPUT (read-only): your existing folder of .xmi files + their
     # videos, mounted in place. Nothing here is ever modified, hence
     # :ro -- your pipeline output is safe.
-    - ${DUUI_INPUT_HOST_DIR:-./sample-input}:/data/input:ro
+    #
+    # `z` is the SELinux share flag. On a labelling distro (openSUSE,
+    # Fedora, RHEL) the container runs as container_t and simply may not
+    # read files labelled user_home_t, so without this the importer sees
+    # an unreadable /data/input and reports "No .xmi files found" --
+    # even running as root. `z` relabels this directory's contents to
+    # container_file_t with a SHARED category, so both importer services
+    # can read it. It is a no-op where SELinux isn't enforcing.
+    #
+    # Note it relabels RECURSIVELY: keep DUUI_INPUT_HOST_DIR pointed at
+    # a data folder, never at $HOME or a system directory.
+    - ${DUUI_INPUT_HOST_DIR:-./importer/sample-input}:/data/input:ro,z
     # OUTPUT (read-write): the video store. The importer copies each
     # CAS's companion video here, named exactly as the `videos.filename`
     # row it just wrote -- which is how the webapp (same store, mounted
     # read-only) knows which file belongs to which database rows.
-    - ${DUUI_VIDEO_STORE:-video_media}:/data/videos
+    # `z` as above -- needed once DUUI_VIDEO_STORE is a host path, since
+    # the store is then a bind mount shared with the webapp.
+    - ${DUUI_VIDEO_STORE:-video_media}:/data/videos:z
 
 services:
   db:
@@ -130,7 +143,7 @@ services:
       # Same video store as the importer, read-only: the viewer only ever
       # plays videos the importer already placed, and never touches your
       # input folder at all.
-      - ${DUUI_VIDEO_STORE:-video_media}:/data/videos:ro
+      - ${DUUI_VIDEO_STORE:-video_media}:/data/videos:ro,z
     ports:
       - "${DUUI_WEBAPP_HOST_PORT:-8010}:8000"
     healthcheck:
