@@ -319,17 +319,16 @@ this stack only consumes its output.)
 
 ## Running without compose
 
-Every container has its own build script, and every image builds with
-**its own folder** as the context — `db/`, `importer/` and `webapp/`
-are self-contained, with no code shared between them:
+Every image builds with **its own folder** as the context — `db/`,
+`importer/` and `webapp/` are self-contained, with no code shared
+between them:
 
 ```bash
-./build-all.sh          # all three
-./db/build.sh           # or individually
-./importer/build.sh
-./webapp/build.sh
+docker build -t duui-db db/
+docker build -t duui-importer importer/
+docker build -t duui-webapp webapp/
 
-IMAGE_TAG=v2 ./webapp/build.sh     # custom tag
+docker build -t duui-webapp:v2 webapp/     # custom tag
 ```
 
 Then wire them up by hand — compose otherwise does exactly this:
@@ -551,14 +550,13 @@ suite is safe against a populated database and needs no cleanup.
 ```
 .
 ├── docker-compose.yml     all three services, for convenience
-├── build-all.sh           builds all three images
 ├── .env.example           every setting, with defaults
-├── db/                    Dockerfile, build.sh, schema.sql
-├── importer/              Dockerfile, build.sh, main.py, typesystems/
+├── db/                    Dockerfile, schema.sql
+├── importer/              Dockerfile, main.py, typesystems/
 │   ├── duui_parser/       the CAS parsers, post-processing, DB layer
 │   ├── tests/             pytest suite for the above
 │   └── sample-input/      small demo .xmi + video (the default input)
-├── webapp/                Dockerfile, build.sh, server.py, static/
+├── webapp/                Dockerfile, server.py, static/
 │   ├── duui_webapp/       settings, DB layer, NL→SQL agent
 │   └── tests/             pytest suite for the above
 └── docs/                  schema reference, screenshots

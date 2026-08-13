@@ -7,5 +7,4 @@ __pycache__/
 tests/
 pyproject.toml
 *.md
-build.sh
 Dockerfile

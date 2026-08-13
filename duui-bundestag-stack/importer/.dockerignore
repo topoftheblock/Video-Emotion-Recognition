@@ -10,5 +10,4 @@ pyproject.toml
 # instead (see docker-compose.yml), so it never needs to be in the image.
 sample-input/
 *.md
-build.sh
 Dockerfile

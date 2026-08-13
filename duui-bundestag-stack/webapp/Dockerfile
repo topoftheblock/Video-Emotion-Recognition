@@ -5,7 +5,6 @@
 # Build context is THIS directory: everything the image needs lives in
 # webapp/, nothing is pulled in from elsewhere in the stack.
 #   docker build -t duui-webapp webapp/
-# ...which is exactly what webapp/build.sh does for you.
 FROM python:3.12-slim
 
 WORKDIR /app
