@@ -5,23 +5,149 @@ Postgres database.
 
 ## Quickstart (Docker)
 
-Requires only Docker + a CAS `.xmi` file with its companion video sitting
-next to it in `cas/` (see `cas/full_2sek_with_person.xmi` /
-`cas/first2.mp4` for a small example pair already in this repo).
+Requires only Docker. Drop your pipeline output into `cas/` -- each CAS
+`.xmi` next to the video file it references (see
+`cas/full_2sek_with_person.xmi` / `cas/first2.mp4` for a small example
+pair already in this repo). Then:
 
 ```bash
-docker compose up -d db                              # start Postgres; wait ~10s for it to report healthy
-docker compose run --rm importer cas/your_file.xmi    # parse the CAS + place its video, one-off
-docker compose up -d webapp                           # start the viewer
+docker compose up -d db                    # start Postgres; wait ~10s for it to report healthy
+docker compose run --rm importer cas/      # import every .xmi in cas/ + place their videos
+docker compose up -d webapp                # start the viewer
 ```
 
-Open **http://localhost:8010**. Repeat the middle command for each
-additional file you want to import; the other two only need running once.
+Open **http://localhost:8010**.
+
+The importer takes a whole directory (above), a single file
+(`... importer cas/one_file.xmi`), or any mix of both -- so you can
+import a batch in one command and add more later without restarting
+anything. `db`/`webapp` only need starting once.
 
 Everything below this is either the no-Docker (local Python + Postgres)
 setup, or a deeper explanation of the Docker path -- see
-"Docker architecture" for what those three commands actually do, which
-volumes/env vars matter, and how to recover if a video didn't get placed.
+"Configuration reference" for every env var and port, and
+"Docker architecture" for what those three commands actually do and how
+to recover if a video didn't get placed.
+
+## Prerequisites
+
+**Docker path**: Docker (with Compose v2) and nothing else. No Python,
+no Postgres, no **ffmpeg**, no system libraries on the host -- the
+images install everything themselves, and nothing in this codebase
+shells out to an external binary (no `ffmpeg`/`subprocess` calls
+anywhere; videos are streamed byte-for-byte as-is, never transcoded).
+The upstream DUUI pipeline that *produces* the CAS files does need
+ffmpeg and GPUs, but that's a separate project -- this repo only
+consumes its output.
+
+**Non-Docker path**: Python 3.12, and Postgres 16+ with the
+**pgvector** extension available (the schema stores face/voice
+embeddings as native `vector` columns). See steps 1-2 below.
+
+**Optional**: the NLP enrichment step needs a spaCy German model
+(~13 MB download, off by default) -- see "Post-processing" below.
+
+## Configuration reference
+
+Every setting is an environment variable, read either from `.env` (see
+`.env.example`) or the real environment -- `duui_parser/config.py` is
+the single place they're all defined. With `docker compose`, the ones
+marked *(compose)* are read on the **host** to build the compose file;
+the rest are passed into the containers.
+
+**Ports** *(compose)* -- change these if something already occupies
+them on your machine:
+
+| Variable | Default | What it is |
+| :--- | :--- | :--- |
+| `DUUI_WEBAPP_HOST_PORT` | `8010` | Host port for the viewer (container always listens on 8000) |
+| `DUUI_DB_HOST_PORT` | `5432` | Host port for Postgres. Set this if you already run a local Postgres. Containers reach the DB as `db:5432` regardless |
+
+**Where files live** *(compose, except `DUUI_INPUT_DIR`/`DUUI_VIDEO_DIR`)*:
+
+| Variable | Default | What it is |
+| :--- | :--- | :--- |
+| `DUUI_INPUT_HOST_DIR` | `./cas` | Host directory holding the pipeline's output (`.xmi` files + their videos). Point this wherever your pipeline writes |
+| `DUUI_TYPESYSTEMS_HOST_DIR` | `./typesystems` | Host directory with the three typesystem XMLs |
+| `DUUI_VIDEO_STORE` | `video_media` | Where imported videos are stored. A plain name = Docker named volume; a host path = bind mount (use that if you want to browse/back up the video store directly) |
+| `DUUI_INPUT_DIR` | `cas` (`/app/cas` in Docker) | Directory the importer *reads* -- a no-argument import processes every `.xmi` in it |
+| `DUUI_VIDEO_DIR` | `cas` (`/media` in Docker) | Directory the importer *writes* videos into and the webapp *serves* them from |
+| `DUUI_XMI_FILE` | *(unset)* | Optional: if set, a no-argument import does just this one file instead of all of `DUUI_INPUT_DIR` |
+| `DUUI_TS_IDENTITY_EMOTION`<br>`DUUI_TS_MULTIMODAL_IDENTITY`<br>`DUUI_TS_EMOTION` | `typesystems/*.xml` | Only needed if your typesystem filenames differ |
+
+**Database**:
+
+| Variable | Default | Notes |
+| :--- | :--- | :--- |
+| `DUUI_DB_NAME` | `your_db` | compose sets `duui_bundestag` |
+| `DUUI_DB_USER` | `your_user` | compose sets `duui` |
+| `DUUI_DB_PASSWORD` | `your_password` | compose sets `duui` |
+| `DUUI_DB_HOST` | `localhost` | **`db`** inside compose (the service name); `localhost` only when running `main.py` on the host |
+
+**Natural-language "Ask" panel** (optional -- leave the key empty and
+everything else still works, the panel just reports it's unconfigured):
+
+| Variable | Default | Notes |
+| :--- | :--- | :--- |
+| `DUUI_QUERY_API_KEY` | *(empty)* | Any OpenAI-compatible endpoint's key. Empty = feature disabled |
+| `DUUI_QUERY_BASE_URL` | `https://lehre.llm.texttechnologylab.org/api` | Swap for a different provider |
+| `DUUI_QUERY_MODEL` | `gondor.qwen3-vl:32b` | |
+| `DUUI_QUERY_MAX_ROWS` | `500` | Row cap on agent queries |
+| `DUUI_QUERY_STATEMENT_TIMEOUT_MS` | `8000` | Per-query timeout |
+| `DUUI_QUERY_MAX_TOOL_ITERATIONS` | `6` | How many SQL attempts the agent gets |
+
+**Post-processing steps** (all run automatically on import -- see
+"Post-processing" below):
+
+| Variable | Default | Notes |
+| :--- | :--- | :--- |
+| `DUUI_ENABLE_GLOBAL_PERSON_LINKING` | `true` | Cross-video person identity via pgvector |
+| `DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD` | `0.30` | Cosine distance; lower = stricter |
+| `DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD` | `0.35` | |
+| `DUUI_ENABLE_EMOTION_FUSION` | `true` | Per-sentence multimodal fusion |
+| `DUUI_ENABLE_NLP_ENRICHMENT` | `false` | POS/NER backfill; needs `requirements-nlp.txt` |
+| `DUUI_SPACY_MODEL` | `de_core_news_sm` | |
+
+### Building / running the containers separately
+
+You don't need compose. Both images build from the **repo root** as
+build context (the webapp image also copies `duui_parser/`, which
+`webapp/server.py` imports):
+
+```bash
+docker build -f Dockerfile -t duui-importer .
+docker build -f webapp/Dockerfile -t duui-webapp .
+```
+
+Running them standalone means supplying by hand what compose otherwise
+wires up -- network, mounts, and env vars:
+
+```bash
+# Importer: ENTRYPOINT is `python main.py`, so the command is just paths
+# (or nothing at all, to import everything in DUUI_INPUT_DIR).
+docker run --rm \
+  -e DUUI_DB_HOST=my-postgres -e DUUI_DB_NAME=duui_bundestag \
+  -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
+  -e DUUI_INPUT_DIR=/app/cas -e DUUI_VIDEO_DIR=/media \
+  -v /path/to/pipeline/output:/app/cas \
+  -v /path/to/typesystems:/app/typesystems:ro \
+  -v duui_videos:/media \
+  duui-importer
+
+# Webapp: listens on 8000 in-container; map it wherever you like.
+docker run -d --name duui-webapp -p 8010:8000 \
+  -e DUUI_DB_HOST=my-postgres -e DUUI_DB_NAME=duui_bundestag \
+  -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
+  -e DUUI_VIDEO_DIR=/media \
+  -v duui_videos:/media:ro \
+  duui-webapp
+```
+
+Both need to reach Postgres (`--network` or a reachable
+`DUUI_DB_HOST`), and both must agree on the **same** video store
+(`duui_videos` above) -- that's the only thing they share besides the
+database. The DB itself is a stock `pgvector/pgvector:pg16` with
+`schema/schema.sql` applied once.
 
 ## Project layout
 
@@ -110,33 +236,57 @@ identically.
 ## 6. Run
 
 ```bash
-python main.py                    # uses DUUI_XMI_FILE from .env
-python main.py cas/other_file.xmi # or pass a path explicitly
+python main.py                          # uses DUUI_XMI_FILE from .env
+python main.py cas/other_file.xmi       # one CAS
+python main.py cas/                     # every *.xmi in that directory
+python main.py a.xmi b.xmi cas/more/    # any mix of files and directories
 ```
 
-This loads and patches the typesystem, loads the CAS (lenient mode --
-annotation types outside this parser's scope, e.g. linguistic
-Token/POS/Dependency layers, are safely skipped), runs every parser
-step in `duui_parser/parsers/PARSE_STEPS`, and commits the result in a
-single transaction (rolled back automatically if any step raises).
+For each CAS this loads it (lenient mode -- annotation types outside
+this parser's scope, e.g. linguistic Token/POS/Dependency layers, are
+safely skipped), runs every parser step in
+`duui_parser/parsers/PARSE_STEPS`, commits in a single transaction
+(rolled back automatically if any step raises), and places the video
+file sitting next to it into `DUUI_VIDEO_DIR`.
 
 ## Processing multiple CAS files
 
-For a batch of files, loop over `run()` rather than calling `main.py`
-repeatedly -- this avoids reloading and re-patching the typesystem for
-every file:
+Point `main.py` (or the Docker `importer`) at a **directory** and it
+imports every `*.xmi` directly inside it -- the normal way to load a
+batch of pipeline output:
 
-```python
-from pathlib import Path
-from duui_parser.pipeline import run
-
-for xmi_path in Path("cas").glob("*.xmi"):
-    run(str(xmi_path))
+```bash
+python main.py cas/
+docker compose run --rm importer cas/     # same thing, in Docker
 ```
 
-If this grows into a real batch job, it's worth having `run()` accept
-an already-loaded typesystem instead of reloading it every call --
-happy to add that if you get there.
+Details worth knowing:
+
+- **The typesystem is loaded and patched once per batch**, not per
+  file -- that step dominates startup, so a directory import is
+  substantially faster than calling `main.py` once per file.
+- **Each file gets its own transaction.** A malformed CAS is reported
+  and skipped, and the batch continues; you get a
+  `N imported, M failed` summary at the end, with each failure listed.
+  `main.py` exits non-zero if anything failed, so a script or CI job
+  notices a partial import.
+- **Directory scanning is not recursive** (`*.xmi` directly inside the
+  given directory). A CAS and its companion video live side by side in
+  one flat drop directory, so recursing would only risk pulling in
+  unrelated exports -- pass several directories explicitly if you have
+  more than one.
+- **Re-importing is safe** -- see the `ON CONFLICT` note at the bottom
+  of this README; re-running a directory after adding one new file
+  re-imports the others harmlessly rather than duplicating them.
+
+To drive it from Python instead, `run_many()` takes the same mix of
+files and directories:
+
+```python
+from duui_parser.pipeline import run_many
+
+succeeded, failed = run_many(["cas/"])
+```
 
 ## Post-processing: cross-video identity, emotion fusion, NLP
 
@@ -359,6 +509,41 @@ feeding something other than this one UI), the natural next step is a
 small `video_stats`-style table these queries write into once, either
 as a further step in `PARSE_STEPS` or the query agent -- happy to add
 that when there's a concrete second consumer.
+
+## How the webapp knows which DB data belongs to which video
+
+Two keys, one per hop -- worth being explicit about, since it's what
+keeps the importer and the webapp in sync without them sharing
+anything but the database and the video store:
+
+1. **`video_id` links all DB rows to one video.** The CAS's own
+   `MultimediaElement` becomes exactly one row in `videos`, and
+   *every* other table carries a `video_id` foreign key back to it
+   (`segments`, `linguistic_tokens`, `persons`, `presences`,
+   `face_detections`, `person_detections`, `base_emotions`,
+   `fused_emotions`, ...). So "all the data for this video" is just
+   `WHERE video_id = X` -- which is precisely what
+   `GET /api/videos/{video_id}/data` does.
+2. **`videos.filename` links that DB row to the file on disk.** The
+   filename is read out of the CAS itself and stored on the `videos`
+   row; the importer copies the video into the video store under that
+   exact name (`duui_parser/media.py`), and the webapp serves it from
+   `<DUUI_VIDEO_DIR>/<filename>` (`GET /media/{filename}`). Nothing
+   else is negotiated between the two containers -- same store, same
+   filename.
+
+So the frontend flow is: `GET /api/videos` (returns `video_id` +
+`filename` + `video_file_available`) → pick one → `GET
+/api/videos/{video_id}/data` for everything in Postgres, and
+`/media/{filename}` for the video bytes, played back in sync.
+
+Because point 2 is a filename convention rather than an enforced
+constraint, `GET /api/videos` **checks the file's existence live** on
+every call and reports it as `video_file_available` -- so a DB row
+whose video never arrived (import ran before the file was placed, or
+it was deleted) shows up as unavailable in the dropdown instead of
+failing mysteriously at playback. The database never stores video
+bytes.
 
 ## Docker architecture
 

@@ -20,7 +20,17 @@ except ImportError:
 
 # --- File locations -------------------------------------------------
 
-XMI_FILE = os.environ.get("DUUI_XMI_FILE", "cas/full_2sek_with_person.xmi")
+# Where the pipeline drops its output: CAS .xmi files, each next to the
+# video file it references. `main.py`/`run_many()` with no explicit
+# path argument import everything in here, so this is the "just run the
+# importer" default for a whole batch. Distinct from VIDEO_MEDIA_DIR
+# below: this is the *input* side and is only ever read from.
+INPUT_DIR = os.environ.get("DUUI_INPUT_DIR", "cas")
+
+# Optional single-file default, kept for compatibility with the older
+# one-CAS-at-a-time workflow: if DUUI_XMI_FILE is set explicitly, a
+# no-argument run imports just that file instead of all of INPUT_DIR.
+XMI_FILE = os.environ.get("DUUI_XMI_FILE")
 
 TYPESYSTEM_FILES = {
     "identity_emotion": os.environ.get(
@@ -94,15 +104,19 @@ ENABLE_NLP_ENRICHMENT = _bool_env("DUUI_ENABLE_NLP_ENRICHMENT", False)
 SPACY_MODEL = os.environ.get("DUUI_SPACY_MODEL", "de_core_news_sm")
 
 # --- Video media -------------------------------------------------------
-# Where served video files live -- the one place both the importer
-# (writes into it, see duui_parser/media.py) and the webapp (reads from
+# Where *served* video files live -- the one place both the importer
+# (copies into it, see duui_parser/media.py) and the webapp (reads from
 # it, see webapp/server.py) agree a video for `videos.filename = X`
-# lives at `<VIDEO_MEDIA_DIR>/X`. Same variable, same default ("cas")
-# for both: on a native (non-Docker) setup this collapses source and
-# served directory into one, so nothing changes from before this was
-# centralized here. In Docker, importer and webapp instead point this
-# at a shared named volume, decoupled from the raw CAS input directory
-# -- see docker-compose.yml.
+# lives at `<VIDEO_MEDIA_DIR>/X`. This is the output side, deliberately
+# separate from INPUT_DIR above so the webapp only ever sees videos
+# that belong to a committed DB row, and never depends on how the raw
+# pipeline drop directory is laid out.
+#
+# Defaults to "cas" -- the same as INPUT_DIR -- so a native (non-Docker)
+# setup collapses the two into one directory and the copy step is a
+# harmless no-op. In Docker they're genuinely different: the importer
+# reads /app/cas and writes /media, and the webapp mounts /media
+# read-only (see docker-compose.yml).
 VIDEO_MEDIA_DIR = os.environ.get("DUUI_VIDEO_DIR", "cas")
 
 # --- Database ---------------------------------------------------------

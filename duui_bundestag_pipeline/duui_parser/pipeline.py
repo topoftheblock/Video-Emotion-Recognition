@@ -1,13 +1,18 @@
 """High-level orchestration: load a CAS, run every parser step against
 it inside one DB transaction, commit, then place the companion video
 file where the webapp expects it.
+
+`run()` handles one CAS; `run_many()` handles a batch (explicit files
+and/or whole directories) and is what `main.py` actually calls -- it
+loads and patches the typesystem exactly once for the entire batch
+rather than per file, which dominates startup time otherwise.
 """
 
 from pathlib import Path
 
 from cassis import load_cas_from_xmi
 
-from .config import XMI_FILE
+from .config import INPUT_DIR, XMI_FILE
 from .db import get_db_connection
 from .media import place_video_file
 from .parsers import PARSE_STEPS
@@ -29,20 +34,81 @@ def parse_and_insert(cas, cursor, conn):
     return context
 
 
-def run(xmi_file=None):
-    """Load typesystem + CAS, parse, commit to the database, and place
-    the video file that came alongside the CAS (same directory, same
-    filename as the `videos` row) into VIDEO_MEDIA_DIR."""
+def default_input_paths():
+    """
+    What to import when no path is passed on the command line: the
+    single file named by DUUI_XMI_FILE if it's set (the older
+    one-CAS-at-a-time workflow), otherwise the whole DUUI_INPUT_DIR
+    directory.
+    """
+    return [XMI_FILE] if XMI_FILE else [INPUT_DIR]
+
+
+def resolve_xmi_paths(paths):
+    """
+    Expand a mix of file and directory paths into a concrete, sorted,
+    de-duplicated list of .xmi files.
+
+    A directory contributes every `*.xmi` directly inside it (not
+    recursive -- a CAS and its companion video live side by side in one
+    flat drop directory, so recursing would only risk picking up
+    unrelated exports). An explicitly named file is taken as-is even if
+    it doesn't end in .xmi, since naming it is already an unambiguous
+    instruction.
+    """
+    resolved = []
+    for raw in paths:
+        path = Path(raw)
+        if path.is_dir():
+            resolved.extend(sorted(path.glob("*.xmi")))
+        else:
+            resolved.append(path)
+
+    seen = set()
+    unique = []
+    for path in resolved:
+        key = path.resolve()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(path)
+    return unique
+
+
+def run(xmi_file=None, typesystem=None):
+    """
+    Load one CAS, parse it, commit to the database, and place the video
+    file that came alongside it (same directory, same filename as the
+    `videos` row) into VIDEO_MEDIA_DIR.
+
+    `typesystem` lets a caller pass an already-loaded, already-patched
+    typesystem so a batch doesn't reload it per file; omitted, it's
+    loaded here as before.
+
+    Takes exactly one file -- use `run_many()` for a directory or a
+    batch (it's also what handles loading the typesystem only once).
+    """
     xmi_file = xmi_file or XMI_FILE
+    if not xmi_file:
+        raise ValueError(
+            "run() needs a single .xmi path (or DUUI_XMI_FILE set). "
+            "To import a whole directory, use run_many([...]) instead."
+        )
+    if Path(xmi_file).is_dir():
+        raise ValueError(
+            f"run() takes one .xmi file, but {xmi_file} is a directory -- "
+            "use run_many([...]) to import a directory."
+        )
 
-    print("Loading and patching TypeSystems...")
-    merged_typesystem = load_merged_typesystem()
+    if typesystem is None:
+        print("Loading and patching TypeSystems...")
+        typesystem = load_merged_typesystem()
 
-    print("Loading CAS data from XMI...")
+    print(f"Loading CAS data from {xmi_file}...")
     with open(xmi_file, "rb") as f:
         # trusted=True enables lxml's huge_tree parsing, needed for large
         # multi-hour-session XMI exports that exceed lxml's default buffer.
-        cas = load_cas_from_xmi(f, typesystem=merged_typesystem, lenient=True, trusted=True)
+        cas = load_cas_from_xmi(f, typesystem=typesystem, lenient=True, trusted=True)
 
     print("Connecting to database and inserting data...")
     conn = get_db_connection()
@@ -62,4 +128,46 @@ def run(xmi_file=None):
     # it right next to the .xmi file just parsed.
     place_video_file(context.get("video_filename"), Path(xmi_file).parent)
 
-    print("Parser completed successfully!")
+    print(f"Finished {xmi_file}")
+
+
+def run_many(paths=None):
+    """
+    Import every CAS in `paths` (any mix of .xmi files and directories
+    containing them). Returns (succeeded, failed) as lists of
+    (path, error-or-None).
+
+    Each file gets its own transaction, and a failure is reported and
+    skipped rather than aborting the batch -- with a folder of exports,
+    one malformed file shouldn't cost you every import after it. The
+    exit code is left to the caller (see main.py) so a partial failure
+    is still visible to a CI job or shell script.
+    """
+    paths = list(paths) if paths else default_input_paths()
+    xmi_files = resolve_xmi_paths(paths)
+
+    if not xmi_files:
+        print(f"No .xmi files found in: {', '.join(str(p) for p in paths)}")
+        return [], []
+
+    print("Loading and patching TypeSystems...")
+    typesystem = load_merged_typesystem()
+
+    print(f"Importing {len(xmi_files)} CAS file(s)...")
+    succeeded, failed = [], []
+    for index, xmi_file in enumerate(xmi_files, start=1):
+        print(f"\n--- [{index}/{len(xmi_files)}] {xmi_file} ---")
+        try:
+            run(str(xmi_file), typesystem=typesystem)
+            succeeded.append((xmi_file, None))
+        except Exception as exc:  # noqa: BLE001 -- batch must survive one bad file
+            print(f"[duui_parser] ERROR importing {xmi_file}: {exc}")
+            failed.append((xmi_file, exc))
+
+    print(
+        f"\nDone: {len(succeeded)} imported, {len(failed)} failed "
+        f"(of {len(xmi_files)} file(s))."
+    )
+    for xmi_file, exc in failed:
+        print(f"  FAILED {xmi_file}: {exc}")
+    return succeeded, failed
