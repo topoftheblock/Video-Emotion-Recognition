@@ -34,6 +34,8 @@ volumes/env vars matter, and how to recover if a video didn't get placed.
 ├── webapp/                # video review viewer (subtitles, emotions, bounding boxes)
 ├── schema/                # database schema (schema.sql + docs)
 ├── typesystems/           # UIMA typesystem XML files (see below)
+├── tests/                 # pytest suite -- see "Tests" below
+├── .github/workflows/     # CI (runs the test suite + Docker builds)
 └── cas/                   # input .xmi files to parse, and the actual video files
 ```
 
@@ -597,6 +599,56 @@ the schema and write real SQL" covers in practice:
   (bypassing the agent, to test the guard itself) was correctly
   rejected with `"Query must start with SELECT or WITH."` before ever
   reaching Postgres.
+
+## Tests
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+Covers the two places a silent bug would be worst: `sql_guard.py` (the
+NL->SQL agent's queries are untrusted input -- pure validation tests
+plus a couple that actually hit a real DB to prove the `READ ONLY`
+transaction itself blocks a write, not just the regex) and the DB
+-writing logic in `global_identity.py`/`emotion_fusion.py` (does the
+matching/averaging actually produce the right rows), plus
+`media.py`'s filesystem logic (copy/idempotency/missing-file handling,
+no DB needed). DB-backed tests are auto-**skipped**, not failed, if no
+Postgres is reachable via `DUUI_DB_*`/`.env` -- point them at a local
+Postgres or `docker compose up -d db` with `schema/schema.sql` applied
+to run the full suite. Every DB-backed test runs on one connection and
+rolls it back at teardown (see `tests/conftest.py`), so nothing needs
+manual cleanup and the suite is safe to run against a real populated
+database without touching its data.
+
+CI (`.github/workflows/ci.yml`) runs the full suite against a fresh
+`pgvector/pgvector:pg16` service container on every push/PR, plus a
+separate job that just builds both Docker images (catches a broken
+`Dockerfile`/`requirements.txt` even if nothing else regressed).
+
+## Operating this (health checks, backups)
+
+- **Liveness**: `GET /healthz` on the webapp does a real `SELECT 1`
+  against Postgres, not just "the process is up" -- what
+  `docker-compose.yml`'s `webapp` healthcheck polls, and what any
+  reverse proxy / orchestrator in front of this should point at too.
+- **Backups**: nothing here does this for you yet -- the `db_data`
+  volume is the only thing that isn't trivially reproducible (videos
+  live outside the DB entirely; CAS files are the pipeline's own
+  output, presumably kept upstream). A plain
+  `docker compose exec db pg_dump -U duui duui_bundestag > backup.sql`
+  (and `psql ... < backup.sql` on a fresh `db_data` volume to restore)
+  is enough to start with; automate it (cron, or a `pg_dump` sidecar
+  container) before this holds data you can't regenerate by
+  re-importing.
+- **What was deliberately left out for this (internal) deployment**:
+  no auth in front of the webapp, no TLS, no rate limiting on
+  `/api/ask`. That's a fine tradeoff on a trusted internal network;
+  revisit it (auth + a reverse proxy terminating TLS, at minimum) the
+  moment this becomes reachable from anywhere less trusted than that,
+  since it currently gives anyone who can reach it full read access to
+  every imported video's data, including cross-video identity links.
 
 ## Database schema
 

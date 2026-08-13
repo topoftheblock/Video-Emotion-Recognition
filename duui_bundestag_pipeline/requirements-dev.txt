@@ -1,0 +1,6 @@
+# Dev/test-only deps -- not needed to run the app, only to run the
+# test suite (see tests/, .github/workflows/ci.yml).
+#
+#   pip install -r requirements.txt -r requirements-dev.txt
+#   pytest
+pytest>=8.0

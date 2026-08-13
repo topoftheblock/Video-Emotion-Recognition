@@ -48,6 +48,12 @@ services:
       - video_media:/media:ro
     ports:
       - "8010:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # One-off CAS importer, not a long-running service -- excluded from
   # `docker compose up` by the "import" profile, so it only runs when

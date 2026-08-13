@@ -1,0 +1,6 @@
+[tool.pytest.ini_options]
+# So `import duui_parser` / `import webapp` resolve when running
+# `pytest` from the repo root, without needing an installed package or
+# a conftest.py sys.path hack.
+pythonpath = ["."]
+testpaths = ["tests"]

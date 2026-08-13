@@ -35,6 +35,26 @@ STATIC_DIR = Path(__file__).parent / "static"
 app = FastAPI(title="DUUI Bundestag Video Viewer")
 
 
+@app.get("/healthz")
+def healthz():
+    """
+    Liveness + DB-connectivity check for orchestrators/`docker compose
+    healthcheck` -- deliberately does a real query, not just "the
+    process is up", since a webapp that's running but can't reach
+    Postgres is not actually healthy from a caller's perspective.
+    """
+    try:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        finally:
+            conn.close()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"database unreachable: {exc}") from exc
+    return {"status": "ok"}
+
+
 def _query(sql, params=None):
     """Run one query and return a list of plain dict rows."""
     conn = get_db_connection()
