@@ -27,7 +27,7 @@ def _resolve_track_person_id(track, context):
     return None
 
 
-def _parse_visible_presences(cas, cursor, conn, video_id, context):
+def _parse_visible_presences(cas, cursor, video_id, context):
     for track in select_across_views(cas, TYPES["person_track"]):
         presence_id = get_xmi_id(track)
         person_id = _resolve_track_person_id(track, context)
@@ -52,7 +52,7 @@ def _parse_visible_presences(cas, cursor, conn, video_id, context):
         )
 
 
-def _parse_speech_presences(cas, cursor, conn, video_id, context):
+def _parse_speech_presences(cas, cursor, video_id, context):
     for segment in select_across_views(cas, TYPES["speaker_segment"]):
         presence_id = get_xmi_id(segment)
         voice = getattr(segment, "voice", None)
@@ -77,7 +77,7 @@ def _parse_speech_presences(cas, cursor, conn, video_id, context):
         )
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
-    _parse_visible_presences(cas, cursor, conn, video_id, context)
-    _parse_speech_presences(cas, cursor, conn, video_id, context)
+    _parse_visible_presences(cas, cursor, video_id, context)
+    _parse_speech_presences(cas, cursor, video_id, context)

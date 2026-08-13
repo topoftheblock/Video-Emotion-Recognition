@@ -19,7 +19,7 @@ def _resolve_word(token):
     return token.get_covered_text()
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
 
     for token in select_across_views(cas, TYPES["diarized_audio_token"]):

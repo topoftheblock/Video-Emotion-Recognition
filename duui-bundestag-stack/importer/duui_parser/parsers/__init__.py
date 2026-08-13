@@ -1,10 +1,15 @@
 """
 Parsers package: one module per CAS/DB entity family.
 
-Every module exposes a `parse(cas, cursor, conn, context)` function
-with an identical signature, where `context` is a plain dict shared
-across all parsers for the current CAS (e.g. it carries
-`global_video_id` once the video parser has resolved it).
+Every module exposes a `parse(cas, cursor, context)` function with an
+identical signature, where `context` is a plain dict shared across all
+parsers for the current CAS (e.g. it carries `global_video_id` once
+the video parser has resolved it).
+
+No step gets the connection itself: the whole import is one
+transaction owned by pipeline.py, which commits once every step has
+run, so a step that could commit or roll back on its own would only be
+a way to break that guarantee.
 
 `PARSE_STEPS` defines the order in which parsers must run -- this
 matters for two reasons: later steps depend on

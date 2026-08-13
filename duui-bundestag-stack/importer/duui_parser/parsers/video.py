@@ -13,7 +13,7 @@ from ..config import TYPES
 from ..typesystem import get_xmi_id
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     global_video_id = None
     video_filename = None
 

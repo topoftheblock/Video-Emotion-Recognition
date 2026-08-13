@@ -73,17 +73,24 @@ def _resolve_embedding_rows(identity_fs):
     return [(get_xmi_id(identity_fs), None, str(embeddings_value))]
 
 
-def _parse_face_embeddings(cas, cursor, conn, context):
-    for item in select_across_views(cas, TYPES["face_identity"]):
-        person_id = resolve_person_id_via_face_fs(item, context)
+def _parse_embeddings(cas, cursor, uima_type, table_name, resolve_person_id, context):
+    """
+    Face and voice embeddings differ only in which identity type they
+    come from, which resolver turns that identity into a person_id, and
+    which table they land in -- everything else (the `.embeddings`
+    shapes, the model reference, the pgvector literal) is identical, so
+    one helper covers both (same pattern as parsers/detection.py).
+    """
+    for item in select_across_views(cas, uima_type):
+        person_id = resolve_person_id(item, context)
         own_model_id = get_xmi_id(getattr(item, "model", None))
 
         for embedding_id, derived_model_id, embedding_repr in _resolve_embedding_rows(item):
             if embedding_id is None:
                 continue
             cursor.execute(
-                """
-                INSERT INTO face_embeddings (embedding_id, person_id, model_id, embedding)
+                f"""
+                INSERT INTO {table_name} (embedding_id, person_id, model_id, embedding)
                 VALUES (%s, %s, %s, %s)
                 ON CONFLICT (embedding_id) DO NOTHING
                 """,
@@ -91,24 +98,12 @@ def _parse_face_embeddings(cas, cursor, conn, context):
             )
 
 
-def _parse_voice_embeddings(cas, cursor, conn, context):
-    for item in select_across_views(cas, TYPES["voice_identity"]):
-        person_id = resolve_person_id_via_voice_fs(item, context)
-        own_model_id = get_xmi_id(getattr(item, "model", None))
-
-        for embedding_id, derived_model_id, embedding_repr in _resolve_embedding_rows(item):
-            if embedding_id is None:
-                continue
-            cursor.execute(
-                """
-                INSERT INTO voice_embeddings (embedding_id, person_id, model_id, embedding)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (embedding_id) DO NOTHING
-                """,
-                (embedding_id, person_id, own_model_id or derived_model_id, _to_pgvector_literal(embedding_repr)),
-            )
-
-
-def parse(cas, cursor, conn, context):
-    _parse_face_embeddings(cas, cursor, conn, context)
-    _parse_voice_embeddings(cas, cursor, conn, context)
+def parse(cas, cursor, context):
+    _parse_embeddings(
+        cas, cursor, TYPES["face_identity"], "face_embeddings",
+        resolve_person_id_via_face_fs, context,
+    )
+    _parse_embeddings(
+        cas, cursor, TYPES["voice_identity"], "voice_embeddings",
+        resolve_person_id_via_voice_fs, context,
+    )

@@ -206,7 +206,7 @@ def _insert_fused_emotion(cursor, emotion, emotion_id, person_id, video_id):
     return fused_id
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
 
     for emotion in select_across_views(cas, TYPES["emotion"]):

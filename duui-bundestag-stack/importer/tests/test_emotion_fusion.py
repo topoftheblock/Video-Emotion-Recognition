@@ -51,7 +51,7 @@ def test_fuses_all_three_modalities_for_a_sentence(db_cursor):
     _insert_base_emotion(db_cursor, VIDEO_EMOTION_ID_1, "video", 0.5, 0.52, None, None, 0.0, 0.0, "Neutral")
     _insert_base_emotion(db_cursor, VIDEO_EMOTION_ID_2, "video", 1.0, 1.02, None, None, 0.4, -0.4, "Happiness")
 
-    emotion_fusion.parse(None, db_cursor, None, {"global_video_id": VIDEO_ID})
+    emotion_fusion.parse(None, db_cursor, {"global_video_id": VIDEO_ID})
 
     db_cursor.execute(
         "SELECT fused_id, target_modality, valence, arousal FROM fused_emotions WHERE video_id = %s",
@@ -84,7 +84,7 @@ def test_skips_sentence_with_no_emotion_data(db_cursor):
         (other_segment, other_video),
     )
 
-    emotion_fusion.parse(None, db_cursor, None, {"global_video_id": other_video})
+    emotion_fusion.parse(None, db_cursor, {"global_video_id": other_video})
 
     db_cursor.execute("SELECT count(*) FROM fused_emotions WHERE video_id = %s", (other_video,))
     assert db_cursor.fetchone()[0] == 0

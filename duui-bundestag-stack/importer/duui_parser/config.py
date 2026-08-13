@@ -118,6 +118,11 @@ DB_CONFIG = {
 
 # --- UIMA type names ----------------------------------------------------
 # Centralising these means a type-system rename only touches this file.
+# Only types some parser step actually `select`s by name are listed.
+# Types this parser reads but never selects -- Embedding,
+# AnnotationComment, HuggingfaceMetaData -- are reached by following a
+# feature off an annotation that *was* selected, so they need a
+# definition (see INJECTED_FALLBACK_TYPES below) but no entry here.
 
 TYPES = {
     "multimedia_element": "org.texttechnologylab.annotation.type.MultimediaElement",
@@ -132,7 +137,6 @@ TYPES = {
     # cassis's select() includes descendants -- so this single type
     # name covers all real Model rows without a second select.
     "model_meta_data": "org.texttechnologylab.annotation.MetaData",
-    "huggingface_meta_data": "org.texttechnologylab.annotation.model.HuggingfaceMetaData",
     "shot": "org.texttechnologylab.annotation.video.Shot",
     "speaker_sentence": "org.texttechnologylab.annotation.audio.SpeakerSentence",
     "speaker_segment": "org.texttechnologylab.annotation.audio.SpeakerSegment",
@@ -141,7 +145,6 @@ TYPES = {
     "person": "org.texttechnologylab.annotation.identity.Person",
     "face_identity": "org.texttechnologylab.annotation.identity.FaceIdentity",
     "voice_identity": "org.texttechnologylab.annotation.identity.VoiceIdentity",
-    "embedding": "org.texttechnologylab.uima.type.Embedding",
     "person_track": "org.texttechnologylab.annotation.video.PersonTrack",
     "face_detection": "org.texttechnologylab.annotation.video.FaceDetection",
     "person_detection": "org.texttechnologylab.annotation.video.PersonDetection",
@@ -150,7 +153,6 @@ TYPES = {
     # per-frame video/audio Emotion above -- it lives directly under
     # `.annotation`, not `.annotation.emotion`.
     "goemotions_emotion": "org.texttechnologylab.annotation.Emotion",
-    "annotation_comment": "org.texttechnologylab.annotation.AnnotationComment",
 }
 
 # Fallback type descriptions for types this parser depends on that are

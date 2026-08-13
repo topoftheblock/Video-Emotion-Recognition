@@ -8,9 +8,9 @@ doesn't have one -- isn't recoverable from `information_schema` alone.
 
 Structure comes from db/schema.sql. The semantics below come from
 three sources, cross-checked against each other:
-  1. schema/data_schema_with_types.md (the intended design)
-  2. importer/duui_parser/parsers/*.py (what actually gets INSERTed, which in
-     a few places diverges from (1) -- noted explicitly below)
+  1. docs/data_schema_with_types.md (the intended design)
+  2. importer/duui_parser/parsers/*.py (what actually gets INSERTed,
+     which in a few places diverges from (1) -- noted explicitly below)
   3. A live query against a populated duui_bundestag database, to see
      which columns are *actually* non-null in practice versus merely
      nullable in the DDL, and what real label/value vocabularies look

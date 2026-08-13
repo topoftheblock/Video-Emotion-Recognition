@@ -96,7 +96,7 @@ def _overlapping_entity_label(doc, start, end):
     return None
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     if not ENABLE_NLP_ENRICHMENT:
         return
 

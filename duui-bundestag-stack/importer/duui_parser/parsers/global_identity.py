@@ -83,7 +83,7 @@ def _assign_global_person(cursor, person_id, global_person_id):
     )
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     if not ENABLE_GLOBAL_PERSON_LINKING:
         return
 

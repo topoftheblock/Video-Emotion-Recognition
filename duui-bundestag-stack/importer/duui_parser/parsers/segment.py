@@ -5,7 +5,7 @@ from ..config import TYPES
 from ..typesystem import get_xmi_id
 
 
-def _parse_shots(cas, cursor, conn, video_id):
+def _parse_shots(cas, cursor, video_id):
     for shot in select_across_views(cas, TYPES["shot"]):
         segment_id = get_xmi_id(shot)
         cursor.execute(
@@ -35,7 +35,7 @@ def _resolve_sentence_person_id(sentence):
     return None
 
 
-def _parse_sentences(cas, cursor, conn, video_id):
+def _parse_sentences(cas, cursor, video_id):
     for sentence in select_across_views(cas, TYPES["speaker_sentence"]):
         segment_id = get_xmi_id(sentence)
         person_id = _resolve_sentence_person_id(sentence)
@@ -59,7 +59,7 @@ def _parse_sentences(cas, cursor, conn, video_id):
         )
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
-    _parse_shots(cas, cursor, conn, video_id)
-    _parse_sentences(cas, cursor, conn, video_id)
+    _parse_shots(cas, cursor, video_id)
+    _parse_sentences(cas, cursor, video_id)

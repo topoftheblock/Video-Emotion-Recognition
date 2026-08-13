@@ -20,7 +20,7 @@ from ..identity_resolution import parse_person_label
 from ..typesystem import get_xmi_id
 
 
-def _parse_global_persons(cas, cursor, conn):
+def _parse_global_persons(cas, cursor):
     for g_person in select_across_views(cas, TYPES["global_person"]):
         gp_id = get_xmi_id(g_person)
         cursor.execute(
@@ -30,7 +30,7 @@ def _parse_global_persons(cas, cursor, conn):
         )
 
 
-def _parse_persons(cas, cursor, conn, video_id, context):
+def _parse_persons(cas, cursor, video_id, context):
     face_id_to_person_id = context.setdefault("face_id_to_person_id", {})
     voice_id_to_person_id = context.setdefault("voice_id_to_person_id", {})
 
@@ -70,7 +70,7 @@ def _parse_persons(cas, cursor, conn, video_id, context):
             voice_id_to_person_id[label_parts["voice"]] = person_id
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
-    _parse_global_persons(cas, cursor, conn)
-    _parse_persons(cas, cursor, conn, video_id, context)
+    _parse_global_persons(cas, cursor)
+    _parse_persons(cas, cursor, video_id, context)

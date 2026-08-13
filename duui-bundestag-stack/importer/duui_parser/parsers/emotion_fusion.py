@@ -152,7 +152,7 @@ def _fuse_segment(cursor, video_id, segment_id, start_time, end_time, begin_offs
         )
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     if not ENABLE_EMOTION_FUSION:
         return
 

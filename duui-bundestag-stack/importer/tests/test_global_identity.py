@@ -48,7 +48,7 @@ def test_links_persons_with_matching_face_embeddings(db_cursor):
 
     # P1's video was "already imported" -- only run the step for V2,
     # same as pipeline.py would on a real second import.
-    global_identity.parse(None, db_cursor, None, {"global_video_id": V2})
+    global_identity.parse(None, db_cursor, {"global_video_id": V2})
 
     db_cursor.execute(
         "SELECT global_person_id FROM persons WHERE person_id IN (%s, %s)", (P1, P2)
@@ -71,7 +71,7 @@ def test_does_not_link_dissimilar_face_embeddings(db_cursor):
         (P2, _vector_literal(512, -1.0)),
     )
 
-    global_identity.parse(None, db_cursor, None, {"global_video_id": V2})
+    global_identity.parse(None, db_cursor, {"global_video_id": V2})
 
     db_cursor.execute(
         "SELECT global_person_id FROM persons WHERE person_id IN (%s, %s)", (P1, P2)
@@ -93,7 +93,7 @@ def test_does_not_relink_a_person_that_already_has_a_global_id(db_cursor):
 
     # Run the step for V2 -- P2 already has a global_person_id, so it
     # must be left alone rather than re-matched/overwritten.
-    global_identity.parse(None, db_cursor, None, {"global_video_id": V2})
+    global_identity.parse(None, db_cursor, {"global_video_id": V2})
 
     db_cursor.execute("SELECT global_person_id FROM persons WHERE person_id = %s", (P2,))
     assert db_cursor.fetchone()[0] == existing_global_id

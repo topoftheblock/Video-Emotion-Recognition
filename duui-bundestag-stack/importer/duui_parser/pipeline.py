@@ -20,7 +20,7 @@ from .parsers import PARSE_STEPS
 from .typesystem import load_merged_typesystem, loading_cas_quietly
 
 
-def parse_and_insert(cas, cursor, conn):
+def parse_and_insert(cas, cursor):
     """
     Run all registered parser steps against a single loaded CAS.
 
@@ -31,7 +31,7 @@ def parse_and_insert(cas, cursor, conn):
     """
     context = {}
     for step in PARSE_STEPS:
-        step.parse(cas, cursor, conn, context)
+        step.parse(cas, cursor, context)
     return context
 
 
@@ -170,7 +170,7 @@ def run(xmi_file=None, typesystem=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        context = parse_and_insert(cas, cursor, conn)
+        context = parse_and_insert(cas, cursor)
         conn.commit()
         cursor.close()
     except Exception:

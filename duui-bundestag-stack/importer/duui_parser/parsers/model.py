@@ -15,7 +15,7 @@ from ..config import TYPES
 from ..typesystem import get_xmi_id
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     for metadata in select_across_views(cas, TYPES["model_meta_data"]):
         model_id = get_xmi_id(metadata)
         cursor.execute(

@@ -46,32 +46,21 @@ def _dominant_label_from_comments(comments):
 
 
 def _insert_text_emotion(cursor, entry, emotion_id, video_id, dominant_label):
+    """
+    Only the columns this annotation type actually carries are listed;
+    every other base_emotions column is nullable and defaults to NULL.
+    Notably absent: person_id (no speaker reference is encoded on this
+    type, see module docstring), the times (it is anchored to character
+    offsets, not to the timeline) and the bbox/VAD values (there is no
+    frame and no dimensional reading here, only per-label scores).
+    """
     cursor.execute(
         """
-        INSERT INTO base_emotions (emotion_id, person_id, video_id, modality, granularity, start_time, end_time, begin_offset, end_offset, frame_index, x, y, w, h, valence, arousal, dominance, dominant_label)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO base_emotions (emotion_id, video_id, modality, granularity, begin_offset, end_offset, dominant_label)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (emotion_id) DO NOTHING
         """,
-        (
-            emotion_id,
-            None,  # no person reference is encoded on this annotation type
-            video_id,
-            "text",
-            "sentence",
-            None,
-            None,
-            entry.begin,
-            entry.end,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            dominant_label,
-        ),
+        (emotion_id, video_id, "text", "sentence", entry.begin, entry.end, dominant_label),
     )
 
 
@@ -97,7 +86,7 @@ def _insert_text_emotion_scores(cursor, comments, emotion_id):
         )
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
 
     for entry in select_across_views(cas, TYPES["goemotions_emotion"]):

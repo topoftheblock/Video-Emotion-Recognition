@@ -17,7 +17,7 @@ def _resolve_detection_person_id(detection, context):
     return None
 
 
-def _parse_detections(cas, cursor, conn, uima_type, table_name, video_id, context):
+def _parse_detections(cas, cursor, uima_type, table_name, video_id, context):
     for detection in select_across_views(cas, uima_type):
         detection_id = get_xmi_id(detection)
         presence_id = get_xmi_id(getattr(detection, "track", None))
@@ -45,11 +45,11 @@ def _parse_detections(cas, cursor, conn, uima_type, table_name, video_id, contex
         )
 
 
-def parse(cas, cursor, conn, context):
+def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
     _parse_detections(
-        cas, cursor, conn, TYPES["face_detection"], "face_detections", video_id, context
+        cas, cursor, TYPES["face_detection"], "face_detections", video_id, context
     )
     _parse_detections(
-        cas, cursor, conn, TYPES["person_detection"], "person_detections", video_id, context
+        cas, cursor, TYPES["person_detection"], "person_detections", video_id, context
     )
