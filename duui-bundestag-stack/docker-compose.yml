@@ -68,8 +68,14 @@ x-importer-common: &importer-common
     # Two separate mounts: the .xmi files and the videos they
     # reference. Point both at the same folder for the side-by-side
     # layout -- mounting one host directory twice is fine.
+    #
+    # The video mount falls back to DUUI_INPUT_XMI_DIR before it falls
+    # back to the demo folder: setting only the .xmi directory then
+    # means "the videos are in there too" (the side-by-side case),
+    # instead of silently looking for your videos in the shipped
+    # sample. Only with neither set does the demo pair apply.
     - ${DUUI_INPUT_XMI_DIR:-./duui-video-emotion-cas-to-postgres/src/resources/sample-input}:/data/input/xmi:ro,z
-    - ${DUUI_INPUT_VIDEO_DIR:-./duui-video-emotion-cas-to-postgres/src/resources/sample-input}:/data/input/videos:ro,z
+    - ${DUUI_INPUT_VIDEO_DIR:-${DUUI_INPUT_XMI_DIR:-./duui-video-emotion-cas-to-postgres/src/resources/sample-input}}:/data/input/videos:ro,z
     # OUTPUT (read-write): the video store. The importer copies each
     # CAS's companion video here, named exactly as the `videos.filename`
     # row it just wrote -- which is how the webapp (same store, mounted

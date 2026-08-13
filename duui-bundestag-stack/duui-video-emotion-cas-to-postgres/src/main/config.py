@@ -42,7 +42,12 @@ INPUT_XMI_DIR = os.environ.get("DUUI_INPUT_XMI_DIR", "cas")
 # or at different folders when the pipeline keeps them apart. Either
 # way a CAS is matched to its video by the exact filename the CAS
 # records (see media.py), never by position.
-INPUT_VIDEO_DIR = os.environ.get("DUUI_INPUT_VIDEO_DIR", "cas")
+#
+# Unset means "wherever the .xmi files are" rather than a fixed
+# default, so pointing the importer at one folder of pipeline output
+# needs one setting, not two. docker-compose.yml chains the host-side
+# mount the same way.
+INPUT_VIDEO_DIR = os.environ.get("DUUI_INPUT_VIDEO_DIR") or INPUT_XMI_DIR
 
 # Optional single-file default, kept for compatibility with the older
 # one-CAS-at-a-time workflow: if DUUI_XMI_FILE is set explicitly, a

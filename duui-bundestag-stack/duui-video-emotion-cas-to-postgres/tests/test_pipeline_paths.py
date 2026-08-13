@@ -1,11 +1,55 @@
 """Tests for src/pipeline.py's batch path resolution -- pure
 path logic, no DB or CAS parsing involved."""
 
+import importlib
 import os
 
 import pytest
 
+from main import config
 from main.pipeline import describe_missing_inputs, resolve_xmi_paths
+
+
+def _config_with_env(monkeypatch, **env):
+    """Re-read config.py under a patched environment. Reloaded again at
+    teardown so the module-level values other tests see are restored."""
+    for name, value in env.items():
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+    return importlib.reload(config)
+
+
+@pytest.fixture(autouse=True)
+def _restore_config():
+    yield
+    importlib.reload(config)
+
+
+def test_video_dir_defaults_to_the_xmi_dir(monkeypatch):
+    """An unset DUUI_INPUT_VIDEO_DIR means "next to the .xmi files",
+    not some fixed folder -- so pointing the importer at one directory
+    of pipeline output takes one setting rather than two. Mirrors the
+    nested default on the host-side mount in docker-compose.yml."""
+    reloaded = _config_with_env(
+        monkeypatch,
+        DUUI_INPUT_XMI_DIR="/pipeline/output",
+        DUUI_INPUT_VIDEO_DIR=None,
+    )
+
+    assert reloaded.INPUT_VIDEO_DIR == "/pipeline/output"
+
+
+def test_video_dir_is_independent_when_set(monkeypatch):
+    reloaded = _config_with_env(
+        monkeypatch,
+        DUUI_INPUT_XMI_DIR="/pipeline/xmi",
+        DUUI_INPUT_VIDEO_DIR="/pipeline/videos",
+    )
+
+    assert reloaded.INPUT_XMI_DIR == "/pipeline/xmi"
+    assert reloaded.INPUT_VIDEO_DIR == "/pipeline/videos"
 
 
 def test_directory_expands_to_its_xmi_files(tmp_path):

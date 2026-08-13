@@ -45,14 +45,17 @@ DUUI_INPUT_XMI_DIR=/path/to/xmi DUUI_INPUT_VIDEO_DIR=/path/to/videos \
   docker compose run --rm importer
 ```
 
-**Set both to the same path if your `.xmi` files and videos sit side
-by side** — that is the common case, and mounting one folder twice is
-fine:
+**If your `.xmi` files and videos sit side by side — the common case —
+set only the first.** `DUUI_INPUT_VIDEO_DIR` follows
+`DUUI_INPUT_XMI_DIR` when it isn't set, so one line is enough:
 
 ```bash
-DUUI_INPUT_XMI_DIR=/my/pipeline/output
-DUUI_INPUT_VIDEO_DIR=/my/pipeline/output
+DUUI_INPUT_XMI_DIR=/my/pipeline/output      # videos looked for here too
 ```
+
+Only when **neither** is set does the shipped demo pair apply — a
+custom `.xmi` folder never silently sends the video lookup back to the
+sample data.
 
 The pairing never depends on the layout: the CAS records its own
 video's filename internally, and the importer looks for exactly that
@@ -146,7 +149,7 @@ To use your own data instead of the sample, set the input folders once
 first (you do not move your files — see the section above):
 
 ```bash
-cp .env.example .env && $EDITOR .env      # set DUUI_INPUT_XMI_DIR + DUUI_INPUT_VIDEO_DIR
+cp .env.example .env && $EDITOR .env      # set DUUI_INPUT_XMI_DIR
 docker compose up -d
 ```
 
@@ -430,7 +433,7 @@ store — and compose passes the same values to both services.
 | Variable | Default | What it is |
 | :--- | :--- | :--- |
 | `DUUI_INPUT_XMI_DIR` | `./duui-video-emotion-cas-to-postgres/src/resources/sample-input` | **Your** folder of `.xmi` files. Mounted read-only; never modified |
-| `DUUI_INPUT_VIDEO_DIR` | `./duui-video-emotion-cas-to-postgres/src/resources/sample-input` | **Your** folder of the videos those `.xmi` files reference. Same path as above if they sit side by side |
+| `DUUI_INPUT_VIDEO_DIR` | `DUUI_INPUT_XMI_DIR` (which itself defaults to the sample folder) | **Your** folder of the videos those `.xmi` files reference. Leave unset when they sit next to the `.xmi` files |
 | `DUUI_VIDEO_STORE` | `video_media` | Where imported videos live. Plain name = Docker volume; host path = bind mount |
 | `DUUI_WEBAPP_HOST_PORT` | `8010` | Host port for the viewer (container always listens on 8000) |
 | `DUUI_DB_HOST_PORT` | `5432` | Host port for Postgres. Change if you run one locally |
