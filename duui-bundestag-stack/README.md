@@ -94,37 +94,44 @@ Requires Docker (with Compose v2). Nothing else — no Python, no
 Postgres, no **ffmpeg** on your machine (see "Prerequisites").
 
 ```bash
-# 0. optional: point at your own data (otherwise the shipped sample is used)
+docker compose up -d
+```
+
+That's it — open **http://localhost:8010** and the shipped sample video
+is playing. The first run builds the images (~1-2 min), then starts the
+database, **runs the import**, and starts the viewer.
+
+To use your own data instead of the sample, set the input folder once
+first (you do not move your files — see the section above):
+
+```bash
 cp .env.example .env && $EDITOR .env      # set DUUI_INPUT_HOST_DIR
+docker compose up -d
+```
 
-# 1. start the database (first start also creates the schema)
-docker compose up -d db
+Verify at any time:
 
-# 2. run the import job -- imports every .xmi in your input folder, then exits
-docker compose run --rm importer
-
-# 3. start the viewer (first run builds the image -- takes ~30-60s;
-#    no -d so you can see it finish. Use -d on later starts.)
-docker compose up webapp
-
-# 4. confirm both containers are up: db AND webapp, both (healthy)
+```bash
 docker compose ps
 ```
 
-Open **http://localhost:8010**.
+You should see `db` and `webapp` as `(healthy)`, plus `init-import` as
+`Exited (0)` — that one is the import job, which is *supposed* to exit
+once it's finished.
 
-Steps 1 and 3 are one-time. Step 2 is what you re-run whenever your
-pipeline produces new files — the viewer picks them up without a restart
-(just reload the page).
+To import more files later, without restarting anything (then reload the
+page):
 
-> **If the page doesn't load or shows no video, check step 4 first.** On
-> the first run, step 3 builds the webapp image; if that command is
-> interrupted before it finishes, **no container is created at all** —
-> nothing crashes, nothing appears in the logs, and the port simply
-> doesn't respond, which looks like missing data but isn't. `docker
-> compose ps` must list **both** `db` and `webapp`. If `webapp` isn't
-> there, just run step 3 again. See "3. Start the viewer" below for the
-> full checklist.
+```bash
+docker compose run --rm importer
+```
+
+> **Why the import runs automatically:** `docker compose up -d` used to
+> start only the database and the viewer, leaving the database empty — so
+> the app came up with an empty dropdown and a blank player, which looks
+> exactly like a broken deployment. The import now runs as part of `up`,
+> and if the database *is* ever empty the viewer says so explicitly
+> instead of showing a black rectangle.
 
 ### Everyday commands
 

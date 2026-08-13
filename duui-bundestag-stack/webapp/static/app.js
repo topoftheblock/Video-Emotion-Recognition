@@ -53,6 +53,10 @@ const el = {
   askReset: document.getElementById("askReset"),
   askStatus: document.getElementById("askStatus"),
   askResults: document.getElementById("askResults"),
+  emptyState: document.getElementById("emptyState"),
+  emptyStateTitle: document.getElementById("emptyStateTitle"),
+  emptyStateDetail: document.getElementById("emptyStateDetail"),
+  emptyStateCommand: document.getElementById("emptyStateCommand"),
 };
 
 /** True if `key` (one of the OVERLAY_CHOICES from the backend) should
@@ -68,6 +72,23 @@ const ctx = el.overlay.getContext("2d");
 
 async function loadVideoList() {
   const videos = await fetch("/api/videos").then((r) => r.json());
+
+  // An empty database used to render an empty dropdown over a blank
+  // player with no explanation at all -- indistinguishable from a broken
+  // app. Say what is actually the case, and what to run.
+  if (!videos.length) {
+    showEmptyState(
+      "No videos imported yet",
+      "The viewer and the database are running fine — the database is simply empty. Run the import job, then reload this page:",
+      "docker compose run --rm importer"
+    );
+    return;
+  }
+
+  // Kept so loadVideo() can tell whether the selected video's file is
+  // actually in the store (GET /api/videos checks that per request).
+  state.videos = videos;
+
   el.videoSelect.innerHTML = videos
     .map(
       (v) =>
@@ -77,9 +98,21 @@ async function loadVideoList() {
   // Cross-video person clusters don't change per-video-load -- fetched
   // once and filtered client-side in renderCrossVideoPanel() below.
   state.globalPersonClusters = await fetch("/api/persons/global").then((r) => r.json()).catch(() => []);
-  if (videos.length) {
-    await loadVideo(videos[0].video_id);
-  }
+  await loadVideo(videos[0].video_id);
+}
+
+/** Covers the video frame with an explanation and the command to run --
+ * used for the two states that otherwise just look broken: nothing
+ * imported, and a database row whose video file isn't in the store. */
+function showEmptyState(title, detail, command) {
+  el.emptyStateTitle.textContent = title;
+  el.emptyStateDetail.textContent = detail;
+  el.emptyStateCommand.textContent = command;
+  el.emptyState.style.display = "";
+}
+
+function hideEmptyState() {
+  el.emptyState.style.display = "none";
 }
 
 async function loadVideo(videoId) {
@@ -89,6 +122,20 @@ async function loadVideo(videoId) {
   renderPersonList(data.persons);
   renderCrossVideoPanel(data);
   loadInsights(videoId);
+
+  // A row can exist while its video file doesn't (import ran before the
+  // file was placed, or it was removed afterwards). Say so instead of
+  // letting playback fail silently on a black frame.
+  const listed = (state.videos || []).find((v) => v.video_id === videoId);
+  if (listed && listed.video_file_available === false) {
+    showEmptyState(
+      "Video file missing",
+      `The database has data for "${data.video.filename}", but that file is not in the video store, so there is nothing to play. Re-run the import job with the video next to its .xmi, then reload:`,
+      "docker compose run --rm importer"
+    );
+  } else {
+    hideEmptyState();
+  }
 
   el.player.src = `/media/${encodeURIComponent(data.video.filename)}`;
   el.player.load();
