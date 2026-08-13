@@ -27,8 +27,7 @@ name: duui-bundestag-stack
 # (the same job, invoked manually) so the two can never drift apart.
 x-importer-common: &importer-common
   build:
-    context: .
-    dockerfile: importer/Dockerfile
+    context: ./importer
   image: duui-importer:latest
   environment:
     DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
@@ -123,8 +122,7 @@ services:
 
   webapp:
     build:
-      context: .
-      dockerfile: webapp/Dockerfile
+      context: ./webapp
     image: duui-webapp:latest
     restart: unless-stopped
     depends_on:

@@ -1,0 +1,14 @@
+# Keeps the build context small and avoids baking local state into the
+# importer image. The image builds from this directory, so paths here
+# are relative to importer/.
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+pyproject.toml
+# The demo CAS + video: compose bind-mounts it as the default input
+# instead (see docker-compose.yml), so it never needs to be in the image.
+sample-input/
+*.md
+build.sh
+Dockerfile

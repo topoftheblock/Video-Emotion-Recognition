@@ -9,7 +9,7 @@ doesn't have one -- isn't recoverable from `information_schema` alone.
 Structure comes from db/schema.sql. The semantics below come from
 three sources, cross-checked against each other:
   1. schema/data_schema_with_types.md (the intended design)
-  2. duui_parser/parsers/*.py (what actually gets INSERTed, which in
+  2. importer/duui_parser/parsers/*.py (what actually gets INSERTed, which in
      a few places diverges from (1) -- noted explicitly below)
   3. A live query against a populated duui_bundestag database, to see
      which columns are *actually* non-null in practice versus merely
@@ -45,7 +45,7 @@ global_persons(global_person_id PK, real_name)
     A person's identity *across* videos. `real_name` is essentially
     never set (nothing in this pipeline resolves a real name -- rows
     exist purely to group persons together). Populated by
-    duui_parser/parsers/global_identity.py, a per-import step that
+    importer/duui_parser/parsers/global_identity.py, a per-import step that
     pgvector-matches each new person's face/voice embedding centroid
     against every other already-imported video's persons and links
     both sides to the same global_persons row below a cosine-distance
@@ -95,7 +95,7 @@ linguistic_tokens(token_id PK, video_id FK, segment_id FK->segments NULL,
     (not reliably populated by the source annotator). `pos_tag`
     (universal POS tags, e.g. 'NOUN', 'VERB', 'DET') and `ner_label`
     (e.g. 'PER', 'LOC', 'ORG', 'MISC') are backfilled by a separate
-    German spaCy NLP pass (duui_parser/parsers/nlp_enrichment.py) over
+    German spaCy NLP pass (importer/duui_parser/parsers/nlp_enrichment.py) over
     each sentence's reconstructed text -- ONLY when
     DUUI_ENABLE_NLP_ENRICHMENT was turned on for that import (it's
     opt-in, off by default, since it needs an extra model dependency).
@@ -233,7 +233,7 @@ fused_emotions(fused_id PK, video_id FK, person_id FK NULL,
     fusion_method, target_modality CHECK IN ('multimodal','video-aggregated','text-aggregated'),
     start_time, end_time, valence, arousal, dominant_label)
     A combined/aggregated emotion signal. Populated automatically for
-    every sentence by duui_parser/parsers/emotion_fusion.py (unless
+    every sentence by importer/duui_parser/parsers/emotion_fusion.py (unless
     DUUI_ENABLE_EMOTION_FUSION was turned off for that import):
     `fusion_method = 'mean-valence-arousal-v1'` rows average
     valence/arousal across whichever of audio/video/text had data for

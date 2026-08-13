@@ -9,8 +9,9 @@ Serves two things:
      with video playback time: sentences (with assembled subtitle
      text), per-modality emotions, and face/person detections.
 
-Run from the project root:
-    uvicorn webapp.server:app --reload
+Run from this directory (webapp/ is self-contained -- it has no code
+outside itself):
+    uvicorn server:app --reload
 """
 
 from pathlib import Path
@@ -20,14 +21,15 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from psycopg2.extras import RealDictCursor
 
-from duui_parser.config import DB_CONFIG, VIDEO_MEDIA_DIR
-from duui_parser.db import get_db_connection
-from duui_parser.query_agent import QueryAgentError, answer_question
+from duui_webapp.config import VIDEO_MEDIA_DIR
+from duui_webapp.db import get_db_connection
+from duui_webapp.query_agent import QueryAgentError, answer_question
 
-# Same variable the importer writes into (duui_parser/media.py) --
-# this is the single place both sides agree a video for
-# `videos.filename = X` lives at `<VIDEO_DIR>/X`. See config.py's
-# VIDEO_MEDIA_DIR docstring and README "Docker architecture".
+# Same DUUI_VIDEO_DIR the importer writes into
+# (importer/duui_parser/media.py) -- this is the single place both
+# sides agree a video for `videos.filename = X` lives at
+# `<VIDEO_DIR>/X`. See duui_webapp/config.py's VIDEO_MEDIA_DIR comment
+# and README "Docker architecture".
 VIDEO_DIR = Path(VIDEO_MEDIA_DIR).resolve()
 VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR = Path(__file__).parent / "static"
@@ -91,7 +93,7 @@ def list_videos():
     Every imported video, plus whether its file actually exists in
     VIDEO_DIR right now -- this is how the webapp "knows" which videos
     it can play: the importer places the file there under the same
-    `filename` (see duui_parser/media.py), but a DB row can still
+    `filename` (see importer/duui_parser/media.py), but a DB row can still
     predate that step (import ran before the video was placed) or
     outlive it (the file was deleted/never arrived), so this is
     checked live rather than assumed.
@@ -192,7 +194,7 @@ def get_video_data(video_id: int):
 def list_global_persons():
     """
     Cross-video person identity: every global_persons cluster that
-    duui_parser/parsers/global_identity.py has linked two or more
+    importer/duui_parser/parsers/global_identity.py has linked two or more
     video-local `persons` rows into, with which video/clip_label each
     member came from. A person with no cross-video match (still the
     common case -- see global_identity.py's docstring) simply doesn't
@@ -330,7 +332,7 @@ class AskRequest(BaseModel):
 def ask_question(payload: AskRequest):
     """
     Natural-language question -> SQL agent. Runs the question through
-    the LLM-backed NL->SQL agent (duui_parser.query_agent), which
+    the LLM-backed NL->SQL agent (duui_webapp.query_agent), which
     explores the schema, writes a query, and picks which display
     overlays (transcript/bounding boxes/emotion modalities) the
     frontend should show for the results.

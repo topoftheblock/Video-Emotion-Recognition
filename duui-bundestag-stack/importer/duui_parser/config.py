@@ -4,6 +4,15 @@ Central configuration for the DUUI CAS parser.
 Keeping every path / credential / type-name in one place means the
 rest of the codebase never hardcodes a UIMA type name or a DB
 setting inline -- everything is imported from here.
+
+Deliberately separate from the viewer's own config (see
+webapp/duui_webapp/config.py): the two containers are independent
+images with independent code, and share nothing but the database and
+the video store. The settings they *both* read -- DB_CONFIG and
+VIDEO_MEDIA_DIR -- are defined in each of them from the same
+environment variables, which is what keeps the two ends of those two
+contracts pointing at the same place (see docker-compose.yml, where
+both services get the same values).
 """
 
 import os
@@ -41,27 +50,6 @@ TYPESYSTEM_FILES = {
     ),
     "emotion": os.environ.get("DUUI_TS_EMOTION", "typesystems/EmotionTypeSystem.xml"),
 }
-
-# --- Database ---------------------------------------------------------
-
-# --- Natural-language query agent -------------------------------------
-# Talks to an OpenAI-compatible chat-completions endpoint (this project
-# uses a university-hosted Open WebUI/Ollama gateway serving Qwen3-VL,
-# not Anthropic directly -- swap DUUI_QUERY_BASE_URL/DUUI_QUERY_MODEL to
-# point at a different OpenAI-compatible provider if needed).
-
-QUERY_AGENT_API_KEY = os.environ.get("DUUI_QUERY_API_KEY", "")
-QUERY_AGENT_BASE_URL = os.environ.get(
-    "DUUI_QUERY_BASE_URL", "https://lehre.llm.texttechnologylab.org/api"
-)
-QUERY_AGENT_MODEL = os.environ.get("DUUI_QUERY_MODEL", "gondor.qwen3-vl:32b")
-QUERY_AGENT_MAX_ROWS = int(os.environ.get("DUUI_QUERY_MAX_ROWS", "500"))
-QUERY_AGENT_STATEMENT_TIMEOUT_MS = int(
-    os.environ.get("DUUI_QUERY_STATEMENT_TIMEOUT_MS", "8000")
-)
-QUERY_AGENT_MAX_TOOL_ITERATIONS = int(
-    os.environ.get("DUUI_QUERY_MAX_TOOL_ITERATIONS", "6")
-)
 
 # --- Post-processing pipeline steps ------------------------------------
 # These run automatically as part of every `python main.py` import (see
@@ -106,17 +94,17 @@ SPACY_MODEL = os.environ.get("DUUI_SPACY_MODEL", "de_core_news_sm")
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
 # (copies into it, see duui_parser/media.py) and the webapp (reads from
-# it, see webapp/server.py) agree a video for `videos.filename = X`
-# lives at `<VIDEO_MEDIA_DIR>/X`. This is the output side, deliberately
-# separate from INPUT_DIR above so the webapp only ever sees videos
-# that belong to a committed DB row, and never depends on how the raw
-# pipeline drop directory is laid out.
+# it, see webapp/duui_webapp/config.py's copy of this setting) agree a
+# video for `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. This
+# is the output side, deliberately separate from INPUT_DIR above so the
+# webapp only ever sees videos that belong to a committed DB row, and
+# never depends on how the raw pipeline drop directory is laid out.
 #
 # Defaults to "cas" -- the same as INPUT_DIR -- so a native (non-Docker)
 # setup collapses the two into one directory and the copy step is a
 # harmless no-op. In Docker they're genuinely different: the importer
-# reads /app/cas and writes /media, and the webapp mounts /media
-# read-only (see docker-compose.yml).
+# reads /data/input and writes /data/videos, and the webapp mounts
+# /data/videos read-only (see docker-compose.yml).
 VIDEO_MEDIA_DIR = os.environ.get("DUUI_VIDEO_DIR", "cas")
 
 # --- Database ---------------------------------------------------------

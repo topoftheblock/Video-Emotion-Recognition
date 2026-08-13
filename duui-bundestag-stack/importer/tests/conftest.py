@@ -1,5 +1,5 @@
 """
-Shared fixtures for the test suite.
+Shared fixtures for the importer's test suite.
 
 `db_conn`/`db_cursor` give tests a real Postgres connection (using the
 same DUUI_DB_* env vars/`.env` the app itself reads via

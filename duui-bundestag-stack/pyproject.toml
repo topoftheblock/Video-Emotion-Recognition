@@ -1,6 +1,11 @@
 [tool.pytest.ini_options]
-# `shared` first so `import duui_parser` resolves the same way it does
-# inside the containers (where shared/duui_parser is copied to
-# /app/duui_parser); `.` so tests/ itself is importable.
-pythonpath = ["shared", "."]
-testpaths = ["tests"]
+# Runs both suites in one go from the stack root. Each container's code
+# lives entirely in its own directory, so both go on the path: that's
+# what makes `import duui_parser` (importer) and `import duui_webapp`
+# (webapp) resolve exactly as they do inside the respective images.
+#
+# Each directory also has its own pyproject.toml, so `cd importer &&
+# pytest` (or `cd webapp && pytest`) works standalone -- this file is
+# only the "run everything" convenience.
+pythonpath = ["importer", "webapp"]
+testpaths = ["importer/tests", "webapp/tests"]

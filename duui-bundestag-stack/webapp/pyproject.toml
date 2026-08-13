@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+# `.` so `import duui_webapp` resolves the same way it does inside the
+# container (where webapp/duui_webapp is copied to /app/duui_webapp).
+# Lets `cd webapp && pytest` work on its own; the stack root's
+# pyproject.toml runs this suite together with the importer's.
+pythonpath = ["."]
+testpaths = ["tests"]

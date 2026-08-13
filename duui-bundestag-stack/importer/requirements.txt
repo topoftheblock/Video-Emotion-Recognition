@@ -1,6 +1,8 @@
+# Runtime deps for the importer only -- deliberately does NOT include
+# fastapi/uvicorn/openai, which nothing under duui_parser/ imports
+# (those belong to the webapp: its HTTP server and the NL->SQL "Ask"
+# panel). Keeping the two requirement sets apart keeps this image small
+# and free of libraries it never touches.
 dkpro-cassis>=0.9.0
 psycopg2-binary>=2.9
 python-dotenv>=1.0
-fastapi>=0.110
-uvicorn>=0.29
-openai>=1.50.0

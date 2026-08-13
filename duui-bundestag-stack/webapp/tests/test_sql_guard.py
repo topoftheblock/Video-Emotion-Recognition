@@ -1,11 +1,11 @@
-"""Tests for duui_parser/query_agent/sql_guard.py -- the read-only
+"""Tests for duui_webapp/query_agent/sql_guard.py -- the read-only
 guard the NL->SQL agent's queries run through. This is a real safety
 boundary (the agent's output is untrusted input), so it gets tested
 independently of whether the LLM behind it is configured at all."""
 
 import pytest
 
-from duui_parser.query_agent.sql_guard import SQLGuardError, run_read_only, validate_select_only
+from duui_webapp.query_agent.sql_guard import SQLGuardError, run_read_only, validate_select_only
 
 
 # ---------------- Pure validation (no DB needed) ----------------

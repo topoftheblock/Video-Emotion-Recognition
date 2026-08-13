@@ -142,7 +142,7 @@ async function loadVideo(videoId) {
 }
 
 /** "Also appears in" panel: for each person in this video, list every
- * *other* video duui_parser/parsers/global_identity.py linked them to
+ * *other* video importer/duui_parser/parsers/global_identity.py linked them to
  * (see state.globalPersonClusters, fetched once at startup). */
 function renderCrossVideoPanel(data) {
   const clusters = state.globalPersonClusters || [];

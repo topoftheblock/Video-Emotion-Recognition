@@ -1,9 +1,8 @@
 # Runtime deps for the webapp only -- deliberately does NOT include
-# dkpro-cassis/lxml, which server.py never imports (those only matter
-# for the parser's duui_parser/pipeline.py, typesystem.py, parsers/*).
-# Keeping this separate from the top-level requirements.txt keeps the
-# webapp image small and avoids installing a UIMA library it never
-# touches.
+# dkpro-cassis/lxml, which nothing under webapp/ imports (those belong
+# to the importer's CAS parsers, see importer/requirements.txt).
+# Keeping the two requirement sets apart keeps this image small and
+# free of a UIMA library it never touches.
 fastapi>=0.110
 uvicorn[standard]>=0.29
 psycopg2-binary>=2.9

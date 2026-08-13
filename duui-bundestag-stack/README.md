@@ -344,9 +344,9 @@ default — uncomment the two `requirements-nlp.txt` lines in
 
 ## Running without compose
 
-Every container has its own build script. The importer and webapp
-images build with the **stack root** as context (they share
-`shared/duui_parser/`), which the scripts handle for you:
+Every container has its own build script, and every image builds with
+**its own folder** as the context — `db/`, `importer/` and `webapp/`
+are self-contained, with no code shared between them:
 
 ```bash
 ./build-all.sh          # all three
@@ -395,8 +395,11 @@ shared between them.
 ## Configuration reference
 
 Everything is an environment variable, read from `.env` or the real
-environment. `shared/duui_parser/config.py` is where they're all
-defined.
+environment. Each container defines the ones it reads:
+`importer/duui_parser/config.py` and `webapp/duui_webapp/config.py`.
+The few that appear in both (`DUUI_DB_*`, `DUUI_VIDEO_DIR`) are exactly
+the two contracts the containers share — the database and the video
+store — and compose passes the same values to both services.
 
 **Paths and ports** (read on the host, to build the compose file):
 
@@ -534,9 +537,20 @@ Each can be switched off independently (see the table above).
 
 ## Tests
 
+Each container has its own suite next to its code
+(`importer/tests/`, `webapp/tests/`). From the stack root, `pytest`
+runs both:
+
 ```bash
-pip install -r importer/requirements.txt -r requirements-dev.txt
+pip install -r importer/requirements.txt -r webapp/requirements.txt \
+            -r requirements-dev.txt
 pytest
+```
+
+Or one side on its own, needing only that side's requirements:
+
+```bash
+cd importer && pytest        # or: cd webapp && pytest
 ```
 
 Covers the read-only SQL guard the Ask panel's generated queries pass
@@ -569,13 +583,22 @@ suite is safe against a populated database and needs no cleanup.
 ├── .env.example           every setting, with defaults
 ├── db/                    Dockerfile, build.sh, schema.sql
 ├── importer/              Dockerfile, build.sh, main.py, typesystems/
+│   ├── duui_parser/       the CAS parsers, post-processing, DB layer
+│   ├── tests/             pytest suite for the above
 │   └── sample-input/      small demo .xmi + video (the default input)
 ├── webapp/                Dockerfile, build.sh, server.py, static/
-├── shared/duui_parser/    application code used by importer AND webapp
-├── tests/                 pytest suite
+│   ├── duui_webapp/       settings, DB layer, NL→SQL agent
+│   └── tests/             pytest suite for the above
 └── docs/                  schema reference, screenshots
 ```
 
-`shared/duui_parser/` is the actual application: the CAS parsers, the
-post-processing steps, the database layer and the NL→SQL agent. Both
-images copy it in, which is why they build from the stack root.
+Each of the three folders is self-contained: it holds all the code its
+image needs and nothing it doesn't, which is why each builds with its
+own folder as the Docker context. The importer never imports the
+viewer's code and vice versa — the only things they share are the
+Postgres database and the video store, both wired up in
+`docker-compose.yml`. That does mean a small amount of deliberate
+duplication (the DB connection helper, the `DUUI_DB_*` /
+`DUUI_VIDEO_DIR` settings, the pytest DB fixture); each copy is a
+handful of lines, and keeping them separate is what lets either
+container be built, tested, or moved out of this repo on its own.
