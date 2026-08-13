@@ -59,13 +59,10 @@ directory as the `.xmi`. So this is fine:
 Everything else — subfolders, unrelated files, other formats — is
 ignored. The folder is never written to.
 
-> **Longer term**: mounting a folder is the pull model. The natural
-> evolution is the push model — the backend gets handed each CAS+video
-> (an upload endpoint, or a watched drop directory) and imports it
-> itself, so nothing has to be mounted at all. The importer is already
-> a self-contained job with a plain CLI, so that change is an entry
-> point in front of it, not a rewrite. Mounting is the right amount of
-> machinery until then.
+> **Longer term**: mounting is the pull model. The push model — an
+> upload endpoint or a watched drop directory hands each CAS+video to
+> the importer — is an entry point in front of the existing CLI job,
+> not a rewrite. Mounting is the right amount of machinery until then.
 
 ### And where do the extracted videos end up?
 
@@ -75,16 +72,16 @@ exactly the filename recorded in the database. The viewer mounts the
 same store read-only. That's the whole mechanism — you never place,
 rename or move a video by hand.
 
-By default the video store is a Docker-managed named volume
-(`video_media`), so there's nothing to set up. If you'd rather have it
-as a normal folder you can browse and back up, point it at a host path:
+By default the store is a Docker-managed named volume (`video_media`),
+so there's nothing to set up. To have it as a normal folder you can
+browse and back up, point it at a host path instead:
 
 ```bash
 DUUI_VIDEO_STORE=/absolute/path/to/duui-videos
 ```
 
-Either way, both the importer and the viewer must use the **same** store
-— with compose that's automatic.
+Either way both containers must use the **same** store — with compose
+that's automatic.
 
 ---
 
@@ -119,19 +116,11 @@ You should see `db` and `webapp` as `(healthy)`, plus `init-import` as
 `Exited (0)` — that one is the import job, which is *supposed* to exit
 once it's finished.
 
-To import more files later, without restarting anything (then reload the
-page):
-
-```bash
-docker compose run --rm importer
-```
-
-> **Why the import runs automatically:** `docker compose up -d` used to
-> start only the database and the viewer, leaving the database empty — so
-> the app came up with an empty dropdown and a blank player, which looks
-> exactly like a broken deployment. The import now runs as part of `up`,
-> and if the database *is* ever empty the viewer says so explicitly
-> instead of showing a black rectangle.
+> **Why the import runs as part of `up`:** starting only the database
+> and the viewer left the database empty, so the app came up with an
+> empty dropdown and a blank player — indistinguishable from a broken
+> deployment. If the database *is* ever empty, the viewer now says so
+> explicitly instead of showing a black rectangle.
 
 ### Everyday commands
 
@@ -149,8 +138,8 @@ docker compose build              # rebuild images after changing code
 docker compose up -d --build webapp   # rebuild and restart just the viewer
 ```
 
-Importing more data later is always the same one command — no restart
-needed:
+Importing more data later never needs a restart — run the job again and
+reload the page:
 
 ```bash
 docker compose run --rm importer
@@ -182,14 +171,16 @@ docker compose ps            # STATUS should say (healthy)
 ### 2. Run the import job
 
 ```bash
-docker compose run --rm importer                    # everything in the input folder
-docker compose run --rm importer session1.xmi       # one specific file
-docker compose run --rm importer sub/ a.xmi b.xmi   # any mix of dirs and files
+docker compose run --rm importer                               # everything in the input folder
+docker compose run --rm importer /data/input/session1.xmi      # one specific file
+docker compose run --rm importer /data/input/sub /data/input/a.xmi   # any mix of dirs and files
 ```
 
 Paths are interpreted **inside** the container, where your input folder
-is mounted at `/data/input` (and that's the working directory default),
-so `session1.xmi` means `<your input folder>/session1.xmi`.
+is mounted at `/data/input` — so they have to be written as container
+paths, not as paths on your machine. Relative paths resolve against the
+image's working directory (`/app`), not against the input folder, so
+prefix them with `/data/input/`.
 
 What one run does, per `.xmi`:
 
@@ -242,22 +233,13 @@ docker compose up -d webapp     # later starts
 ```
 
 **The first run builds the webapp image (~30-60 s).** With `-d` that
-happens silently, and if the command is interrupted before it completes
-(Ctrl-C, closing the terminal, or moving on too early) **no container is
-created at all** — nothing crashes, nothing lands in the logs, and the
-port just doesn't respond. That looks exactly like "the app has no data"
-even when the database and video store are perfectly fine. Running it in
-the foreground the first time makes the build and `Application startup
-complete` visible.
-
-**Always verify:**
-
-```bash
-docker compose ps
-```
-
-Both `db` and `webapp` must be listed, both `(healthy)`. If `webapp` is
-missing from the list entirely, the start never completed — run it again.
+happens silently, and if it is interrupted before finishing (Ctrl-C,
+closing the terminal, moving on too early) **no container is created at
+all** — nothing crashes, nothing reaches the logs, the port just doesn't
+respond. That looks exactly like "the app has no data" even when the
+database and video store are fine. Hence the foreground run above, and
+`docker compose ps` afterwards: if `webapp` is missing from the list
+entirely, the start never completed — run it again.
 
 Then open http://localhost:8010 and pick a video from the dropdown. It
 lists everything in the database and marks any video whose file is
@@ -315,22 +297,20 @@ docker run --rm -v duui-bundestag-stack_video_media:/data/videos \
   -v /my/pipeline/output:/src:ro alpine cp /src/session1.mp4 /data/videos/
 ```
 
-(Check the exact volume name with `docker compose config --volumes`; the
-project prefix follows the folder name.)
+(The prefix is the compose project name, which `docker-compose.yml`
+pins to `duui-bundestag-stack` rather than deriving from the folder
+name. `docker volume ls` shows the full names.)
 
 ---
 
 ## Prerequisites
 
-**Docker path (recommended)**: Docker with Compose v2. That's it. No
-Python, no Postgres, no **ffmpeg**, no system libraries — the images
-bring everything, and nothing in this codebase shells out to an
-external binary. Videos are streamed byte-for-byte to the browser and
-never transcoded; the browser's own video decoder does the work.
-
-(The upstream DUUI pipeline that *produces* the CAS files does need
-ffmpeg and GPUs — that's a separate project. This stack only consumes
-its output.)
+**Docker path (recommended)**: Docker with Compose v2. That's it — no
+Python, no Postgres, no **ffmpeg**, no system libraries. Nothing here
+shells out to an external binary; videos are streamed byte-for-byte to
+the browser and never transcoded. (The upstream DUUI pipeline that
+*produces* the CAS files does need ffmpeg and GPUs — separate project,
+this stack only consumes its output.)
 
 **For running the tests or the importer directly on the host**: Python
 3.12, and Postgres 16+ with **pgvector** available.
@@ -428,6 +408,12 @@ running the images by hand):
 | `DUUI_DB_USER` | `duui` | |
 | `DUUI_DB_PASSWORD` | `duui` | Change it for anything beyond a local/internal deployment |
 | `DUUI_DB_HOST` | `localhost` | Compose sets `db` (the service name) inside containers |
+
+Those defaults come from `docker-compose.yml`. Running the code
+straight on the host without them set (no `.env`, no exports) falls
+back to the placeholders in `config.py` (`your_db` / `your_user`), so
+the connection simply fails — which is why the DB-backed tests skip
+rather than error when you haven't pointed them anywhere.
 
 **Natural-language "Ask" panel** (optional — empty key = feature off,
 everything else unaffected):
@@ -592,13 +578,11 @@ suite is safe against a populated database and needs no cleanup.
 └── docs/                  schema reference, screenshots
 ```
 
-Each of the three folders is self-contained: it holds all the code its
-image needs and nothing it doesn't, which is why each builds with its
-own folder as the Docker context. The importer never imports the
-viewer's code and vice versa — the only things they share are the
-Postgres database and the video store, both wired up in
-`docker-compose.yml`. That does mean a small amount of deliberate
-duplication (the DB connection helper, the `DUUI_DB_*` /
-`DUUI_VIDEO_DIR` settings, the pytest DB fixture); each copy is a
-handful of lines, and keeping them separate is what lets either
-container be built, tested, or moved out of this repo on its own.
+Each folder is self-contained — it holds all the code its image needs
+and nothing it doesn't, which is why each builds with its own folder as
+the Docker context. The importer never imports the viewer's code or
+vice versa; they share only the database and the video store, wired up
+in `docker-compose.yml`. The price is a little deliberate duplication
+(the DB connection helper, the `DUUI_DB_*` / `DUUI_VIDEO_DIR` settings,
+the pytest DB fixture) — a handful of lines each, and what lets either
+container be built, tested or lifted out of this repo on its own.

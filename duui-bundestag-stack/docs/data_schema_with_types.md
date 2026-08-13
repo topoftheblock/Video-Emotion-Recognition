@@ -2,6 +2,19 @@
 
 Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeline-Ergebnisse (WhisperX / VideoID / PersonLinking / Emotion).
 
+> **This is the design document, not a description of the running
+> database.** `db/schema.sql` is the authoritative schema, and the
+> importer follows it where the two differ. Known, deliberate
+> divergences: the text offsets are called `begin_offset`/`end_offset`
+> in the database (`END` is a reserved word in SQL); the single
+> `Detection` type here is implemented as separate `face_detections`
+> and `person_detections` tables; `segments` is also fed by
+> `SpeakerSentence` (for `kind = 'sentence'`), not only by `Shot`; and
+> text emotion comes from a second UIMA type not listed here
+> (`org.texttechnologylab.annotation.Emotion`, GoEmotions-style — see
+> `importer/duui_parser/parsers/text_emotion.py`). Keep this file as
+> the record of the intended design; correct the code, not the spec.
+
 ## Metadaten & Video Layer
 
 **Video** (The Master File)

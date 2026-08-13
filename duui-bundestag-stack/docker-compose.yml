@@ -110,9 +110,10 @@ services:
 
   # The same job, for importing more files later without touching the
   # running stack. Excluded from `up` by the "import" profile so it only
-  # runs when asked for explicitly:
-  #   docker compose run --rm importer                 # whole input dir
-  #   docker compose run --rm importer one_file.xmi    # a single file
+  # runs when asked for explicitly (paths are container paths -- the
+  # input directory is /data/input in here, whatever it is on the host):
+  #   docker compose run --rm importer                            # whole input dir
+  #   docker compose run --rm importer /data/input/one_file.xmi   # a single file
   importer:
     <<: *importer-common
     profiles: ["import"]
