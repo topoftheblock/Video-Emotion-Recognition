@@ -315,11 +315,6 @@ this stack only consumes its output.)
 **For running the tests or the importer directly on the host**: Python
 3.12, and Postgres 16+ with **pgvector** available.
 
-**Optional NLP enrichment**: needs a spaCy German model (~13 MB). Off by
-default — uncomment the two `requirements-nlp.txt` lines in
-`importer/Dockerfile`, rebuild, and set
-`DUUI_ENABLE_NLP_ENRICHMENT=true`.
-
 ---
 
 ## Running without compose
@@ -435,8 +430,6 @@ everything else unaffected):
 | `DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD` | `0.30` | Cosine distance; lower = stricter |
 | `DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD` | `0.35` | |
 | `DUUI_ENABLE_EMOTION_FUSION` | `true` | One fused emotion row per sentence, averaged across available modalities |
-| `DUUI_ENABLE_NLP_ENRICHMENT` | `false` | spaCy POS/NER backfill (needs the extra build step) |
-| `DUUI_SPACY_MODEL` | `de_core_news_sm` | |
 
 ---
 
@@ -466,7 +459,7 @@ everything else unaffected):
 
 ## Post-processing during import
 
-Three things are computed by the importer rather than read from the CAS,
+Two things are computed by the importer rather than read from the CAS,
 because the CAS doesn't contain them:
 
 1. **Cross-video person identity** — each new person's face/voice
@@ -478,8 +471,6 @@ because the CAS doesn't contain them:
 2. **Emotion fusion** — per sentence, valence/arousal are averaged
    within each modality and then across modalities into one
    `fused_emotions` row.
-3. **NLP enrichment** (opt-in) — spaCy POS/NER tags backfilled onto the
-   transcript tokens, which the CAS leaves empty.
 
 Each can be switched off independently (see the table above).
 

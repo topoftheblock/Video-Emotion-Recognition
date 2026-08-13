@@ -33,7 +33,6 @@ from . import (
     emotion,
     text_emotion,
     emotion_fusion,
-    nlp_enrichment,
 )
 
 PARSE_STEPS = [
@@ -54,8 +53,6 @@ PARSE_STEPS = [
     text_emotion,   # text-based GoEmotions -> BaseEmotion + EmotionScore
     emotion_fusion, # multimodal fusion per sentence -- must run last: needs every
                     # modality's base_emotions rows for this video already inserted
-    nlp_enrichment, # POS/NER backfill onto linguistic_tokens -- only needs segment/token,
-                    # placed last alongside emotion_fusion since order doesn't matter for it
 ]
 
 __all__ = ["PARSE_STEPS"]

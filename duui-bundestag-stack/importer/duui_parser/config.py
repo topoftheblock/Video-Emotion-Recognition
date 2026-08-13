@@ -83,14 +83,6 @@ GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
 # audio/video/text base_emotions are available for it.
 ENABLE_EMOTION_FUSION = _bool_env("DUUI_ENABLE_EMOTION_FUSION", True)
 
-# NLP enrichment (duui_parser/parsers/nlp_enrichment.py): runs spaCy
-# POS/NER over each sentence's reconstructed text and backfills
-# linguistic_tokens.pos_tag/ner_label, which the source CAS leaves
-# empty. Off by default -- unlike the other two steps this pulls in a
-# large model download (see requirements.txt), so it's opt-in.
-ENABLE_NLP_ENRICHMENT = _bool_env("DUUI_ENABLE_NLP_ENRICHMENT", False)
-SPACY_MODEL = os.environ.get("DUUI_SPACY_MODEL", "de_core_news_sm")
-
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
 # (copies into it, see duui_parser/media.py) and the webapp (reads from
@@ -299,8 +291,8 @@ INJECTED_FALLBACK_TYPES = {
 # provenance on everything it touches, so the .xmi references DKPro's
 # text-layer types and TTLab's annotator-metadata types. None of them is
 # in TYPES above and no parser step selects them: the transcript comes
-# from `DiarizedAudioToken` (the audio layer), and POS/NER are backfilled
-# from spaCy by the optional nlp_enrichment step, not read from the CAS.
+# from `DiarizedAudioToken` (the audio layer), and POS/NER are taken from
+# the DiarizedAudioToken features themselves where present.
 #
 # cassis warns once per unknown type while loading the XMI and skips the
 # annotation -- correct behaviour, but for these twelve it is noise that

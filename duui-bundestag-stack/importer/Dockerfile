@@ -13,13 +13,6 @@ WORKDIR /app
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Optional NLP enrichment (POS/NER backfill via spaCy). Uncomment both
-# lines to bake it in, then run with DUUI_ENABLE_NLP_ENRICHMENT=true.
-# Left out by default because it pulls in a ~13MB model download that
-# most imports don't need -- see README "Post-processing".
-# COPY requirements-nlp.txt ./requirements-nlp.txt
-# RUN pip install --no-cache-dir -r requirements-nlp.txt
-
 # The application code: the CAS parsers, the post-processing steps and
 # the database layer.
 COPY duui_parser ./duui_parser

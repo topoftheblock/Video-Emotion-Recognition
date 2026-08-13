@@ -94,16 +94,12 @@ linguistic_tokens(token_id PK, video_id FK, segment_id FK->segments NULL,
     segment.end_time), not segment_id -- segment_id is frequently NULL
     (not reliably populated by the source annotator). `pos_tag`
     (universal POS tags, e.g. 'NOUN', 'VERB', 'DET') and `ner_label`
-    (e.g. 'PER', 'LOC', 'ORG', 'MISC') are backfilled by a separate
-    German spaCy NLP pass (importer/duui_parser/parsers/nlp_enrichment.py) over
-    each sentence's reconstructed text -- ONLY when
-    DUUI_ENABLE_NLP_ENRICHMENT was turned on for that import (it's
-    opt-in, off by default, since it needs an extra model dependency).
-    So these columns are populated for some imported videos and NULL
-    for others depending on that setting -- check whether any
-    non-empty values exist for the video(s) in question before relying
-    on POS/NER filtering to answer a question; if they're empty, say
-    so rather than silently returning zero rows.
+    (e.g. 'PER', 'LOC', 'ORG', 'MISC') are copied straight from the
+    source annotator's token features, which typically do not set them
+    -- so both columns are usually NULL. Check whether any non-empty
+    values exist for the video(s) in question before relying on
+    POS/NER filtering to answer a question; if they're empty, say so
+    rather than silently returning zero rows.
 
 face_embeddings / voice_embeddings(embedding_id PK, person_id FK, model_id FK, embedding vector)
     Raw biometric vectors (512-dim face / 192-dim voice). Never needed
