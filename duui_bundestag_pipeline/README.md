@@ -3,6 +3,26 @@
 Parses UIMA CAS XMI output from the DUUI video-emotion pipeline into a
 Postgres database.
 
+## Quickstart (Docker)
+
+Requires only Docker + a CAS `.xmi` file with its companion video sitting
+next to it in `cas/` (see `cas/full_2sek_with_person.xmi` /
+`cas/first2.mp4` for a small example pair already in this repo).
+
+```bash
+docker compose up -d db                              # start Postgres; wait ~10s for it to report healthy
+docker compose run --rm importer cas/your_file.xmi    # parse the CAS + place its video, one-off
+docker compose up -d webapp                           # start the viewer
+```
+
+Open **http://localhost:8010**. Repeat the middle command for each
+additional file you want to import; the other two only need running once.
+
+Everything below this is either the no-Docker (local Python + Postgres)
+setup, or a deeper explanation of the Docker path -- see
+"Docker architecture" for what those three commands actually do, which
+volumes/env vars matter, and how to recover if a video didn't get placed.
+
 ## Project layout
 
 ```
