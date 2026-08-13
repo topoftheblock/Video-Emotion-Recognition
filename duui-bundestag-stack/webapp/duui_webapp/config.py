@@ -5,13 +5,13 @@ Every setting the webapp reads lives here, so nothing else in this
 container hardcodes a path or a credential inline.
 
 Deliberately separate from the importer's own config (see
-importer/duui_parser/config.py): the two containers are independent
-images with independent code, and share nothing but the database and
-the video store. The settings they *both* read -- DB_CONFIG and
-VIDEO_MEDIA_DIR -- are defined in each of them from the same
-environment variables, which is what keeps the two ends of those two
-contracts pointing at the same place (see docker-compose.yml, where
-both services get the same values).
+duui-video-emotion-cas-to-postgres/src/main/config.py): the two
+containers are independent images with independent code, and share
+nothing but the database and the video store. The settings they *both*
+read -- DB_CONFIG and VIDEO_MEDIA_DIR -- are defined in each of them
+from the same environment variables, which is what keeps the two ends
+of those two contracts pointing at the same place (see
+docker-compose.yml, where both services get the same values).
 """
 
 import os
@@ -28,7 +28,8 @@ except ImportError:
 
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
-# (copies into it, see importer/duui_parser/media.py) and the webapp
+# (copies into it, see
+# duui-video-emotion-cas-to-postgres/src/main/media.py) and the webapp
 # (reads from it, see webapp/server.py) agree a video for
 # `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. The viewer only
 # ever reads from it; it never sees the importer's input directory at

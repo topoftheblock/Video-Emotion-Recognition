@@ -1,9 +1,9 @@
-"""Tests for duui_parser/media.py -- pure filesystem logic, no DB
+"""Tests for src/main/media.py -- pure filesystem logic, no DB
 needed. Covers the behavior the Docker "importer places the video"
 flow depends on: idempotent copy, and graceful (non-raising) handling
 of a missing source or filename."""
 
-from duui_parser import media
+from main import media
 
 
 def test_place_video_file_copies_when_missing(tmp_path, monkeypatch):

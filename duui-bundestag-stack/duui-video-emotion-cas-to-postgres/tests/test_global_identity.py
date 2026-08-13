@@ -1,5 +1,5 @@
 """
-DB-integration tests for duui_parser/parsers/global_identity.py.
+DB-integration tests for src/main/parsers/global_identity.py.
 
 Everything runs on the `db_cursor` fixture's single connection and is
 rolled back at teardown (see conftest.py) -- setup inserts, the
@@ -8,7 +8,7 @@ uncommitted transaction, so no cleanup or dedicated test schema is
 needed beyond a real Postgres with schema.sql applied.
 """
 
-from duui_parser.parsers import global_identity
+from main.parsers import global_identity
 
 # Well outside any real CAS's xmi:id range (small integers in
 # practice) -- avoids any risk of colliding with genuine committed

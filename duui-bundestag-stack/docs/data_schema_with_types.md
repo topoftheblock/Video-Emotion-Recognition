@@ -12,7 +12,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 > `SpeakerSentence` (for `kind = 'sentence'`), not only by `Shot`; and
 > text emotion comes from a second UIMA type not listed here
 > (`org.texttechnologylab.annotation.Emotion`, GoEmotions-style — see
-> `importer/duui_parser/parsers/text_emotion.py`). Keep this file as
+> `duui-video-emotion-cas-to-postgres/src/main/parsers/text_emotion.py`). Keep this file as
 > the record of the intended design; correct the code, not the spec.
 
 ## Metadaten & Video Layer

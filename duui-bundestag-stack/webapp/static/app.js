@@ -138,8 +138,10 @@ async function loadVideo(videoId) {
 }
 
 /** "Also appears in" panel: for each person in this video, list every
- * *other* video importer/duui_parser/parsers/global_identity.py linked them to
- * (see state.globalPersonClusters, fetched once at startup). */
+ * *other* video that
+ * duui-video-emotion-cas-to-postgres/src/main/parsers/global_identity.py
+ * linked them to (see state.globalPersonClusters, fetched once at
+ * startup). */
 function renderCrossVideoPanel(data) {
   const clusters = state.globalPersonClusters || [];
   const rows = [];

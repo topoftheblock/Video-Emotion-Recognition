@@ -1,5 +1,5 @@
 # Runtime deps for the importer only -- deliberately does NOT include
-# fastapi/uvicorn/openai, which nothing under duui_parser/ imports
+# fastapi/uvicorn/openai, which nothing under src/ imports
 # (those belong to the webapp: its HTTP server and the NL->SQL "Ask"
 # panel). Keeping the two requirement sets apart keeps this image small
 # and free of libraries it never touches.

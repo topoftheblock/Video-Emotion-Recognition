@@ -1,11 +1,11 @@
-"""Tests for duui_parser/pipeline.py's batch path resolution -- pure
+"""Tests for src/pipeline.py's batch path resolution -- pure
 path logic, no DB or CAS parsing involved."""
 
 import os
 
 import pytest
 
-from duui_parser.pipeline import describe_missing_inputs, resolve_xmi_paths
+from main.pipeline import describe_missing_inputs, resolve_xmi_paths
 
 
 def test_directory_expands_to_its_xmi_files(tmp_path):

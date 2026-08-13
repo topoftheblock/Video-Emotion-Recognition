@@ -8,7 +8,8 @@ fail) when there isn't one, so `pytest` still works for anyone who
 just wants the pure-function tests without spinning up Postgres.
 
 The viewer only ever reads, so unlike the importer's suite (see
-importer/tests/conftest.py) nothing here needs a rollback fixture.
+duui-video-emotion-cas-to-postgres/tests/conftest.py) nothing here
+needs a rollback fixture.
 
 Requires the schema already applied (`psql -f db/schema.sql`) --
 see README "Tests" for how to run against the compose db service.

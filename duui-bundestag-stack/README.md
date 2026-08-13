@@ -10,11 +10,11 @@ Three containers, each buildable on its own:
 | Folder | Container | What it is |
 | :--- | :--- | :--- |
 | `db/` | `duui-db` | Postgres 16 + pgvector, schema baked in |
-| `importer/` | `duui-importer` | **One-off job**: parses `.xmi` → Postgres, and copies the videos where the viewer can find them. Runs, works, exits |
+| `duui-video-emotion-cas-to-postgres/` | `duui-video-emotion-cas-to-postgres` | **One-off job**: parses `.xmi` → Postgres, and copies the videos where the viewer can find them. Runs, works, exits |
 | `webapp/` | `duui-webapp` | The viewer (FastAPI + static frontend). Long-running |
 
 ```
-YOUR pipeline output folder            duui-importer (one-off)                duui-webapp
+YOUR pipeline output folder      duui-video-emotion-cas-to-postgres           duui-webapp
 (stays exactly where it is)      ┌──▶ 1. parse .xmi ──▶ Postgres ◀───────────── reads DB
   session1.xmi + session1.mp4 ───┤                                                  ▲
   session2.xmi + session2.mp4 ───┘    2. copy .mp4 ──▶ video store ────────────────┘
@@ -320,12 +320,12 @@ this stack only consumes its output.)
 ## Running without compose
 
 Every image builds with **its own folder** as the context — `db/`,
-`importer/` and `webapp/` are self-contained, with no code shared
-between them:
+`duui-video-emotion-cas-to-postgres/` and `webapp/` are self-contained,
+with no code shared between them:
 
 ```bash
 docker build -t duui-db db/
-docker build -t duui-importer importer/
+docker build -t duui-video-emotion-cas-to-postgres duui-video-emotion-cas-to-postgres/
 docker build -t duui-webapp webapp/
 
 docker build -t duui-webapp:v2 webapp/     # custom tag
@@ -349,7 +349,7 @@ docker run --rm --network duui \
   -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
   -v /my/pipeline/output:/data/input:ro \
   -v duui_videos:/data/videos \
-  duui-importer:latest
+  duui-video-emotion-cas-to-postgres:latest
 
 # 3. viewer
 docker run -d --name duui-webapp --network duui \
@@ -370,7 +370,8 @@ shared between them.
 
 Everything is an environment variable, read from `.env` or the real
 environment. Each container defines the ones it reads:
-`importer/duui_parser/config.py` and `webapp/duui_webapp/config.py`.
+`duui-video-emotion-cas-to-postgres/src/main/config.py` and
+`webapp/duui_webapp/config.py`.
 The few that appear in both (`DUUI_DB_*`, `DUUI_VIDEO_DIR`) are exactly
 the two contracts the containers share — the database and the video
 store — and compose passes the same values to both services.
@@ -379,7 +380,7 @@ store — and compose passes the same values to both services.
 
 | Variable | Default | What it is |
 | :--- | :--- | :--- |
-| `DUUI_INPUT_HOST_DIR` | `./importer/sample-input` | **Your** folder of `.xmi` files + videos. Mounted read-only; never modified |
+| `DUUI_INPUT_HOST_DIR` | `./duui-video-emotion-cas-to-postgres/src/resources/sample-input` | **Your** folder of `.xmi` files + videos. Mounted read-only; never modified |
 | `DUUI_VIDEO_STORE` | `video_media` | Where imported videos live. Plain name = Docker volume; host path = bind mount |
 | `DUUI_WEBAPP_HOST_PORT` | `8010` | Host port for the viewer (container always listens on 8000) |
 | `DUUI_DB_HOST_PORT` | `5432` | Host port for Postgres. Change if you run one locally |
@@ -392,7 +393,7 @@ running the images by hand):
 | `DUUI_INPUT_DIR` | `/data/input` | Directory the importer reads |
 | `DUUI_VIDEO_DIR` | `/data/videos` | Directory the importer writes videos to / the viewer serves from |
 | `DUUI_XMI_FILE` | *(unset)* | If set, a no-argument import does just this one file |
-| `DUUI_TS_IDENTITY_EMOTION`<br>`DUUI_TS_MULTIMODAL_IDENTITY`<br>`DUUI_TS_EMOTION` | `typesystems/*.xml` | Only if your typesystem filenames differ |
+| `DUUI_TS_IDENTITY_EMOTION`<br>`DUUI_TS_MULTIMODAL_IDENTITY`<br>`DUUI_TS_EMOTION` | `src/resources/typesystems/*.xml` | Only if your typesystem filenames differ |
 
 **Database**:
 
@@ -509,19 +510,19 @@ It can be switched off (see the table above).
 ## Tests
 
 Each container has its own suite next to its code
-(`importer/tests/`, `webapp/tests/`). From the stack root, `pytest`
-runs both:
+(`duui-video-emotion-cas-to-postgres/tests/`, `webapp/tests/`). From
+the stack root, `pytest` runs both:
 
 ```bash
-pip install -r importer/requirements.txt -r webapp/requirements.txt \
-            -r requirements-dev.txt
+pip install -r duui-video-emotion-cas-to-postgres/requirements.txt \
+            -r webapp/requirements.txt -r requirements-dev.txt
 pytest
 ```
 
 Or one side on its own, needing only that side's requirements:
 
 ```bash
-cd importer && pytest        # or: cd webapp && pytest
+cd duui-video-emotion-cas-to-postgres && pytest        # or: cd webapp && pytest
 ```
 
 Covers the read-only SQL guard the Ask panel's generated queries pass
@@ -552,10 +553,14 @@ suite is safe against a populated database and needs no cleanup.
 ├── docker-compose.yml     all three services, for convenience
 ├── .env.example           every setting, with defaults
 ├── db/                    Dockerfile, schema.sql
-├── importer/              Dockerfile, main.py, typesystems/
-│   ├── duui_parser/       the CAS parsers, post-processing, DB layer
-│   ├── tests/             pytest suite for the above
-│   └── sample-input/      small demo .xmi + video (the default input)
+├── duui-video-emotion-cas-to-postgres/
+│                          Dockerfile, requirements.txt
+│   ├── src/               source root (on the path, not a package)
+│   │   ├── main/          the CAS parsers, post-processing, DB layer,
+│   │   │                  and __main__.py (the `python -m main` entry)
+│   │   └── resources/     typesystems/ + sample-input/ (demo .xmi
+│   │                      + video, the default input)
+│   └── tests/             pytest suite for the above
 ├── webapp/                Dockerfile, server.py, static/
 │   ├── duui_webapp/       settings, DB layer, NL→SQL agent
 │   └── tests/             pytest suite for the above

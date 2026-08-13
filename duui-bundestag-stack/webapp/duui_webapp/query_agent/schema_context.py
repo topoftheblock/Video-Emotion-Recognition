@@ -9,8 +9,9 @@ doesn't have one -- isn't recoverable from `information_schema` alone.
 Structure comes from db/schema.sql. The semantics below come from
 three sources, cross-checked against each other:
   1. docs/data_schema_with_types.md (the intended design)
-  2. importer/duui_parser/parsers/*.py (what actually gets INSERTed,
-     which in a few places diverges from (1) -- noted explicitly below)
+  2. duui-video-emotion-cas-to-postgres/src/main/parsers/*.py (what
+     actually gets INSERTed, which in a few places diverges from (1) --
+     noted explicitly below)
   3. A live query against a populated duui_bundestag database, to see
      which columns are *actually* non-null in practice versus merely
      nullable in the DDL, and what real label/value vocabularies look
@@ -45,8 +46,9 @@ global_persons(global_person_id PK, real_name)
     A person's identity *across* videos. `real_name` is essentially
     never set (nothing in this pipeline resolves a real name -- rows
     exist purely to group persons together). Populated by
-    importer/duui_parser/parsers/global_identity.py, a per-import step that
-    pgvector-matches each new person's face/voice embedding centroid
+    duui-video-emotion-cas-to-postgres/src/main/parsers/global_identity.py,
+    a per-import step that pgvector-matches each new person's
+    face/voice embedding centroid
     against every other already-imported video's persons and links
     both sides to the same global_persons row below a cosine-distance
     threshold (see config.py). This is a similarity HEURISTIC, not a

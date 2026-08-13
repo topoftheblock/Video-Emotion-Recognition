@@ -3,7 +3,7 @@ Shared fixtures for the importer's test suite.
 
 `db_conn`/`db_cursor` give tests a real Postgres connection (using the
 same DUUI_DB_* env vars/`.env` the app itself reads via
-duui_parser.config.DB_CONFIG) and roll back everything at teardown --
+src.config.DB_CONFIG) and roll back everything at teardown --
 tests are free to INSERT/UPDATE against the real schema and never have
 to clean up by hand, as long as they never call `conn.commit()`
 themselves. Tests that need a live DB are automatically skipped (not
@@ -17,7 +17,7 @@ see README "Tests" for how CI does this.
 import psycopg2
 import pytest
 
-from duui_parser.config import DB_CONFIG
+from main.config import DB_CONFIG
 
 
 def _can_connect():

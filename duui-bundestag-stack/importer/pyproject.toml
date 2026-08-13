@@ -1,7 +1,0 @@
-[tool.pytest.ini_options]
-# `.` so `import duui_parser` resolves the same way it does inside the
-# container (where importer/duui_parser is copied to /app/duui_parser).
-# Lets `cd importer && pytest` work on its own; the stack root's
-# pyproject.toml runs this suite together with the webapp's.
-pythonpath = ["."]
-testpaths = ["tests"]

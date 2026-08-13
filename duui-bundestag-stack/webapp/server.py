@@ -26,10 +26,10 @@ from duui_webapp.db import get_db_connection
 from duui_webapp.query_agent import QueryAgentError, answer_question
 
 # Same DUUI_VIDEO_DIR the importer writes into
-# (importer/duui_parser/media.py) -- this is the single place both
-# sides agree a video for `videos.filename = X` lives at
-# `<VIDEO_DIR>/X`. See duui_webapp/config.py's VIDEO_MEDIA_DIR comment
-# and README "Docker architecture".
+# (duui-video-emotion-cas-to-postgres/src/main/media.py) -- this is the
+# single place both sides agree a video for `videos.filename = X` lives
+# at `<VIDEO_DIR>/X`. See duui_webapp/config.py's VIDEO_MEDIA_DIR
+# comment and README "Docker architecture".
 VIDEO_DIR = Path(VIDEO_MEDIA_DIR).resolve()
 VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 STATIC_DIR = Path(__file__).parent / "static"
@@ -93,10 +93,11 @@ def list_videos():
     Every imported video, plus whether its file actually exists in
     VIDEO_DIR right now -- this is how the webapp "knows" which videos
     it can play: the importer places the file there under the same
-    `filename` (see importer/duui_parser/media.py), but a DB row can still
-    predate that step (import ran before the video was placed) or
-    outlive it (the file was deleted/never arrived), so this is
-    checked live rather than assumed.
+    `filename` (see
+    duui-video-emotion-cas-to-postgres/src/main/media.py), but a DB row
+    can still predate that step (import ran before the video was
+    placed) or outlive it (the file was deleted/never arrived), so this
+    is checked live rather than assumed.
     """
     videos = _query(
         "SELECT video_id, filename, duration, fps, width, height FROM videos ORDER BY processed_at DESC"
@@ -186,12 +187,12 @@ def get_video_data(video_id: int):
 def list_global_persons():
     """
     Cross-video person identity: every global_persons cluster that
-    importer/duui_parser/parsers/global_identity.py has linked two or more
-    video-local `persons` rows into, with which video/clip_label each
-    member came from. A person with no cross-video match (still the
-    common case -- see global_identity.py's docstring) simply doesn't
-    appear here; this endpoint is specifically "who spans videos", not
-    "everyone".
+    duui-video-emotion-cas-to-postgres/src/main/parsers/global_identity.py
+    has linked two or more video-local `persons` rows into, with which
+    video/clip_label each member came from. A person with no
+    cross-video match (still the common case -- see
+    global_identity.py's docstring) simply doesn't appear here; this
+    endpoint is specifically "who spans videos", not "everyone".
     """
     rows = _query(
         """

@@ -27,8 +27,8 @@ name: duui-bundestag-stack
 # (the same job, invoked manually) so the two can never drift apart.
 x-importer-common: &importer-common
   build:
-    context: ./importer
-  image: duui-importer:latest
+    context: ./duui-video-emotion-cas-to-postgres
+  image: duui-video-emotion-cas-to-postgres:latest
   environment:
     DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
     DUUI_DB_USER: ${DUUI_DB_USER:-duui}
@@ -54,7 +54,7 @@ x-importer-common: &importer-common
     #
     # Note it relabels RECURSIVELY: keep DUUI_INPUT_HOST_DIR pointed at
     # a data folder, never at $HOME or a system directory.
-    - ${DUUI_INPUT_HOST_DIR:-./importer/sample-input}:/data/input:ro,z
+    - ${DUUI_INPUT_HOST_DIR:-./duui-video-emotion-cas-to-postgres/src/resources/sample-input}:/data/input:ro,z
     # OUTPUT (read-write): the video store. The importer copies each
     # CAS's companion video here, named exactly as the `videos.filename`
     # row it just wrote -- which is how the webapp (same store, mounted

@@ -16,6 +16,7 @@ both services get the same values).
 """
 
 import os
+from pathlib import Path
 
 try:
     from dotenv import load_dotenv
@@ -30,7 +31,7 @@ except ImportError:
 # --- File locations -------------------------------------------------
 
 # Where the pipeline drops its output: CAS .xmi files, each next to the
-# video file it references. `main.py`/`run_many()` with no explicit
+# video file it references. `python -m main`/`run_many()` with no explicit
 # path argument import everything in here, so this is the "just run the
 # importer" default for a whole batch. Distinct from VIDEO_MEDIA_DIR
 # below: this is the *input* side and is only ever read from.
@@ -41,19 +42,30 @@ INPUT_DIR = os.environ.get("DUUI_INPUT_DIR", "cas")
 # no-argument run imports just that file instead of all of INPUT_DIR.
 XMI_FILE = os.environ.get("DUUI_XMI_FILE")
 
+# Bundled, non-code assets (the UIMA typesystem descriptors, the demo
+# CAS) live under the source root's `resources/`, not in the `main`
+# package. Resolved from this file rather than the working directory so
+# `python -m main` works from anywhere; DUUI_TS_* still override.
+RESOURCES_DIR = Path(__file__).resolve().parents[1] / "resources"
+_TYPESYSTEM_DIR = RESOURCES_DIR / "typesystems"
+
 TYPESYSTEM_FILES = {
     "identity_emotion": os.environ.get(
-        "DUUI_TS_IDENTITY_EMOTION", "typesystems/IdentityEmotionTypeSystem.xml"
+        "DUUI_TS_IDENTITY_EMOTION",
+        str(_TYPESYSTEM_DIR / "IdentityEmotionTypeSystem.xml"),
     ),
     "multimodal_identity": os.environ.get(
-        "DUUI_TS_MULTIMODAL_IDENTITY", "typesystems/MultimodalIdentityTypeSystem.xml"
+        "DUUI_TS_MULTIMODAL_IDENTITY",
+        str(_TYPESYSTEM_DIR / "MultimodalIdentityTypeSystem.xml"),
     ),
-    "emotion": os.environ.get("DUUI_TS_EMOTION", "typesystems/EmotionTypeSystem.xml"),
+    "emotion": os.environ.get(
+        "DUUI_TS_EMOTION", str(_TYPESYSTEM_DIR / "EmotionTypeSystem.xml")
+    ),
 }
 
 # --- Post-processing pipeline steps ------------------------------------
-# These run automatically as part of every `python main.py` import (see
-# duui_parser/parsers/__init__.py) -- each can be switched off
+# These run automatically as part of every `python -m main` import (see
+# src/main/parsers/__init__.py) -- each can be switched off
 # independently for a faster import or a constrained environment
 # without breaking the rest of the pipeline.
 
@@ -61,7 +73,7 @@ def _bool_env(name, default):
     return os.environ.get(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
-# Cross-video person identity (duui_parser/parsers/global_identity.py):
+# Cross-video person identity (src/main/parsers/global_identity.py):
 # after a video's face/voice embeddings are inserted, each new local
 # person is matched via pgvector cosine distance against every other
 # video's persons; a match below the threshold links both to the same
@@ -80,7 +92,7 @@ GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
 
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
-# (copies into it, see duui_parser/media.py) and the webapp (reads from
+# (copies into it, see src/main/media.py) and the webapp (reads from
 # it, see webapp/duui_webapp/config.py's copy of this setting) agree a
 # video for `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. This
 # is the output side, deliberately separate from INPUT_DIR above so the

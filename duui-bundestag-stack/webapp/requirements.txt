@@ -1,6 +1,7 @@
 # Runtime deps for the webapp only -- deliberately does NOT include
 # dkpro-cassis/lxml, which nothing under webapp/ imports (those belong
-# to the importer's CAS parsers, see importer/requirements.txt).
+# to the importer's CAS parsers, see
+# duui-video-emotion-cas-to-postgres/requirements.txt).
 # Keeping the two requirement sets apart keeps this image small and
 # free of a UIMA library it never touches.
 fastapi>=0.110

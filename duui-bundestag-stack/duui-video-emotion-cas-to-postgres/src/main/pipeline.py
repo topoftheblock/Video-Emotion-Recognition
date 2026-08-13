@@ -3,7 +3,7 @@ it inside one DB transaction, commit, then place the companion video
 file where the webapp expects it.
 
 `run()` handles one CAS; `run_many()` handles a batch (explicit files
-and/or whole directories) and is what `main.py` actually calls -- it
+and/or whole directories) and is what `python -m main` actually calls -- it
 loads and patches the typesystem exactly once for the entire batch
 rather than per file, which dominates startup time otherwise.
 """
@@ -196,7 +196,7 @@ def run_many(paths=None):
     Each file gets its own transaction, and a failure is reported and
     skipped rather than aborting the batch -- with a folder of exports,
     one malformed file shouldn't cost you every import after it. The
-    exit code is left to the caller (see main.py) so a partial failure
+    exit code is left to the caller (see src/main/__main__.py) so a partial failure
     is still visible to a CI job or shell script.
     """
     paths = list(paths) if paths else default_input_paths()

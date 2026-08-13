@@ -4,7 +4,7 @@ DocumentMetaData if no MultimediaElement annotation is present.
 Sets context["global_video_id"] and context["video_filename"] for
 downstream steps -- the latter is what pipeline.py uses after commit
 to place the companion video file where the webapp expects it (see
-duui_parser/media.py), so it stays in lockstep with whatever filename
+src/main/media.py), so it stays in lockstep with whatever filename
 actually ended up in the `videos` row, rather than being re-derived.
 """
 
