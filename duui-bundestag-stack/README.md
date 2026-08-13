@@ -103,8 +103,12 @@ docker compose up -d db
 # 2. run the import job -- imports every .xmi in your input folder, then exits
 docker compose run --rm importer
 
-# 3. start the viewer
-docker compose up -d webapp
+# 3. start the viewer (first run builds the image -- takes ~30-60s;
+#    no -d so you can see it finish. Use -d on later starts.)
+docker compose up webapp
+
+# 4. confirm both containers are up: db AND webapp, both (healthy)
+docker compose ps
 ```
 
 Open **http://localhost:8010**.
@@ -112,6 +116,42 @@ Open **http://localhost:8010**.
 Steps 1 and 3 are one-time. Step 2 is what you re-run whenever your
 pipeline produces new files — the viewer picks them up without a restart
 (just reload the page).
+
+> **If the page doesn't load or shows no video, check step 4 first.** On
+> the first run, step 3 builds the webapp image; if that command is
+> interrupted before it finishes, **no container is created at all** —
+> nothing crashes, nothing appears in the logs, and the port simply
+> doesn't respond, which looks like missing data but isn't. `docker
+> compose ps` must list **both** `db` and `webapp`. If `webapp` isn't
+> there, just run step 3 again. See "3. Start the viewer" below for the
+> full checklist.
+
+### Everyday commands
+
+All of these run from this directory (`cd` here first):
+
+```bash
+docker compose ps                 # status -- db and webapp should say (healthy)
+docker compose logs -f webapp     # follow the viewer's log (or: db)
+
+docker compose stop               # stop, keep containers
+docker compose down               # stop and remove containers -- DATA IS KEPT
+docker compose down -v            # ...and delete the database + video store too
+
+docker compose build              # rebuild images after changing code
+docker compose up -d --build webapp   # rebuild and restart just the viewer
+```
+
+Importing more data later is always the same one command — no restart
+needed:
+
+```bash
+docker compose run --rm importer
+DUUI_INPUT_HOST_DIR=/other/folder docker compose run --rm importer   # different source
+```
+
+If port 8010 or 5432 is already in use, set `DUUI_WEBAPP_HOST_PORT` /
+`DUUI_DB_HOST_PORT` in `.env` (see "Configuration reference").
 
 ---
 
@@ -171,13 +211,52 @@ Useful behaviour when importing a whole folder:
 ### 3. Start the viewer
 
 ```bash
-docker compose up -d webapp
+docker compose up webapp        # first time: no -d, so you see it finish
+docker compose up -d webapp     # later starts
 ```
+
+**The first run builds the webapp image (~30-60 s).** With `-d` that
+happens silently, and if the command is interrupted before it completes
+(Ctrl-C, closing the terminal, or moving on too early) **no container is
+created at all** — nothing crashes, nothing lands in the logs, and the
+port just doesn't respond. That looks exactly like "the app has no data"
+even when the database and video store are perfectly fine. Running it in
+the foreground the first time makes the build and `Application startup
+complete` visible.
+
+**Always verify:**
+
+```bash
+docker compose ps
+```
+
+Both `db` and `webapp` must be listed, both `(healthy)`. If `webapp` is
+missing from the list entirely, the start never completed — run it again.
 
 Then open http://localhost:8010 and pick a video from the dropdown. It
 lists everything in the database and marks any video whose file is
 missing from the store, so a half-finished import is visible rather than
 mysterious.
+
+**If the dropdown is empty or the video won't play**, go through these in
+order — each one narrows down which hop is broken:
+
+```bash
+docker compose ps                    # 1. is webapp present AND healthy?
+curl localhost:8010/healthz          # 2. app up, and reaching Postgres?  -> {"status":"ok"}
+curl localhost:8010/api/videos       # 3. rows in the DB? video_file_available true?
+docker compose logs webapp           # 4. anything actually erroring?
+```
+
+- **1 fails / `webapp` missing** → the container was never started. Re-run
+  step 3 (this is the most common cause by far).
+- **2 fails** → the app is running but can't reach the database. Check
+  `docker compose ps` for `db` and `docker compose logs db`.
+- **3 returns `[]`** → the database is empty; the import didn't land.
+  Re-run step 2 and read its summary line.
+- **3 shows `"video_file_available": false`** → the row exists but its
+  video never reached the store. See "How does the viewer know which data
+  belongs to which video?" below for how to place it without re-importing.
 
 ---
 
