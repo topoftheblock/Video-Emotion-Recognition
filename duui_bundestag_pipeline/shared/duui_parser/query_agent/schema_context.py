@@ -6,7 +6,7 @@ columns are actually populated in practice, how label vocabularies
 differ across modalities, how to recover a time anchor for a row that
 doesn't have one -- isn't recoverable from `information_schema` alone.
 
-Structure comes from schema/schema.sql. The semantics below come from
+Structure comes from db/schema.sql. The semantics below come from
 three sources, cross-checked against each other:
   1. schema/data_schema_with_types.md (the intended design)
   2. duui_parser/parsers/*.py (what actually gets INSERTed, which in

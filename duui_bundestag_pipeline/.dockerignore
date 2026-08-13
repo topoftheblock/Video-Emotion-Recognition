@@ -1,13 +1,17 @@
+# Keeps the build context small and avoids baking local state into the
+# images. Both the importer and webapp images build from the stack root,
+# so this applies to both.
 .venv/
 __pycache__/
 *.pyc
 .git/
+.gitignore
 .env
-cas/*.xmi
-cas/*.mp4
-architecture.pdf
-architecture.aux
-architecture.log
-architecture.out
-architecture.fls
-architecture.fdb_latexmk
+.pytest_cache/
+tests/
+docs/
+sample-input/
+README.md
+*.md
+build-all.sh
+docker-compose.yml

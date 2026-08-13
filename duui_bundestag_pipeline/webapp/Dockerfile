@@ -1,8 +1,11 @@
-# Build from the repo root:
+# The video review viewer: FastAPI backend + static frontend. Reads
+# Postgres and the video store; never parses CAS files itself, which is
+# why its requirements.txt deliberately omits dkpro-cassis/lxml.
+#
+# Build context is the STACK ROOT (one level up), because this image
+# needs shared/duui_parser/ as well as this directory:
 #   docker build -f webapp/Dockerfile -t duui-webapp .
-# (needs the root as build context because it also copies duui_parser/,
-# which server.py imports for DB access and the query agent.)
-
+# ...which is exactly what webapp/build.sh does for you.
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -10,14 +13,21 @@ WORKDIR /app
 COPY webapp/requirements.txt ./webapp/requirements.txt
 RUN pip install --no-cache-dir -r webapp/requirements.txt
 
-# Only what server.py actually imports: config, db, query_agent.
-# The parser-only modules (pipeline.py, typesystem.py, parsers/) come
-# along too since they're cheap files with no import-time side effect
-# unless something explicitly imports them -- server.py never does.
-COPY duui_parser ./duui_parser
-COPY webapp ./webapp
+# Shared application code -- server.py imports duui_parser.config (for
+# settings), duui_parser.db (connection handling) and
+# duui_parser.query_agent (the NL->SQL "Ask" panel).
+COPY shared/duui_parser ./duui_parser
+COPY webapp/server.py ./webapp/server.py
+COPY webapp/static ./webapp/static
 
 ENV PYTHONUNBUFFERED=1
+
+# Where it looks for video files -- must point at the same store the
+# importer writes into (see README).
+ENV DUUI_VIDEO_DIR=/data/videos
+
+# Always 8000 inside the container; map it to whatever host port you
+# like (compose defaults to 8010).
 EXPOSE 8000
 
 CMD ["uvicorn", "webapp.server:app", "--host", "0.0.0.0", "--port", "8000"]

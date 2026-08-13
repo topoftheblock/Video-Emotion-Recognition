@@ -1,9 +1,16 @@
 name: CI
 
+# Must live at the REPOSITORY root -- GitHub Actions does not pick up
+# .github/workflows from a subdirectory. The project itself lives in
+# duui_bundestag_pipeline/, hence the working-directory below.
 on:
   push:
     branches: [main]
   pull_request:
+
+defaults:
+  run:
+    working-directory: duui_bundestag_pipeline
 
 jobs:
   test:
@@ -38,10 +45,10 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements-dev.txt
+        run: pip install -r importer/requirements.txt -r requirements-dev.txt
 
       - name: Apply schema
-        run: psql "postgresql://duui:duui@localhost:5432/duui_bundestag" -f schema/schema.sql
+        run: psql "postgresql://duui:duui@localhost:5432/duui_bundestag" -f db/schema.sql
 
       - name: Run tests
         run: pytest -v
@@ -50,7 +57,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build importer image
-        run: docker build -f Dockerfile -t duui-importer .
-      - name: Build webapp image
-        run: docker build -f webapp/Dockerfile -t duui-webapp .
+      # Each image has its own build script; build-all.sh runs all three
+      # (and is what a human would run locally, so CI exercises the same
+      # path rather than a separate set of docker build invocations).
+      - name: Build all images
+        run: ./build-all.sh

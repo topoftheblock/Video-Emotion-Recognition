@@ -10,7 +10,7 @@ themselves. Tests that need a live DB are automatically skipped (not
 failed) if one isn't reachable, so `pytest` still works for anyone who
 just wants the pure-function tests without spinning up Postgres.
 
-Requires the schema already applied (`psql -f schema/schema.sql`) --
+Requires the schema already applied (`psql -f db/schema.sql`) --
 see README "Tests" for how CI does this.
 """
 
