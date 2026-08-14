@@ -17,6 +17,7 @@ export const el = {
   subtitleBar: document.getElementById("subtitleBar"),
   subtitleText: document.getElementById("subtitleText"),
   subtitleEmotion: document.getElementById("subtitleEmotion"),
+  subtitleToggle: document.getElementById("subtitleToggle"),
   playBtn: document.getElementById("playBtn"),
   scrub: document.getElementById("scrub"),
   timeCurrent: document.getElementById("timeCurrent"),

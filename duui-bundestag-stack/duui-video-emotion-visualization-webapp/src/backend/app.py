@@ -20,10 +20,35 @@ app is built, not when a test imports a helper. Run it with uvicorn's
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 
 from .config import STATIC_DIR, VIDEO_DIR
 from .db import get_db_connection
 from .routes import ask, persons, stats, videos
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """
+    Static files the browser must revalidate on every load.
+
+    The frontend is unversioned -- index.html asks for `js/main.js`,
+    not `js/main.<hash>.js` -- so a browser is free to reuse a cached
+    copy under its own heuristics. It does: after a rebuild, Chrome
+    revalidates the navigation (fresh index.html) while serving the
+    module and stylesheet subresources straight from disk cache. The
+    result is a page whose HTML has a new control on it and whose JS
+    has never heard of that control, which looks exactly like a broken
+    feature rather than a stale cache.
+
+    `no-cache` does not mean "don't store" -- the copy is kept and the
+    ETag StaticFiles already sends still turns the check into a 304, so
+    this costs one conditional request per file, not a re-download.
+    """
+
+    def file_response(self, *args, **kwargs) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
 
 def create_app() -> FastAPI:
@@ -66,6 +91,6 @@ def create_app() -> FastAPI:
     # Mounted last: "/" is a catch-all, so anything registered after it
     # would never be reached.
     app.mount("/media", StaticFiles(directory=VIDEO_DIR), name="media")
-    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+    app.mount("/", NoCacheStaticFiles(directory=STATIC_DIR, html=True), name="static")
 
     return app

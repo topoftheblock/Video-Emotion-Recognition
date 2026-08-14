@@ -16,7 +16,7 @@
 import { el } from "./dom.js";
 import { renderBoundingBoxes, syncCanvasSize } from "./overlay.js";
 import { initPlayer, onFrame, render } from "./player.js";
-import { renderSubtitle } from "./subtitles.js";
+import { initSubtitleToggle, renderSubtitle } from "./subtitles.js";
 import { initAskPanel } from "./panels/ask.js";
 import { renderEmotionPanels } from "./panels/emotions.js";
 import { loadVideo, loadVideoList } from "./videoLoader.js";
@@ -27,6 +27,7 @@ onFrame(renderEmotionPanels);
 onFrame(renderBoundingBoxes);
 
 initPlayer();
+initSubtitleToggle(render);
 initAskPanel();
 
 el.videoSelect.addEventListener("change", (e) => loadVideo(Number(e.target.value)));

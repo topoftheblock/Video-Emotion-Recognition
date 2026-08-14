@@ -30,6 +30,12 @@ export const state = {
   /** Handle of the in-flight requestAnimationFrame render loop. */
   rafHandle: null,
   /**
+   * User-facing subtitle switch, on until the CC button turns it off.
+   * Independent of `activeOverlays`: the agent decides which overlays
+   * are *relevant*, this decides whether the bar is wanted at all.
+   */
+  subtitlesVisible: true,
+  /**
    * null = show every overlay (default browsing mode). Once a query
    * result is opened this becomes a Set of the overlay keys the agent
    * picked as relevant, and the renderers hide whatever isn't in it.

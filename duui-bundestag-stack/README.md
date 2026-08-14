@@ -555,7 +555,9 @@ running it *is* the opt-in):
 
 - **Video with overlays**: subtitles reconstructed from the transcript
   tokens, a text-emotion badge, and face/person bounding boxes labelled
-  with that frame's video-modality emotion.
+  with that frame's video-modality emotion. The `CC` button in the
+  transport bar switches the subtitles (and their emotion badge) off
+  and back on.
 - **Text / Audio / Video emotion panels**: one panel per modality, each
   listing every label that modality's model emits with two numbers —
   the reading at the current playhead, and the mean over the whole
