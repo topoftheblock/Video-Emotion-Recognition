@@ -32,8 +32,10 @@
   padding: 4px 9px;
 }
 
+/* No direct Gateway precedent -- its nav brand is Logo.svg, an image,
+   not text. Nearest real Tailwind step to what was already here. */
 .topbar-title {
-  font-size: 15.5px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
 }
@@ -42,7 +44,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-dim);
 }
@@ -56,7 +58,7 @@
   border-radius: var(--radius-sm);
   padding: 7px 12px;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   max-width: 46vw;

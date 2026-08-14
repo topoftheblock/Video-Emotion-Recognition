@@ -18,9 +18,13 @@
   margin-bottom: 2px;
 }
 
+/* 18px, not the 16px this panel's numbers otherwise use -- once the
+   rows around it move from 10.5px to 14px, 16 no longer reads as
+   clearly senior to them. Matches .ask-title's heading weight instead:
+   proportionality, not a Gateway precedent. */
 .emo-dominant {
   font-family: var(--font-mono);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--emotion);
   overflow: hidden;
@@ -30,23 +34,36 @@
 
 .emo-count {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-dim);
   flex-shrink: 0;
 }
 
 /* Same columns as .emo-row, so the two words sit exactly over the
-   numbers they name. */
+   numbers they name. Matches Skeleton's .table tbody td (text-sm,
+   14px) -- these rows are dense tabular data, read continuously while
+   scrubbing. .emo-label inherits this for its own size (no separate
+   rule below); .emo-legend's own more-specific rule immediately after
+   pulls it back down to the badge/chip size instead, so header and
+   data keep their size hierarchy even though both now clear the
+   12px floor. */
+/* Columns widened from the pre-resize 62px/34px/34px, tuned for 11px
+   mono: at 14px the longest label ("Happiness", "disgusted",
+   "dominance" -- 9 characters) and the widest value ("-1.00"/"+1.00",
+   5 characters) need the extra room, checked against the model
+   vocabularies in PANELS above and formatSigned()'s output. */
 .emo-row, .emo-legend {
   display: grid;
-  grid-template-columns: 62px 1fr 34px 34px;
+  grid-template-columns: 74px 1fr 38px 38px;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
+  font-size: 14px;
 }
 
+/* Matches Skeleton's .badge/.chip (text-xs, 12px) -- this is a column
+   header, the same role as .panel-title and .person-legend. */
 .emo-legend {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -59,9 +76,12 @@
 .emo-legend span { grid-column: 3; text-align: right; }
 .emo-legend span + span { grid-column: 4; }
 
+/* --text-strong (surface-600), not --text-dim: read continuously while
+   scrubbing, same reasoning as .job-detail. Size comes from .emo-row
+   above via inheritance -- this has no font-size of its own. */
 .emo-label {
   font-family: var(--font-mono);
-  color: var(--text-dim);
+  color: var(--text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -112,7 +132,7 @@
 
 .emo-now, .emo-avg {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 14px;
   text-align: right;
   white-space: nowrap;
 }

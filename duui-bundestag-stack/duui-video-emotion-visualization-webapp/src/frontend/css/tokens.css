@@ -104,10 +104,20 @@
 
   /* Text. theme-blue sets --theme-font-color-base to literal black, so
      body copy is #000 rather than the near-black this file used to
-     carry. --text-dim is the Gateway's .dimmed (surface-400). */
+     carry. --text-dim is the Gateway's .dimmed (surface-400).
+
+     --text-strong is one step past that -- surface-600, the value
+     Endpoint.svelte pairs with its smallest caption text rather than
+     .dimmed's surface-400. For the handful of small, continuously-read
+     data fields (.emo-label, .job-detail, .ask-sql) where --text-dim's
+     5.5:1 reads as weak at 11-14px. --text-faint (surface-300) used to
+     sit here too, at #a7a9ae -- 2.35:1 on white, an outright AA
+     failure -- and had exactly one caller (.time-sep). Retired rather
+     than fixed in place: a token that light has no safe use as text on
+     this palette. */
   --text: #000000;
   --text-dim: var(--surface-400);
-  --text-faint: var(--surface-300);
+  --text-strong: var(--surface-600);
 
   /* Interactive. Was indigo->violet; now flat primary. --gradient-brand
      is deliberately a solid colour and not a gradient: every fill in

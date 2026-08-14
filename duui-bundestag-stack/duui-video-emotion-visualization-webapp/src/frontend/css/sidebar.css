@@ -35,7 +35,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -71,7 +71,7 @@
   padding: 0 10px;
   margin: 0 0 6px;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -103,7 +103,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
@@ -160,7 +160,7 @@
   background: var(--signal-soft);
   color: var(--signal-strong);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.03em;
   text-transform: none;
@@ -197,7 +197,7 @@
 .cross-list .person-name {
   grid-column: 2;
   grid-row: 1;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -216,7 +216,7 @@
   flex-direction: column;
   gap: 2px;
   color: var(--surface-500);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.45;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -235,7 +235,7 @@
 
 .person-meta {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 400;
   color: var(--text-dim);
   margin-left: auto;

@@ -68,8 +68,12 @@
   flex: 1;
 }
 
+/* The Gateway's own .toast (the model for this banner) sets its whole
+   message block to text-xl (20px). This banner already splits headline
+   from detail, so the headline alone doesn't need to carry that full
+   size -- one step down, 18px, matching .ask-title's heading weight. */
 .job-text strong {
-  font-size: 12.5px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text);
 }
@@ -83,13 +87,16 @@
 .job-row-stale .job-detail,
 .job-row-stale .job-elapsed { color: var(--error-800); }
 
+/* --text-strong (surface-600), not --text-dim: this is read
+   continuously while a job runs, and --text-dim's 5.5:1 reads as weak
+   at this size next to the now-larger headline above it. */
 .job-detail {
   display: flex;
   align-items: baseline;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim);
+  font-size: 14px;
+  color: var(--text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
