@@ -581,6 +581,9 @@ running it *is* the opt-in):
   average valence/arousal per person. Computed on request in plain SQL
   (no materialised views, no cache). Served but not currently rendered:
   the per-modality panels above replaced the panel that used to show it.
+- **Job banner**: while the importer or the cross-video identity job is
+  running, a strip under the header says so and how far along it is —
+  see "Job status" below.
 - **Ask panel** (if configured): a natural-language question is turned
   into SQL by an LLM agent, run read-only, and returned as clickable
   clips that jump the player to that moment — with only the overlays
@@ -635,6 +638,60 @@ linking identifiable people across recordings.
 
 Skipping it entirely is fine: `global_person_id` stays NULL, the "Also
 appears in" panel hides itself, and nothing else in the stack changes.
+
+---
+
+## Job status
+
+The importer and the cross-video identity job each write a row to
+`job_runs` while they work, and the viewer shows a banner under the
+header for anything currently running. This exists because the two
+states looked identical from the browser: an empty dropdown during a
+first import and an empty dropdown because the import failed.
+
+What the banner can tell you, per job:
+
+| job | progress |
+| --- | --- |
+| **importer** | exact file counter (`3/12`), plus the phase within a file: loading typesystem, parsing `<name>.xmi`, inserting `<step> (8/10)`, placing video |
+| **global-identity** | exact person counter (`1240/3807`), plus phase: connecting, comparing embeddings, committing |
+
+The importer's CAS parse is a single `lxml` call, so during that phase
+there is a phase name and an elapsed clock but no bar — on a
+multi-hour export it is usually the longest part of the import, and a
+bar creeping along on invented numbers would be worse than an honest
+"still parsing, 4m 12s".
+
+Details worth knowing:
+
+- **A killed job is detected, not believed.** The row still says
+  `running` (a killed process never writes its own final row), so the
+  viewer compares `heartbeat_at` against
+  `queries/jobs.py:STALE_AFTER_SECONDS` (30s) and reports "stopped
+  responding" instead. The next run of that same job closes the old row
+  out as `failed`.
+- **Cost.** Each job writes at most one row per second
+  (`job_runs.py:MIN_WRITE_INTERVAL`), on its own autocommit connection —
+  the importer's main connection only exists around the insert, and
+  global-identity's whole run is one uncommitted transaction, so
+  neither could carry a heartbeat. The browser polls `GET /api/jobs`
+  every 10s when idle, 2s while a job runs, and **not at all while the
+  tab is hidden** — a backgrounded tab is where polling waste would
+  otherwise accumulate.
+- **Status reporting never breaks a job.** Every write is best-effort;
+  the first failure disables reporting for that run and prints one
+  line. An import does not fail because the status table is missing.
+- **The table is created on demand.** `db/schema.sql` only runs on a
+  fresh volume, so all three services issue the same
+  `CREATE TABLE IF NOT EXISTS job_runs` at startup. On an existing
+  database it appears the first time any of them starts — nothing to
+  migrate by hand. Keep the copies in step if you change the columns;
+  `db/schema.sql` lists where they are.
+
+`job_runs` is append-only history — one row per run, finished ones
+included — so `SELECT * FROM job_runs ORDER BY job_run_id DESC` also
+answers "when did the last import finish, and did it?". The viewer
+deliberately only reads the running ones.
 
 ---
 
@@ -782,7 +839,10 @@ video store), wired up in `docker-compose.yml`. The price is a little
 deliberate duplication (the DB connection helper, the `DUUI_DB_*` /
 `DUUI_VIDEO_DIR` settings, the pytest DB fixture) — a handful of lines
 each, and what lets any of them be built, tested or lifted out of this
-repo on its own.
+repo on its own. `job_runs.py` is the newest instance of that price: the
+importer and the identity job carry a copy each because neither can
+import the other's code, and the table's DDL is repeated a third time
+in the viewer (see "Job status").
 
 The three packages are named differently (`main`, `identity`,
 `backend`) on purpose: the stack root's `pyproject.toml` puts all three

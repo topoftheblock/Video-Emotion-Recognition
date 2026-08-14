@@ -15,12 +15,13 @@ from cassis import load_cas_from_xmi
 
 from .config import INPUT_VIDEO_DIR, INPUT_XMI_DIR, XMI_FILE
 from .db import get_db_connection
+from .job_runs import JobRun
 from .media import ensure_video_available
 from .parsers import PARSE_STEPS
 from .typesystem import load_merged_typesystem, loading_cas_quietly
 
 
-def parse_and_insert(cas, cursor):
+def parse_and_insert(cas, cursor, on_step=None):
     """
     Run all registered parser steps against a single loaded CAS.
 
@@ -28,9 +29,16 @@ def parse_and_insert(cas, cursor):
     Person, Presence, Detection, Emotion, ...) can read
     context["global_video_id"], which the video step resolves first.
     Returned so `run()` can use context["video_filename"] afterwards.
+
+    `on_step(name, index, total)` is called before each step. This is
+    the one phase of an import whose progress is actually countable --
+    the CAS parse either side of it is a single opaque call -- so it is
+    what the status banner shows a bar for.
     """
     context = {}
-    for step in PARSE_STEPS:
+    for index, step in enumerate(PARSE_STEPS, start=1):
+        if on_step is not None:
+            on_step(step.__name__.rsplit(".", 1)[-1], index, len(PARSE_STEPS))
         step.parse(cas, cursor, context)
     return context
 
@@ -131,7 +139,7 @@ def describe_missing_inputs(paths):
     return reasons
 
 
-def run(xmi_file=None, typesystem=None):
+def run(xmi_file=None, typesystem=None, job=None):
     """
     Load one CAS, parse it, commit to the database, and place the video
     file that came alongside it (same directory, same filename as the
@@ -140,6 +148,10 @@ def run(xmi_file=None, typesystem=None):
     `typesystem` lets a caller pass an already-loaded, already-patched
     typesystem so a batch doesn't reload it per file; omitted, it's
     loaded here as before.
+
+    `job` is an optional job_runs.JobRun to report phases to. Left out
+    (a direct one-file call), the import runs exactly as before and
+    nothing is written to `job_runs` -- run_many() is what opens a run.
 
     Takes exactly one file -- use `run_many()` for a directory or a
     batch (it's also what handles loading the typesystem only once).
@@ -158,9 +170,17 @@ def run(xmi_file=None, typesystem=None):
 
     if typesystem is None:
         print("Loading and patching TypeSystems...")
+        if job is not None:
+            job.update(phase="loading typesystem")
         typesystem = load_merged_typesystem()
 
     print(f"Loading CAS data from {xmi_file}...")
+    # No sub-progress to report here: this is one lxml call, and on a
+    # multi-hour export it is usually the longest phase of the import.
+    # The phase name plus the elapsed time the viewer shows is the
+    # whole of what can honestly be said about it.
+    if job is not None:
+        job.update(phase=f"parsing {Path(xmi_file).name}")
     with open(xmi_file, "rb") as f, loading_cas_quietly():
         # trusted=True enables lxml's huge_tree parsing, needed for large
         # multi-hour-session XMI exports that exceed lxml's default buffer.
@@ -170,7 +190,14 @@ def run(xmi_file=None, typesystem=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        context = parse_and_insert(cas, cursor)
+        # The step counter goes in the phase text, not in
+        # progress_current: that pair counts files for the whole run,
+        # and a bar that switched scale halfway through a batch would
+        # be worse than no bar.
+        def on_step(name, index, total):
+            job.update(phase=f"inserting {name} ({index}/{total})")
+
+        context = parse_and_insert(cas, cursor, on_step=on_step if job else None)
         conn.commit()
         cursor.close()
     except Exception:
@@ -185,6 +212,8 @@ def run(xmi_file=None, typesystem=None):
     # configured location is used rather than the .xmi's own parent.
     # `cas` is passed so a CAS that embeds its own video can supply it
     # when no companion file exists (see media.py).
+    if job is not None:
+        job.update(phase=f"placing video for {Path(xmi_file).name}")
     ensure_video_available(context.get("video_filename"), INPUT_VIDEO_DIR, cas)
 
     print(f"Finished {xmi_file}")
@@ -201,6 +230,11 @@ def run_many(paths=None):
     one malformed file shouldn't cost you every import after it. The
     exit code is left to the caller (see src/main/__main__.py) so a partial failure
     is still visible to a CI job or shell script.
+
+    The whole batch is one `job_runs` row, which is what the viewer
+    shows as "an import is running" (see job_runs.py). It is opened
+    only once there is actually something to import: a run that found
+    no .xmi files has nothing to report and shouldn't flash a banner.
     """
     paths = list(paths) if paths else default_input_paths()
     xmi_files = resolve_xmi_paths(paths)
@@ -211,19 +245,28 @@ def run_many(paths=None):
             print(f"  - {reason}")
         return [], []
 
-    print("Loading and patching TypeSystems...")
-    typesystem = load_merged_typesystem()
+    with JobRun("importer") as job:
+        print("Loading and patching TypeSystems...")
+        job.update(phase="loading typesystem", current=0, total=len(xmi_files))
+        typesystem = load_merged_typesystem()
 
-    print(f"Importing {len(xmi_files)} CAS file(s)...")
-    succeeded, failed = [], []
-    for index, xmi_file in enumerate(xmi_files, start=1):
-        print(f"\n--- [{index}/{len(xmi_files)}] {xmi_file} ---")
-        try:
-            run(str(xmi_file), typesystem=typesystem)
-            succeeded.append((xmi_file, None))
-        except Exception as exc:  # noqa: BLE001 -- batch must survive one bad file
-            print(f"[duui_parser] ERROR importing {xmi_file}: {exc}")
-            failed.append((xmi_file, exc))
+        print(f"Importing {len(xmi_files)} CAS file(s)...")
+        succeeded, failed = [], []
+        for index, xmi_file in enumerate(xmi_files, start=1):
+            print(f"\n--- [{index}/{len(xmi_files)}] {xmi_file} ---")
+            job.update(current=index - 1, total=len(xmi_files))
+            try:
+                run(str(xmi_file), typesystem=typesystem, job=job)
+                succeeded.append((xmi_file, None))
+            except Exception as exc:  # noqa: BLE001 -- batch must survive one bad file
+                print(f"[duui_parser] ERROR importing {xmi_file}: {exc}")
+                failed.append((xmi_file, exc))
+
+        job.update(
+            current=len(xmi_files),
+            message=f"{len(succeeded)} imported, {len(failed)} failed",
+            force=True,
+        )
 
     print(
         f"\nDone: {len(succeeded)} imported, {len(failed)} failed "

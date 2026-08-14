@@ -24,7 +24,8 @@ from starlette.responses import Response
 
 from .config import STATIC_DIR, VIDEO_DIR
 from .db import get_db_connection
-from .routes import ask, persons, stats, videos
+from .queries import jobs as jobs_query
+from .routes import ask, jobs, persons, stats, videos
 
 
 class NoCacheStaticFiles(StaticFiles):
@@ -83,10 +84,17 @@ def create_app() -> FastAPI:
             ) from exc
         return {"status": "ok"}
 
+    # The jobs write this table, but the viewer is the service that is
+    # always up, and db/schema.sql only runs on a fresh volume -- so it
+    # creates the table too if this database predates the feature.
+    # Best-effort: a failure here must not stop the app from starting.
+    jobs_query.ensure_table()
+
     app.include_router(videos.router)
     app.include_router(persons.router)
     app.include_router(stats.router)
     app.include_router(ask.router)
+    app.include_router(jobs.router)
 
     # Mounted last: "/" is a catch-all, so anything registered after it
     # would never be reached.

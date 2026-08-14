@@ -31,6 +31,10 @@ export function fetchGlobalPersons() {
   return getJson("/api/persons/global");
 }
 
+export function fetchRunningJobs() {
+  return getJson("/api/jobs");
+}
+
 export async function askQuestion(question) {
   const response = await fetch("/api/ask", {
     method: "POST",

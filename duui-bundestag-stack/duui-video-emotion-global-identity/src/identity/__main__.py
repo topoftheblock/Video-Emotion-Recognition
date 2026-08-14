@@ -25,6 +25,7 @@ variables listed there (DUUI_DB_NAME, DUUI_GLOBAL_PERSON_*, etc.)
 import sys
 
 from identity.db import get_db_connection
+from identity.job_runs import JobRun
 from identity.linking import recompute_global_identities
 
 
@@ -37,19 +38,43 @@ def _progress(index, total):
 
 
 def main():
-    print("Connecting to database...")
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        print("Clearing previous global identities and recomputing...")
-        stats = recompute_global_identities(cursor, progress=_progress)
-        conn.commit()
-        cursor.close()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+    # The status row is written on its own autocommit connection, so it
+    # stays visible to the viewer while the recompute below sits in one
+    # long uncommitted transaction (see job_runs.py).
+    with JobRun("global-identity") as job:
+        print("Connecting to database...")
+        job.update(phase="connecting")
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            print("Clearing previous global identities and recomputing...")
+            job.update(phase="comparing embeddings")
+
+            def progress(index, total):
+                _progress(index, total)
+                # Called once per person; JobRun throttles it to a write
+                # a second, so this stays a counter and not a commit
+                # storm on a corpus of thousands.
+                job.update(current=index, total=total)
+
+            stats = recompute_global_identities(cursor, progress=progress)
+            job.update(phase="committing", force=True)
+            conn.commit()
+            cursor.close()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        job.update(
+            message=(
+                f"{stats['persons_linked']} of {stats['persons_total']} person(s) "
+                f"linked into {stats['identities_created']} global identit"
+                f"{'y' if stats['identities_created'] == 1 else 'ies'}"
+            ),
+            force=True,
+        )
 
     print(
         f"\nCleared {stats['identities_deleted']} previous global "

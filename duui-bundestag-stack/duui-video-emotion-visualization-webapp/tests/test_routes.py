@@ -36,6 +36,7 @@ def test_every_api_route_is_registered(client):
         "/api/persons/global",
         "/api/stats/{video_id}",
         "/api/ask",
+        "/api/jobs",
     } <= set(paths)
     assert "post" in paths["/api/ask"]
     assert "get" in paths["/api/videos"]

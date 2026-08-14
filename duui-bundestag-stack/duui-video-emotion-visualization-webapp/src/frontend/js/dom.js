@@ -38,6 +38,7 @@ export const el = {
   askReset: document.getElementById("askReset"),
   askStatus: document.getElementById("askStatus"),
   askResults: document.getElementById("askResults"),
+  jobBanner: document.getElementById("jobBanner"),
   emptyState: document.getElementById("emptyState"),
   emptyStateTitle: document.getElementById("emptyStateTitle"),
   emptyStateDetail: document.getElementById("emptyStateDetail"),

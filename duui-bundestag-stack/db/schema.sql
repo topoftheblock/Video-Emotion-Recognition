@@ -170,3 +170,36 @@ CREATE INDEX IF NOT EXISTS face_embeddings_person_idx
     ON face_embeddings (person_id);
 CREATE INDEX IF NOT EXISTS voice_embeddings_person_idx
     ON voice_embeddings (person_id);
+-- 7. Job status
+-- One row per run of a long-running job (the importer, the
+-- cross-video identity job), so the viewer can say "an import is
+-- running" and how far along it is instead of leaving a user to guess
+-- whether the empty dropdown is a bug or a job that hasn't finished.
+--
+-- This file only runs when the db volume is created empty, so an
+-- already-populated deployment never sees it. The same DDL is
+-- therefore repeated as CREATE TABLE IF NOT EXISTS in each service
+-- that touches the table -- keep the four copies in step:
+--   duui-video-emotion-cas-to-postgres/src/main/job_runs.py
+--   duui-video-emotion-global-identity/src/identity/job_runs.py
+--   duui-video-emotion-visualization-webapp/src/backend/queries/jobs.py
+--
+-- fillfactor leaves room on the page for the heartbeat UPDATEs, which
+-- rewrite the same row once a second for the length of a run: with
+-- space to spare they stay HOT (in-page) instead of leaving a dead
+-- tuple and a new index entry behind every time.
+CREATE TABLE IF NOT EXISTS job_runs (
+    job_run_id BIGSERIAL PRIMARY KEY,
+    job TEXT NOT NULL,
+    status TEXT NOT NULL,
+    phase TEXT,
+    progress_current INT,
+    progress_total INT,
+    message TEXT,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    finished_at TIMESTAMPTZ
+) WITH (fillfactor = 70);
+
+CREATE INDEX IF NOT EXISTS job_runs_running_idx
+    ON job_runs (job, started_at DESC);

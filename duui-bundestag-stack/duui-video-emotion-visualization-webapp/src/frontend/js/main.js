@@ -18,6 +18,7 @@ import { renderBoundingBoxes, syncCanvasSize } from "./overlay.js";
 import { initPlayer, onFrame, render } from "./player.js";
 import { initSubtitleToggle, renderSubtitle } from "./subtitles.js";
 import { initAskPanel } from "./panels/ask.js";
+import { initJobBanner } from "./panels/jobs.js";
 import { initEmotionPanels, renderEmotionPanels } from "./panels/emotions.js";
 import { initPersonList } from "./panels/people.js";
 import { state } from "./state.js";
@@ -31,6 +32,7 @@ onFrame(renderBoundingBoxes);
 initPlayer();
 initSubtitleToggle(render);
 initAskPanel();
+initJobBanner();
 
 // Picking a person narrows the emotion panels to them. The rows are
 // rebuilt rather than just re-filled: the whole-video averages drawn

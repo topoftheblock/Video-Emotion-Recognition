@@ -1,0 +1,120 @@
+/* ---------------- Job status banner ----------------
+   Sits between the header and the Ask panel while the importer or the
+   cross-video identity job is running. Built to be noticed and then
+   ignored: it uses the brand indigo rather than a warning colour,
+   because a running import is normal, not a problem.
+------------------------------------------------------------------*/
+
+.job-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 24px 0;
+}
+
+.job-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--signal);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.job-row-stale {
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.job-spinner {
+  width: 13px;
+  height: 13px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--signal) 25%, transparent);
+  border-top-color: var(--signal);
+  animation: job-spin 0.9s linear infinite;
+}
+
+/* Stopped, not spinning: the whole point of this state is that
+   nothing is moving any more. */
+.job-spinner-stale {
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  border-top-color: var(--danger);
+  animation: none;
+}
+
+@keyframes job-spin {
+  to { transform: rotate(360deg); }
+}
+
+.job-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.job-text strong {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.job-row-stale .job-text strong { color: var(--danger); }
+
+.job-detail {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.job-elapsed { margin-left: auto; color: var(--text-faint); flex-shrink: 0; }
+
+.job-bar {
+  position: relative;
+  height: 3px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  overflow: hidden;
+}
+
+.job-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gradient-brand);
+  transition: width 0.3s ease;
+}
+
+/* No countable progress (the importer's CAS parse is one opaque
+   call): a stripe that travels says "working" without claiming to
+   know how far along it is. */
+.job-bar-indeterminate .job-bar-fill {
+  width: 35% !important;
+  animation: job-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes job-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(285%); }
+}
+
+@media (max-width: 860px) {
+  .job-banner { padding: 10px 16px 0; }
+  .job-detail { white-space: normal; }
+}
