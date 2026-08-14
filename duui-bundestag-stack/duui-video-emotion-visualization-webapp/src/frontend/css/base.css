@@ -4,19 +4,105 @@
    wash behind the whole page.
 ------------------------------------------------------------------*/
 
-/* Oxanium, self-hosted from fonts/ -- the same file DUUIWeb ships in
-   static/fonts/, copied with its OFL alongside it.
+/* Every self-hosted family lives in its own fonts/<family>/ folder,
+   next to that family's own licence file -- fonts/oxanium/OFL.txt,
+   fonts/ubuntu-mono/UFL.txt, fonts/roboto/OFL.txt. One font, one
+   licence, one directory: nothing to cross-reference when a licence
+   needs checking or a family needs pulling out. */
 
-   It is a variable font (wght 200-800) in a single 42KB file. DUUIWeb's
-   @font-face omits the weight range, which pins the axis at 400 and
-   leaves the browser to synthesise every bold; declaring the real range
-   here means 600/700 render as drawn glyphs instead. Same typeface,
-   just not faked. */
+/* Oxanium -- the same file DUUIWeb ships in static/fonts/.
+
+   Variable (wght 200-800) in a single 42KB file. DUUIWeb's @font-face
+   omits the weight range, which pins the axis at 400 and leaves the
+   browser to synthesise every bold; declaring the real range here means
+   600/700 render as drawn glyphs instead. Same typeface, just not
+   faked. */
 @font-face {
   font-family: "Oxanium";
-  src: url("../fonts/Oxanium.ttf") format("truetype-variations");
+  src: url("../fonts/oxanium/Oxanium.ttf") format("truetype-variations");
   font-weight: 200 800;
   font-style: normal;
+  font-display: swap;
+}
+
+/* Ubuntu Mono, from the official ubuntu-font-family-0.83 release rather
+   than the lone Regular that DUUIWeb bundles. Same font, same version
+   (0.80), but the release carries the real Bold and Italic faces, so
+   nothing here is synthesised.
+
+   All four faces of the family, for completeness -- three of them
+   match what the app currently asks for:
+     400 normal  -- the default for every read-out
+     700 normal  -- what a request for 600 (.emo-dominant, .ask-table
+                    th) resolves to, since CSS matching walks upward
+                    from any desired weight above 500
+     400 italic  -- .emo-row-dim .emo-label, the valence/arousal/
+                    dominance rows in the emotion panels
+     700 italic  -- unused today; shipped so the family is whole rather
+                    than missing its one remaining combination
+   Note that 500 (.time-readout, .emo-now) resolves *down* to 400 by the
+   same weight-matching rule -- a real Regular, not a synthesised
+   in-between. */
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: url("../fonts/ubuntu-mono/UbuntuMono-R.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: url("../fonts/ubuntu-mono/UbuntuMono-B.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: url("../fonts/ubuntu-mono/UbuntuMono-RI.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: url("../fonts/ubuntu-mono/UbuntuMono-BI.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Roboto -- the subtitle track's font (see .subtitle-text in
+   stage.css), and deliberately not used anywhere else. Everything else
+   in the app is UI chrome or a data read-out, in Oxanium or Ubuntu Mono
+   respectively; subtitles are neither -- they're prose, sourced from
+   the video's own transcript, sitting over footage rather than next to
+   it. Oxanium's squared-off geometry is built to be a display/heading
+   face and gets harder to read at the small sizes a caption track
+   needs; Roboto is a humanist grotesque designed for exactly that,
+   which is why it's the default on both major mobile caption stacks.
+
+   Two files cover the whole family: variable wght 100-900 on both the
+   upright and (separately, since italic is a distinct axis Roboto
+   doesn't expose as a variable dimension within one file) the italic
+   face. Nothing here currently sets font-style: italic, but the second
+   file is 42KB and keeps the family complete rather than half-shipped. */
+@font-face {
+  font-family: "Roboto";
+  src: url("../fonts/roboto/Roboto-VariableFont_wdth,wght.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("../fonts/roboto/Roboto-Italic-VariableFont_wdth,wght.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: italic;
   font-display: swap;
 }
 

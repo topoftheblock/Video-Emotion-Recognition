@@ -176,12 +176,24 @@
 
   /* Oxanium for everything, per DUUIWeb/src/app.postcss, which
      overrides theme-blue's system-ui for both base and heading.
-     Mono is Tailwind's default stack -- the Gateway ships UbuntuMono
-     but never references it, and the numeric read-outs here (timecodes,
-     scores) genuinely want tabular glyphs. */
+
+     Mono is Ubuntu Mono -- the font DUUIWeb bundles, self-hosted here
+     from the official ubuntu-font-family-0.83 release so the real Bold
+     and Italic faces come with it (see the @font-face block in
+     base.css). Only the generic `monospace`
+     backs it up: every other name in that default stack is either
+     platform-specific or, in the case of ui-monospace, unsupported by
+     Chrome on Linux -- so they matched nothing here and only decided
+     which fallback won on other machines. With a self-hosted face the
+     fallback is a network-failure path, not the normal one. */
   --font-ui: "Oxanium", system-ui, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  --font-mono: "Ubuntu Mono", monospace;
+
+  /* Roboto, for the subtitle track alone (.subtitle-text in stage.css)
+     -- prose sourced from the video's own transcript, not UI chrome, so
+     it doesn't inherit --font-ui. See the @font-face block in base.css
+     for why. */
+  --font-subtitle: "Roboto", system-ui, sans-serif;
 
   /* The Gateway's .transition-300. Replaces the 150ms transform-and-
      glow transitions this app used; hovers there are colour-only. */
