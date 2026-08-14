@@ -72,7 +72,11 @@
         </div>
       </div>
       <div class="transport">
-        <button id="playBtn" class="transport-btn" aria-label="Play/Pause">▶</button>
+        <!-- Initial (paused) icon; js/player.js swaps it on play/pause
+             and holds the matching pair of paths. -->
+        <button id="playBtn" class="transport-btn" aria-label="Play/Pause">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.5 5v14l10.5-7z"/></svg>
+        </button>
         <button id="subtitleToggle" class="transport-toggle is-on" type="button"
                 aria-pressed="true" title="Hide subtitles">CC</button>
         <span class="time-readout"><span id="timeCurrent">0:00</span> <span class="time-sep">/</span> <span id="timeTotal">0:00</span></span>

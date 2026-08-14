@@ -144,11 +144,21 @@
   background: var(--gradient-brand);
   color: #fff;
   cursor: pointer;
-  font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   transition: background-color var(--transition);
+}
+
+/* 20px in a 40px button -- half the diameter. The glyphs this replaced
+   sat at 13px, which read as small for the only filled control in the
+   transport. `display: block` keeps the inline-baseline gap from
+   nudging the icon off the vertical centre. */
+.transport-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .transport-btn:hover { background: var(--signal-hover); }
