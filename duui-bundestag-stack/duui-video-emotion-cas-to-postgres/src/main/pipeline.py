@@ -9,18 +9,26 @@ rather than per file, which dominates startup time otherwise.
 """
 
 import os
+from collections import Counter
 from pathlib import Path
 
 from cassis import load_cas_from_xmi
 from lxml import etree
 
-from .config import INPUT_VIDEO_DIR, INPUT_XMI_DIR, XMI_FILE
-from .db import get_db_connection
+from .config import (
+    INPUT_VIDEO_DIR,
+    INPUT_XMI_DIR,
+    ON_EXISTING,
+    ON_EXISTING_CHOICES,
+    XMI_FILE,
+)
+from .db import delete_video, find_video_by_filename, get_db_connection
 from .job_runs import JobRun
 from .media import (
     cas_source,
     ensure_video_available,
     find_media_sofas,
+    read_video_filename,
     select_video_sofa,
     strip_media_sofas,
 )
@@ -28,7 +36,7 @@ from .parsers import PARSE_STEPS
 from .typesystem import load_merged_typesystem, loading_cas_quietly
 
 
-def parse_and_insert(cas, cursor, on_step=None):
+def parse_and_insert(cas, cursor, on_step=None, context=None):
     """
     Run all registered parser steps against a single loaded CAS.
 
@@ -36,13 +44,16 @@ def parse_and_insert(cas, cursor, on_step=None):
     Person, Presence, Detection, Emotion, ...) can read
     context["global_video_id"], which the video step resolves first.
     Returned so `run()` can use context["video_filename"] afterwards.
+    A caller can seed it -- run() passes the filename it read off the
+    raw XML, so the video row is keyed by the name the skip/replace
+    decision was made on.
 
     `on_step(name, index, total)` is called before each step. This is
     the one phase of an import whose progress is actually countable --
     the CAS parse either side of it is a single opaque call -- so it is
     what the status banner shows a bar for.
     """
-    context = {}
+    context = {} if context is None else context
     for index, step in enumerate(PARSE_STEPS, start=1):
         if on_step is not None:
             on_step(step.__name__.rsplit(".", 1)[-1], index, len(PARSE_STEPS))
@@ -146,11 +157,14 @@ def describe_missing_inputs(paths):
     return reasons
 
 
-def run(xmi_file=None, typesystem=None, job=None):
+def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
     """
     Load one CAS, parse it, commit to the database, and place the video
     file that came alongside it (same directory, same filename as the
     `videos` row) into VIDEO_MEDIA_DIR.
+
+    Returns "imported", "skipped" or "replaced", so a batch can report
+    what it actually did.
 
     `typesystem` lets a caller pass an already-loaded, already-patched
     typesystem so a batch doesn't reload it per file; omitted, it's
@@ -160,9 +174,18 @@ def run(xmi_file=None, typesystem=None, job=None):
     (a direct one-file call), the import runs exactly as before and
     nothing is written to `job_runs` -- run_many() is what opens a run.
 
+    `on_existing` is "skip" or "replace" (default from
+    DUUI_ON_EXISTING); see config.py.
+
     Takes exactly one file -- use `run_many()` for a directory or a
     batch (it's also what handles loading the typesystem only once).
     """
+    on_existing = on_existing or ON_EXISTING
+    if on_existing not in ON_EXISTING_CHOICES:
+        raise ValueError(
+            f"on_existing must be one of {', '.join(ON_EXISTING_CHOICES)}, "
+            f"not {on_existing!r}"
+        )
     xmi_file = xmi_file or XMI_FILE
     if not xmi_file:
         raise ValueError(
@@ -190,6 +213,28 @@ def run(xmi_file=None, typesystem=None, job=None):
     if job is not None:
         job.update(phase=f"reading {Path(xmi_file).name}")
     tree = etree.parse(str(xmi_file), etree.XMLParser(huge_tree=True))
+
+    # The filename is read here, off the raw XML, because it is what
+    # decides whether this file needs importing at all -- and answering
+    # that before the cassis load is the whole value of `skip`.
+    video_filename = read_video_filename(tree)
+    replaced = False
+    if video_filename:
+        existing_video_id = find_video_by_filename(video_filename)
+        if existing_video_id is not None:
+            if on_existing == "skip":
+                print(
+                    f"[duui_parser] '{video_filename}' is already imported "
+                    f"(video_id {existing_video_id}) -- skipping. Use "
+                    f"--on-existing replace to re-import it."
+                )
+                return "skipped"
+            delete_video(existing_video_id)
+            replaced = True
+            print(
+                f"[duui_parser] replacing '{video_filename}' "
+                f"(video_id {existing_video_id}): previous rows deleted"
+            )
 
     sofas = find_media_sofas(tree)
     # Captured before the blanking below, and decoded only if the video
@@ -226,7 +271,13 @@ def run(xmi_file=None, typesystem=None, job=None):
         def on_step(name, index, total):
             job.update(phase=f"inserting {name} ({index}/{total})")
 
-        context = parse_and_insert(cas, cursor, on_step=on_step if job else None)
+        # Seeded with the name the pre-pass read, so the row the video
+        # parser upserts is keyed by the same filename the skip/replace
+        # decision above was made on.
+        context = {"video_filename": video_filename}
+        context = parse_and_insert(
+            cas, cursor, on_step=on_step if job else None, context=context
+        )
         conn.commit()
         cursor.close()
     except Exception:
@@ -251,19 +302,24 @@ def run(xmi_file=None, typesystem=None, job=None):
     ensure_video_available(context.get("video_filename"), INPUT_VIDEO_DIR, video_payload)
 
     print(f"Finished {xmi_file}")
+    return "replaced" if replaced else "imported"
 
 
-def run_many(paths=None):
+def run_many(paths=None, on_existing=None):
     """
     Import every CAS in `paths` (any mix of .xmi files and directories
     containing them). Returns (succeeded, failed) as lists of
-    (path, error-or-None).
+    (path, error-or-None) -- a skipped file counts as succeeded, since
+    "already imported" is a successful outcome, not a failure.
 
     Each file gets its own transaction, and a failure is reported and
     skipped rather than aborting the batch -- with a folder of exports,
     one malformed file shouldn't cost you every import after it. The
     exit code is left to the caller (see src/main/__main__.py) so a partial failure
     is still visible to a CI job or shell script.
+
+    `on_existing` ("skip"/"replace", default DUUI_ON_EXISTING) decides
+    what happens to a file whose video is already in the database.
 
     The whole batch is one `job_runs` row, which is what the viewer
     shows as "an import is running" (see job_runs.py). It is opened
@@ -286,25 +342,31 @@ def run_many(paths=None):
 
         print(f"Importing {len(xmi_files)} CAS file(s)...")
         succeeded, failed = [], []
+        outcomes = Counter()
         for index, xmi_file in enumerate(xmi_files, start=1):
             print(f"\n--- [{index}/{len(xmi_files)}] {xmi_file} ---")
             job.update(current=index - 1, total=len(xmi_files))
             try:
-                run(str(xmi_file), typesystem=typesystem, job=job)
+                outcome = run(
+                    str(xmi_file),
+                    typesystem=typesystem,
+                    job=job,
+                    on_existing=on_existing,
+                )
+                outcomes[outcome] += 1
                 succeeded.append((xmi_file, None))
             except Exception as exc:  # noqa: BLE001 -- batch must survive one bad file
                 print(f"[duui_parser] ERROR importing {xmi_file}: {exc}")
                 failed.append((xmi_file, exc))
 
-        job.update(
-            current=len(xmi_files),
-            message=f"{len(succeeded)} imported, {len(failed)} failed",
-            force=True,
-        )
+        outcomes["failed"] = len(failed)
+        summary = ", ".join(
+            f"{count} {name}" for name, count in outcomes.items() if count
+        ) or "nothing to do"
+        job.update(current=len(xmi_files), message=summary, force=True)
 
     print(
-        f"\nDone: {len(succeeded)} imported, {len(failed)} failed "
-        f"(of {len(xmi_files)} file(s))."
+        f"\nDone: {summary} (of {len(xmi_files)} file(s))."
     )
     for xmi_file, exc in failed:
         print(f"  FAILED {xmi_file}: {exc}")

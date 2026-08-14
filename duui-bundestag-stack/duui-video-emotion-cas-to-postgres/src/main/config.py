@@ -65,6 +65,17 @@ XMI_FILE = os.environ.get("DUUI_XMI_FILE")
 # has to be set when the named view is genuinely different.
 VIDEO_VIEW = os.environ.get("DUUI_VIDEO_VIEW", "_InitialView")
 
+# What to do with a .xmi whose video (by filename) is already in the
+# database. `skip` leaves it alone and does not even load the CAS --
+# which is what makes re-running the importer over a growing drop
+# folder, or `docker compose up` re-running init-import, close to free.
+# `replace` deletes the existing video and everything hanging off it
+# (the schema cascades) and imports the file fresh, for when a CAS has
+# been re-exported and its rows should match the new version.
+# Overridable per run with `--on-existing` on the command line.
+ON_EXISTING_CHOICES = ("skip", "replace")
+ON_EXISTING = os.environ.get("DUUI_ON_EXISTING", "skip")
+
 # Bundled, non-code assets (the UIMA typesystem descriptors, the demo
 # CAS) live under the source root's `resources/`, not in the `main`
 # package. Resolved from this file rather than the working directory so

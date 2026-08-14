@@ -179,6 +179,34 @@ def find_media_sofas(tree):
     return payloads
 
 
+def read_video_filename(tree):
+    """
+    The filename this document describes, read off the raw XML.
+
+    Same precedence as parsers/video.py's `parse` -- MultimediaElement
+    first, DocumentMetaData second -- because it answers the same
+    question, only earlier: pipeline.py needs the name *before* the CAS
+    is loaded, to decide whether this video is already imported without
+    paying for a cassis parse it may be about to throw away. Returns
+    None if neither annotation is present, in which case the caller
+    falls back to reading it from the loaded CAS.
+    """
+    metadata = None
+
+    for element in tree.iter():
+        if not isinstance(element.tag, str):
+            continue
+        localname = etree.QName(element).localname
+        if localname == "MultimediaElement":
+            filename = element.get("filename")
+            if filename:
+                return filename
+        elif localname == "DocumentMetaData" and metadata is None:
+            metadata = element.get("documentTitle")
+
+    return metadata
+
+
 def select_video_sofa(sofas):
     """
     The sofa holding the video, or None if there is none.

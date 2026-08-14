@@ -56,6 +56,12 @@ x-importer-common: &importer-common
     # from the CAS instead of a file. Passed through from .env so
     # setting it there actually reaches the importer.
     DUUI_VIDEO_VIEW: ${DUUI_VIDEO_VIEW:-_InitialView}
+    # What to do with a .xmi whose video is already imported (matched
+    # by filename). `skip` is why `up` re-running init-import is now
+    # nearly free -- it does not even load the CAS. Set `replace` (or
+    # pass `--on-existing replace`) to rebuild a video's rows from a
+    # re-exported CAS.
+    DUUI_ON_EXISTING: ${DUUI_ON_EXISTING:-skip}
   volumes:
     # INPUT (read-only): your existing folder of .xmi files + their
     # videos, mounted in place. Nothing here is ever modified, hence

@@ -12,7 +12,7 @@ def _parse_shots(cas, cursor, video_id):
             """
             INSERT INTO segments (segment_id, video_id, kind, seg_index, start_time, end_time, begin_offset, end_offset)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (segment_id) DO NOTHING
+            ON CONFLICT (video_id, segment_id) DO NOTHING
             """,
             (
                 segment_id,
@@ -44,7 +44,7 @@ def _parse_sentences(cas, cursor, video_id):
             """
             INSERT INTO segments (segment_id, video_id, kind, start_time, end_time, begin_offset, end_offset, person_id)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (segment_id) DO NOTHING
+            ON CONFLICT (video_id, segment_id) DO NOTHING
             """,
             (
                 segment_id,

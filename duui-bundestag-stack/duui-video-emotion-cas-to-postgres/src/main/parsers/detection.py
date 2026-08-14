@@ -27,7 +27,7 @@ def _parse_detections(cas, cursor, uima_type, table_name, video_id, context):
             f"""
             INSERT INTO {table_name} (detection_id, presence_id, person_id, video_id, frame_index, t_time, x, y, w, h, detection_score)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (detection_id) DO NOTHING
+            ON CONFLICT (video_id, detection_id) DO NOTHING
             """,
             (
                 detection_id,

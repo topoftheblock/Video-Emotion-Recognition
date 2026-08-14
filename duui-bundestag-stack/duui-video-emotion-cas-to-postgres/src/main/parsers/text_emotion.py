@@ -58,13 +58,13 @@ def _insert_text_emotion(cursor, entry, emotion_id, video_id, dominant_label):
         """
         INSERT INTO base_emotions (emotion_id, video_id, modality, granularity, begin_offset, end_offset, dominant_label)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (emotion_id) DO NOTHING
+        ON CONFLICT (video_id, emotion_id) DO NOTHING
         """,
         (emotion_id, video_id, "text", "sentence", entry.begin, entry.end, dominant_label),
     )
 
 
-def _insert_text_emotion_scores(cursor, comments, emotion_id):
+def _insert_text_emotion_scores(cursor, comments, emotion_id, video_id):
     """`comments` is a plain list of AnnotationComment FS references
     (see `as_list`), each carrying one GoEmotions label/score pair
     (key/value)."""
@@ -78,11 +78,11 @@ def _insert_text_emotion_scores(cursor, comments, emotion_id):
 
         cursor.execute(
             """
-            INSERT INTO emotion_scores (emotion_id, label, score)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (emotion_id, label) DO NOTHING
+            INSERT INTO emotion_scores (video_id, emotion_id, label, score)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (video_id, emotion_id, label) DO NOTHING
             """,
-            (emotion_id, label, score),
+            (video_id, emotion_id, label, score),
         )
 
 
@@ -94,4 +94,4 @@ def parse(cas, cursor, context):
         comments = as_list(getattr(entry, "Emotions", None))
         dominant_label = _dominant_label_from_comments(comments)
         _insert_text_emotion(cursor, entry, emotion_id, video_id, dominant_label)
-        _insert_text_emotion_scores(cursor, comments, emotion_id)
+        _insert_text_emotion_scores(cursor, comments, emotion_id, video_id)

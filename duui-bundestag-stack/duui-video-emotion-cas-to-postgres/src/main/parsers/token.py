@@ -28,7 +28,7 @@ def parse(cas, cursor, context):
             """
             INSERT INTO linguistic_tokens (token_id, video_id, segment_id, start_time, end_time, begin_offset, end_offset, word, pos_tag, ner_label)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (token_id) DO NOTHING
+            ON CONFLICT (video_id, token_id) DO NOTHING
             """,
             (
                 token_id,

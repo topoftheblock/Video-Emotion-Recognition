@@ -81,6 +81,12 @@ def _parse_embeddings(cas, cursor, uima_type, table_name, resolve_person_id, con
     shapes, the model reference, the pgvector literal) is identical, so
     one helper covers both (same pattern as parsers/detection.py).
     """
+    video_id = context.get("global_video_id")
+    # The model references in this CAS are xmi:ids; `models` is keyed
+    # by (name, version, source) and numbered by the database, so they
+    # have to be translated through the map parsers/model.py built.
+    model_ids = context.get("model_id_by_xmi_id", {})
+
     for item in select_across_views(cas, uima_type):
         person_id = resolve_person_id(item, context)
         own_model_id = get_xmi_id(getattr(item, "model", None))
@@ -90,11 +96,17 @@ def _parse_embeddings(cas, cursor, uima_type, table_name, resolve_person_id, con
                 continue
             cursor.execute(
                 f"""
-                INSERT INTO {table_name} (embedding_id, person_id, model_id, embedding)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (embedding_id) DO NOTHING
+                INSERT INTO {table_name} (video_id, embedding_id, person_id, model_id, embedding)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (video_id, embedding_id) DO NOTHING
                 """,
-                (embedding_id, person_id, own_model_id or derived_model_id, _to_pgvector_literal(embedding_repr)),
+                (
+                    video_id,
+                    embedding_id,
+                    person_id,
+                    model_ids.get(own_model_id or derived_model_id),
+                    _to_pgvector_literal(embedding_repr),
+                ),
             )
 
 

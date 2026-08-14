@@ -52,7 +52,7 @@ def _parse_persons(cas, cursor, video_id, context):
             """
             INSERT INTO persons (person_id, video_id, clip_label, match_score)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (person_id) DO NOTHING
+            ON CONFLICT (video_id, person_id) DO NOTHING
             """,
             (
                 person_id,

@@ -87,7 +87,7 @@ def _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, score
         """
         INSERT INTO base_emotions (emotion_id, person_id, video_id, modality, granularity, start_time, end_time, begin_offset, end_offset, frame_index, x, y, w, h, valence, arousal, dominance, dominant_label)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (emotion_id) DO UPDATE SET
+        ON CONFLICT (video_id, emotion_id) DO UPDATE SET
             person_id = EXCLUDED.person_id, video_id = EXCLUDED.video_id,
             modality = EXCLUDED.modality, granularity = EXCLUDED.granularity,
             start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time,
@@ -120,15 +120,20 @@ def _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, score
     )
 
 
-def _insert_emotion_scores(cursor, scores, emotion_id):
+def _insert_emotion_scores(cursor, scores, emotion_id, video_id):
     for score in scores:
         cursor.execute(
             """
-            INSERT INTO emotion_scores (emotion_id, label, score)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (emotion_id, label) DO NOTHING
+            INSERT INTO emotion_scores (video_id, emotion_id, label, score)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (video_id, emotion_id, label) DO NOTHING
             """,
-            (emotion_id, getattr(score, "label", None), getattr(score, "score", None)),
+            (
+                video_id,
+                emotion_id,
+                getattr(score, "label", None),
+                getattr(score, "score", None),
+            ),
         )
 
 
@@ -141,4 +146,4 @@ def parse(cas, cursor, context):
         scores = as_list(getattr(emotion, "scores", None))
 
         _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, scores)
-        _insert_emotion_scores(cursor, scores, emotion_id)
+        _insert_emotion_scores(cursor, scores, emotion_id, video_id)

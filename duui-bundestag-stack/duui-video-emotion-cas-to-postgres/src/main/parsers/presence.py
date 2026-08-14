@@ -36,7 +36,7 @@ def _parse_visible_presences(cas, cursor, video_id, context):
             """
             INSERT INTO presences (presence_id, person_id, video_id, modality, start_time, end_time, begin_offset, end_offset)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (presence_id) DO NOTHING
+            ON CONFLICT (video_id, presence_id) DO NOTHING
             """,
             (
                 presence_id,
@@ -62,7 +62,7 @@ def _parse_speech_presences(cas, cursor, video_id, context):
             """
             INSERT INTO presences (presence_id, person_id, video_id, modality, start_time, end_time, begin_offset, end_offset)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (presence_id) DO NOTHING
+            ON CONFLICT (video_id, presence_id) DO NOTHING
             """,
             (
                 presence_id,
