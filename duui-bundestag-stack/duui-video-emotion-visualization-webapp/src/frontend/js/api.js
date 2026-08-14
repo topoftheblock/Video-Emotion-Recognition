@@ -3,8 +3,12 @@
  *
  * A non-2xx response throws, carrying the FastAPI `detail` string when
  * there is one -- callers that can carry on without the data (the
- * insights panel, the cross-video panel) catch and degrade, and the
- * ones that cannot let it surface.
+ * cross-video panel) catch and degrade, and the ones that cannot let
+ * it surface.
+ *
+ * GET /api/stats/{id} is deliberately absent: it is still served (see
+ * backend/routes/stats.py) but nothing in the viewer reads it since
+ * the emotion panels replaced the old insights panel.
  */
 
 async function getJson(path) {
@@ -25,10 +29,6 @@ export function fetchVideoData(videoId) {
 
 export function fetchGlobalPersons() {
   return getJson("/api/persons/global");
-}
-
-export function fetchStats(videoId) {
-  return getJson(`/api/stats/${videoId}`);
 }
 
 export async function askQuestion(question) {

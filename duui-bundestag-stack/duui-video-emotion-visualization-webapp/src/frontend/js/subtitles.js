@@ -1,6 +1,6 @@
 /**
- * The two time-synced text readouts: the subtitle bar over the video,
- * and the "Voice" panel's valence/arousal bars.
+ * The subtitle bar over the video -- and `coveredBy`, the "which rows
+ * are live at this instant" helper every time-synced panel shares.
  */
 
 import { el } from "./dom.js";
@@ -24,32 +24,4 @@ export function renderSubtitle(data, t) {
   const textEmotion = coveredBy(data.emotions.text, t)[0];
   el.subtitleEmotion.textContent =
     showTextEmotion && textEmotion ? textEmotion.dominant_label || "" : "";
-}
-
-export function renderVoicePanel(data, t) {
-  const audioEmotion = overlayEnabled("audio_emotion")
-    ? coveredBy(data.emotions.audio, t)[0]
-    : null;
-  if (!audioEmotion) {
-    el.voiceLabel.textContent = "—";
-    setBar(el.valenceFill, 0);
-    setBar(el.arousalFill, 0);
-    return;
-  }
-  el.voiceLabel.textContent = audioEmotion.dominant_label || "—";
-  setBar(el.valenceFill, audioEmotion.valence || 0);
-  setBar(el.arousalFill, audioEmotion.arousal || 0);
-}
-
-/** Renders a signed value in [-1, 1] as a bar growing left/right from centre. */
-function setBar(elFill, value) {
-  const clamped = Math.max(-1, Math.min(1, value || 0));
-  const pct = Math.abs(clamped) * 50;
-  if (clamped >= 0) {
-    elFill.style.left = "50%";
-    elFill.style.width = pct + "%";
-  } else {
-    elFill.style.left = 50 - pct + "%";
-    elFill.style.width = pct + "%";
-  }
 }

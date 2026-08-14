@@ -60,11 +60,31 @@ def get_tokens(video_id):
     )
 
 
-def get_emotions(video_id):
+def get_timeline_emotions(video_id):
+    """
+    Every emotion reading that sits on the timeline.
+
+    `start_time IS NOT NULL` is not defensive filtering -- it is what
+    separates the two different annotators whose output shares
+    modality='text' (see query_agent/schema_context.py): the
+    Ekman-mapped reading carries real start_time/end_time, the raw
+    28-class GoEmotions reading is anchored to character offsets only.
+    Both describe the same sentence, so anything that treats
+    modality='text' as one series counts every sentence twice -- which
+    is how a label came to be reported more often than there are
+    sentences.
+
+    Everything the frontend renders is driven off `currentTime`, so a
+    reading with no time cannot be placed at all. Leaving it out of the
+    payload keeps that trap out of the frontend entirely; the raw
+    GoEmotions rows stay reachable through /api/stats and the query
+    agent.
+    """
     return query(
         "SELECT emotion_id, person_id, modality, granularity, start_time, end_time, "
         "frame_index, x, y, w, h, valence, arousal, dominance, dominant_label "
-        "FROM base_emotions WHERE video_id = %s ORDER BY start_time",
+        "FROM base_emotions WHERE video_id = %s AND start_time IS NOT NULL "
+        "ORDER BY start_time",
         (video_id,),
     )
 
@@ -129,7 +149,7 @@ def build_playback_payload(video_id):
     for sentence in sentences:
         sentence["text"] = assemble_sentence_text(sentence, tokens)
 
-    emotions = get_emotions(video_id)
+    emotions = get_timeline_emotions(video_id)
     emotions_by_modality = {"video": [], "audio": [], "text": []}
     for e in emotions:
         emotions_by_modality.setdefault(e["modality"] or "video", []).append(e)

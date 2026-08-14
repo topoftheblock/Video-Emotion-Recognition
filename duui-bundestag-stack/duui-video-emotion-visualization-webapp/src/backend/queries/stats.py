@@ -1,26 +1,49 @@
 """
-The fixed (not LLM-written) emotion statistics behind the "Emotion
-insights" panel.
+The fixed (not LLM-written) emotion statistics served by
+GET /api/stats/{video_id}.
 
 Deliberately plain SQL rather than routed through the NL->SQL agent,
 both for speed/determinism and so there's always at least a few
 analyses available even with the query agent unconfigured. Computed on
-demand, not cached/written back to the DB -- see README "Emotion
-statistics" for why.
+demand, not cached/written back to the DB -- see README "What the
+viewer shows" for why.
+
+These three are cross-cutting: they compare modalities and people
+against each other, which is not what the viewer's per-modality
+emotion panels do, so nothing in the frontend currently reads them.
+The endpoint stays because it is the one analysis surface that needs
+neither an LLM nor hand-written SQL from the caller.
 """
 
 from ..db import query
 
 
 def emotion_distribution(video_id):
-    """Stat 1: how often each dominant_label occurred, per modality."""
+    """
+    Stat 1: how often each dominant_label occurred, per emotion series.
+
+    Grouped by *series*, not by modality, because modality='text' holds
+    the output of two different annotators at once (see
+    query_agent/schema_context.py): an Ekman-mapped reading that is on
+    the timeline, and a raw 28-class GoEmotions reading that is not.
+    There is one of each per sentence, so grouping by modality alone
+    counted every sentence twice and could report a label more often
+    than the video has sentences. `modality` is still returned
+    alongside, so a caller that only cares about the modality can group
+    the two text series back together knowingly.
+    """
     return query(
         """
-        SELECT modality, dominant_label, count(*) AS n
-        FROM base_emotions
-        WHERE video_id = %s AND dominant_label IS NOT NULL
-        GROUP BY modality, dominant_label
-        ORDER BY modality, n DESC
+        SELECT series, modality, dominant_label, count(*) AS n
+        FROM (
+            SELECT modality, dominant_label,
+                   CASE WHEN modality = 'text' AND start_time IS NULL
+                        THEN 'text (raw GoEmotions)' ELSE modality END AS series
+            FROM base_emotions
+            WHERE video_id = %s AND dominant_label IS NOT NULL
+        ) labelled
+        GROUP BY series, modality, dominant_label
+        ORDER BY series, n DESC
         """,
         (video_id,),
     )

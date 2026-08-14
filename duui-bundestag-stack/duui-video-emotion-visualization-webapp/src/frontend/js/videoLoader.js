@@ -12,7 +12,7 @@ import { fetchGlobalPersons, fetchVideoData, fetchVideos } from "./api.js";
 import { el, html } from "./dom.js";
 import { assignPersonColors, state } from "./state.js";
 import { renderCrossVideoPanel } from "./panels/crossVideo.js";
-import { loadInsights } from "./panels/insights.js";
+import { initEmotionPanels } from "./panels/emotions.js";
 import { renderPersonList } from "./panels/people.js";
 
 const IMPORT_COMMAND = "docker compose run --rm importer";
@@ -93,7 +93,7 @@ export async function loadVideo(videoId) {
   assignPersonColors(data.persons);
   renderPersonList(data.persons);
   renderCrossVideoPanel(data);
-  loadInsights(videoId);
+  initEmotionPanels(data);
 
   // A row can exist while its video file doesn't (import ran before the
   // file was placed, or it was removed afterwards). Say so instead of

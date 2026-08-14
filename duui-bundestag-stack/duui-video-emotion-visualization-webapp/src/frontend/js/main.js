@@ -16,13 +16,14 @@
 import { el } from "./dom.js";
 import { renderBoundingBoxes, syncCanvasSize } from "./overlay.js";
 import { initPlayer, onFrame, render } from "./player.js";
-import { renderSubtitle, renderVoicePanel } from "./subtitles.js";
+import { renderSubtitle } from "./subtitles.js";
 import { initAskPanel } from "./panels/ask.js";
+import { renderEmotionPanels } from "./panels/emotions.js";
 import { loadVideo, loadVideoList } from "./videoLoader.js";
 
 // Registration order is render order.
 onFrame(renderSubtitle);
-onFrame(renderVoicePanel);
+onFrame(renderEmotionPanels);
 onFrame(renderBoundingBoxes);
 
 initPlayer();

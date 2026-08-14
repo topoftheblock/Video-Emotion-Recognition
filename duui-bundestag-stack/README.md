@@ -496,16 +496,24 @@ everything else unaffected):
 - **Video with overlays**: subtitles reconstructed from the transcript
   tokens, a text-emotion badge, and face/person bounding boxes labelled
   with that frame's video-modality emotion.
-- **Voice panel**: the audio-modality emotion at the current instant
-  plus valence/arousal bars (tone of voice, independent of the words).
+- **Text / Audio / Video emotion panels**: one panel per modality, each
+  listing every label that modality's model emits with two numbers —
+  the reading at the current playhead, and the mean over the whole
+  video (also drawn as a tick on the same bar, so "is this moment
+  unusual for this video?" is one glance). Audio and video additionally
+  show their dimensional readings: valence and arousal, plus dominance
+  for audio. Everything is computed in the browser from the playback
+  payload, so it stays in sync with the frame being shown rather than
+  with a separate request.
 - **People / On screen now**: who was identified in the video, and who
   is visible at this exact frame, colour-matched to their box.
 - **Also appears in**: for each person, other videos they were linked
   to across the corpus (only when such a link exists).
-- **Emotion insights**: three fixed statistics — video-vs-text
-  agreement, dominant-emotion distribution per modality, and average
-  valence/arousal per person. Computed on request in plain SQL (no
-  materialised views, no cache).
+- **`GET /api/stats/{video_id}`**: three fixed statistics — video-vs-text
+  agreement, dominant-emotion distribution per emotion series, and
+  average valence/arousal per person. Computed on request in plain SQL
+  (no materialised views, no cache). Served but not currently rendered:
+  the per-modality panels above replaced the panel that used to show it.
 - **Ask panel** (if configured): a natural-language question is turned
   into SQL by an LLM agent, run read-only, and returned as clickable
   clips that jump the player to that moment — with only the overlays
@@ -594,7 +602,8 @@ through (including that the `READ ONLY` transaction itself blocks
 writes, not just the keyword check), the viewer's HTTP surface via
 `TestClient` (route wiring, the frontend being served, the `/media`
 mount), subtitle assembly from token timings, the agent-result →
-playable-clip conversion, the cross-video linking logic against a real
+playable-clip conversion, the separation of the two annotators that
+share `modality = 'text'`, the cross-video linking logic against a real
 database, the video-placement logic, and batch path resolution.
 
 Database-backed tests are **skipped**, not failed, when no Postgres is
@@ -607,8 +616,12 @@ DUUI_DB_HOST=localhost DUUI_DB_USER=duui DUUI_DB_PASSWORD=duui \
   DUUI_DB_NAME=duui_bundestag pytest
 ```
 
-Each test runs in one transaction that is rolled back afterwards, so the
-suite is safe against a populated database and needs no cleanup.
+The importer's tests run in one transaction that is rolled back
+afterwards. The viewer reads through a fresh connection per query and
+so cannot see an uncommitted transaction: its one writing test commits
+a throwaway video and deletes it again in the fixture's teardown.
+Either way the suite is safe against a populated database and leaves
+nothing behind.
 
 ---
 
