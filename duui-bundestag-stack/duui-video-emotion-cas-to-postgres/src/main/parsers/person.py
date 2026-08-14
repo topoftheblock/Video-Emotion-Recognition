@@ -1,4 +1,14 @@
-"""Parses GlobalPerson and (video-local) Person rows.
+"""Parses (video-local) Person rows.
+
+`persons.global_person_id` is deliberately left NULL here, and
+`identity:GlobalPerson` is not read from the CAS at all. Cross-video
+identity is computed from embeddings by a separate, explicitly-run job
+(see duui-video-emotion-global-identity/) which clears and rebuilds
+both `global_persons` and this column corpus-wide -- so anything the
+importer wrote into them would be discarded on its next run anyway.
+Not reading the type also drops a "type not found in typesystem"
+warning on every import: `GlobalPerson` is absent from the shipped
+typesystems, and no real CAS this parser has run against populated it.
 
 Also builds the face_id/voice_id -> person_id lookup maps that other
 parsers (embedding, presence, detection, emotion) need when a
@@ -20,16 +30,6 @@ from ..identity_resolution import parse_person_label
 from ..typesystem import get_xmi_id
 
 
-def _parse_global_persons(cas, cursor):
-    for g_person in select_across_views(cas, TYPES["global_person"]):
-        gp_id = get_xmi_id(g_person)
-        cursor.execute(
-            "INSERT INTO global_persons (global_person_id, real_name) VALUES (%s, %s) "
-            "ON CONFLICT (global_person_id) DO NOTHING",
-            (gp_id, getattr(g_person, "real_name", getattr(g_person, "name", None))),
-        )
-
-
 def _parse_persons(cas, cursor, video_id, context):
     face_id_to_person_id = context.setdefault("face_id_to_person_id", {})
     voice_id_to_person_id = context.setdefault("voice_id_to_person_id", {})
@@ -37,7 +37,6 @@ def _parse_persons(cas, cursor, video_id, context):
     for person in select_across_views(cas, TYPES["person"]):
         person_id = get_xmi_id(person)
 
-        global_person_id = get_xmi_id(getattr(person, "globalPerson", None))
         label = getattr(person, "label", None)
         label_parts = parse_person_label(label)
 
@@ -51,14 +50,13 @@ def _parse_persons(cas, cursor, video_id, context):
 
         cursor.execute(
             """
-            INSERT INTO persons (person_id, video_id, global_person_id, clip_label, match_score)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO persons (person_id, video_id, clip_label, match_score)
+            VALUES (%s, %s, %s, %s)
             ON CONFLICT (person_id) DO NOTHING
             """,
             (
                 person_id,
                 video_id,
-                global_person_id,
                 clip_label,
                 match_score,
             ),
@@ -72,5 +70,4 @@ def _parse_persons(cas, cursor, video_id, context):
 
 def parse(cas, cursor, context):
     video_id = context.get("global_video_id")
-    _parse_global_persons(cas, cursor)
     _parse_persons(cas, cursor, video_id, context)

@@ -1,13 +1,15 @@
 /**
  * "Also appears in": for each person in this video, every *other*
  * video that
- * duui-video-emotion-cas-to-postgres/src/main/parsers/global_identity.py
+ * duui-video-emotion-global-identity/src/identity/linking.py
  * linked them to.
  *
  * Reads state.globalPersonClusters, fetched once at startup and
  * filtered client-side -- cross-video identity doesn't change between
  * video loads. The panel hides itself entirely when this video has no
- * one who appears elsewhere, which is still the common case.
+ * one who appears elsewhere, which is still the common case: importing
+ * videos does not compute these links, so until the global-identity
+ * job has been run there are none at all.
  */
 
 import { el, html } from "../dom.js";

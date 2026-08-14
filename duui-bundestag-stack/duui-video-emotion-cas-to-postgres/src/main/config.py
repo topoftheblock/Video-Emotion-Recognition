@@ -86,33 +86,6 @@ TYPESYSTEM_FILES = {
     ),
 }
 
-# --- Post-processing pipeline steps ------------------------------------
-# These run automatically as part of every `python -m main` import (see
-# src/main/parsers/__init__.py) -- each can be switched off
-# independently for a faster import or a constrained environment
-# without breaking the rest of the pipeline.
-
-def _bool_env(name, default):
-    return os.environ.get(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
-
-
-# Cross-video person identity (src/main/parsers/global_identity.py):
-# after a video's face/voice embeddings are inserted, each new local
-# person is matched via pgvector cosine distance against every other
-# video's persons; a match below the threshold links both to the same
-# global_persons row (creating one if neither side had one yet).
-ENABLE_GLOBAL_PERSON_LINKING = _bool_env("DUUI_ENABLE_GLOBAL_PERSON_LINKING", True)
-# Cosine distance (`<=>`, 0 = identical .. 2 = opposite) -- lower is
-# stricter. 0.30 is a conservative starting point for ArcFace-style
-# 512-dim face embeddings; retune against real cross-video duplicates
-# before trusting this for anything beyond suggestions.
-GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD = float(
-    os.environ.get("DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD", "0.30")
-)
-GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
-    os.environ.get("DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD", "0.35")
-)
-
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
 # (copies into it, see src/main/media.py) and the webapp (reads from it,
@@ -163,7 +136,12 @@ TYPES = {
     "speaker_sentence": "org.texttechnologylab.annotation.audio.SpeakerSentence",
     "speaker_segment": "org.texttechnologylab.annotation.audio.SpeakerSegment",
     "diarized_audio_token": "org.texttechnologylab.annotation.type.DiarizedAudioToken",
-    "global_person": "org.texttechnologylab.annotation.identity.GlobalPerson",
+    # NOTE: there is deliberately no `global_person` entry.
+    # `identity.GlobalPerson` is absent from every shipped typesystem
+    # and empty in every real CAS seen so far, and cross-video identity
+    # is now computed from embeddings by a separate job (see
+    # duui-video-emotion-global-identity/), so selecting the type here
+    # bought nothing but a warning on every import.
     "person": "org.texttechnologylab.annotation.identity.Person",
     "face_identity": "org.texttechnologylab.annotation.identity.FaceIdentity",
     "voice_identity": "org.texttechnologylab.annotation.identity.VoiceIdentity",

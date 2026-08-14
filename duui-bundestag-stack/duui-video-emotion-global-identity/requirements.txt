@@ -1,0 +1,6 @@
+# Runtime deps for the global-identity job only. Deliberately does NOT
+# include dkpro-cassis: this job never opens a CAS. Its entire input and
+# output is the database, which is why it needs nothing but a Postgres
+# driver (the vector maths all happens server-side in pgvector).
+psycopg2-binary>=2.9
+python-dotenv>=1.0

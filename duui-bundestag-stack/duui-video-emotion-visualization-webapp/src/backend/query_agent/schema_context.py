@@ -46,19 +46,20 @@ global_persons(global_person_id PK, real_name)
     A person's identity *across* videos. `real_name` is essentially
     never set (nothing in this pipeline resolves a real name -- rows
     exist purely to group persons together). Populated by
-    duui-video-emotion-cas-to-postgres/src/main/parsers/global_identity.py,
-    a per-import step that pgvector-matches each new person's
-    face/voice embedding centroid
-    against every other already-imported video's persons and links
+    duui-video-emotion-global-identity/src/identity/linking.py,
+    a separate job that pgvector-matches each person's face/voice
+    embedding centroid against every other video's persons and links
     both sides to the same global_persons row below a cosine-distance
-    threshold (see config.py). This is a similarity HEURISTIC, not a
+    threshold (see its config.py). This is a similarity HEURISTIC, not a
     verified identity match, and the per-pair distance isn't stored
     (no column for it) -- treat a shared global_person_id as
     "probably the same person," not ground truth, and always check
     whether any rows actually share one (`GROUP BY global_person_id
     HAVING count(DISTINCT video_id) > 1`) before answering a
-    cross-video identity question, since a single-video dataset or one
-    where the step is disabled will have none.
+    cross-video identity question. Importing videos does NOT populate
+    this table -- the job has to be run explicitly -- so a table that
+    is simply empty is a completely normal state, as is a single-video
+    dataset having no clusters.
 
 persons(person_id PK, video_id FK->videos, global_person_id FK->global_persons NULL,
          clip_label, match_score)
@@ -68,8 +69,8 @@ persons(person_id PK, video_id FK->videos, global_person_id FK->global_persons N
     always a named speaker. `match_score` is a 0..1 confidence
     (e.g. 0.83). Prefer joining to `persons` for display names
     (`COALESCE(p.clip_label, 'person ' || p.person_id::text)`).
-    `global_person_id` is set only where global_identity.py found a
-    cross-video match (see global_persons above) -- still commonly
+    `global_person_id` is set only where the global-identity job found
+    a cross-video match (see global_persons above) -- still commonly
     NULL (no other video to match against, or no confident match), so
     always LEFT JOIN through it rather than assuming every person has
     one.

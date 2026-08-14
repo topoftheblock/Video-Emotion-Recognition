@@ -6,12 +6,16 @@ from ..db import query
 def list_global_clusters():
     """
     Every global_persons cluster that
-    duui-video-emotion-cas-to-postgres/src/main/parsers/global_identity.py
+    duui-video-emotion-global-identity/src/identity/linking.py
     has linked two or more video-local `persons` rows into, with which
     video/clip_label each member came from. A person with no
-    cross-video match (still the common case -- see global_identity.py's
+    cross-video match (still the common case -- see linking.py's
     docstring) simply doesn't appear here; this is specifically "who
     spans videos", not "everyone".
+
+    Expect nothing at all until that job has been run: it is a separate
+    container that is never part of `docker compose up`, so importing
+    videos alone leaves every `global_person_id` NULL.
     """
     rows = query(
         """

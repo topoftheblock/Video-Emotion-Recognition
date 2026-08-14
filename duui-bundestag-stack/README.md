@@ -5,12 +5,13 @@ files plus the videos they describe), loads it into Postgres, and serves
 a browser viewer that plays each video with its subtitles, per-modality
 emotions and face/person bounding boxes rendered live in sync.
 
-Three containers, each buildable on its own:
+Four containers, each buildable on its own:
 
 | Folder | Container | What it is |
 | :--- | :--- | :--- |
 | `db/` | `duui-db` | Postgres 16 + pgvector, schema baked in |
 | `duui-video-emotion-cas-to-postgres/` | `duui-video-emotion-cas-to-postgres` | **One-off job**: parses `.xmi` → Postgres, and copies the videos where the viewer can find them. Runs, works, exits |
+| `duui-video-emotion-global-identity/` | `duui-video-emotion-global-identity` | **One-off job, run explicitly**: works out which people in *different* videos are the same person, from the embeddings already in the database. Never runs on its own |
 | `duui-video-emotion-visualization-webapp/` | `duui-video-emotion-visualization-webapp` | The viewer (FastAPI + static frontend). Long-running |
 
 ```
@@ -21,8 +22,18 @@ YOUR pipeline output folder      duui-video-emotion-cas-to-postgres    ...-visua
         mounted READ-ONLY                                (shared)         reads read-only
 ```
 
-Both application folders use the same layout: `src/` is the source root
-(it goes on the path, it is not a package), with `tests/` beside it.
+The fourth container sits entirely inside the database — no files, no
+mounts. It reads the face/voice embeddings the importer loaded and
+writes back which people in different videos are the same person:
+
+```
+                   duui-video-emotion-global-identity
+   Postgres ──▶ embeddings ──▶ cosine match ──▶ global_persons ──▶ Postgres
+                   (you run it; never starts on its own)
+```
+
+The three application folders use the same layout: `src/` is the source
+root (it goes on the path, it is not a package), with `tests/` beside it.
 
 ---
 
@@ -172,6 +183,19 @@ once it's finished.
 > deployment. If the database *is* ever empty, the viewer now says so
 > explicitly instead of showing a black rectangle.
 
+One thing `up` deliberately does **not** do is work out which people
+appear in more than one video. That is a separate job, because it looks
+at the whole corpus at once rather than at the file being imported —
+run it once your videos are in:
+
+```bash
+docker compose run --rm global-identity
+```
+
+Until you do, the viewer's "Also appears in" panel stays empty and
+`persons.global_person_id` is NULL everywhere. See "Cross-video person
+identity" below.
+
 ### Everyday commands
 
 All of these run from this directory (`cd` here first):
@@ -196,6 +220,9 @@ docker compose run --rm importer
 # different source:
 DUUI_INPUT_XMI_DIR=/other/xmi DUUI_INPUT_VIDEO_DIR=/other/videos \
   docker compose run --rm importer
+
+# ...and afterwards, to refresh who is the same person across videos:
+docker compose run --rm global-identity
 ```
 
 If port 8010 or 5432 is already in use, set `DUUI_WEBAPP_HOST_PORT` /
@@ -203,7 +230,7 @@ If port 8010 or 5432 is already in use, set `DUUI_WEBAPP_HOST_PORT` /
 
 ---
 
-## The three jobs in detail
+## The jobs in detail
 
 ### 1. Start the database
 
@@ -240,9 +267,12 @@ What one run does, per `.xmi`:
 1. Parses the CAS and writes everything into Postgres in **one
    transaction** (video, persons, segments, transcript tokens,
    detections, all three emotion modalities, embeddings).
-2. Runs the post-processing steps (see below).
-3. Puts the CAS's video into the video store — the companion file if
+2. Puts the CAS's video into the video store — the companion file if
    one exists, otherwise the video embedded in the CAS itself.
+
+It writes only what the CAS actually contains. Nothing is inferred, and
+in particular cross-video person identity is left entirely alone — see
+step 3 below.
 
 Useful behaviour when importing a whole folder:
 
@@ -279,7 +309,26 @@ No .xmi files found in: /data/input/xmi
 - *none named `*.xmi`* — right folder, no CAS in it (the entries it did
   find are listed, so a wrong subfolder is obvious).
 
-### 3. Start the viewer
+### 3. Link people across videos (optional, explicit)
+
+```bash
+docker compose run --rm global-identity
+```
+
+Takes no arguments — the corpus already in the database is its entire
+input, and it writes nothing but `global_persons` and
+`persons.global_person_id`. It prints what it cleared and what it
+rebuilt:
+
+```
+Cleared 12 previous global identities (27 person link(s) removed).
+Recomputed over 340 person(s): 31 linked into 14 global identities.
+```
+
+Skip it and everything else still works — you just won't get the "Also
+appears in" panel. Details and caveats: "Cross-video person identity".
+
+### 4. Start the viewer
 
 ```bash
 docker compose up webapp        # first time: no -d, so you see it finish
@@ -374,13 +423,15 @@ this stack only consumes its output.)
 ## Running without compose
 
 Every image builds with **its own folder** as the context — `db/`,
-`duui-video-emotion-cas-to-postgres/` and
+`duui-video-emotion-cas-to-postgres/`,
+`duui-video-emotion-global-identity/` and
 `duui-video-emotion-visualization-webapp/` are self-contained, with no
 code shared between them:
 
 ```bash
 docker build -t duui-db db/
 docker build -t duui-video-emotion-cas-to-postgres duui-video-emotion-cas-to-postgres/
+docker build -t duui-video-emotion-global-identity duui-video-emotion-global-identity/
 docker build -t duui-video-emotion-visualization-webapp duui-video-emotion-visualization-webapp/
 
 docker build -t duui-video-emotion-visualization-webapp:v2 duui-video-emotion-visualization-webapp/   # custom tag
@@ -407,7 +458,14 @@ docker run --rm --network duui \
   -v duui_videos:/data/videos \
   duui-video-emotion-cas-to-postgres:latest
 
-# 3. viewer
+# 3. cross-video identity (one-off, whenever you want it refreshed).
+#    No volumes -- it only ever talks to the database.
+docker run --rm --network duui \
+  -e DUUI_DB_HOST=duui-db -e DUUI_DB_NAME=duui_bundestag \
+  -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
+  duui-video-emotion-global-identity:latest
+
+# 4. viewer
 docker run -d --name duui-webapp --network duui \
   -e DUUI_DB_HOST=duui-db -e DUUI_DB_NAME=duui_bundestag \
   -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
@@ -417,8 +475,8 @@ docker run -d --name duui-webapp --network duui \
 ```
 
 The importer and the viewer must share the same video volume
-(`duui_videos` here) and reach the same database. Nothing else is
-shared between them.
+(`duui_videos` here) and reach the same database. The identity job
+needs only the database. Nothing else is shared between them.
 
 ---
 
@@ -426,7 +484,8 @@ shared between them.
 
 Everything is an environment variable, read from `.env` or the real
 environment. Each container defines the ones it reads:
-`duui-video-emotion-cas-to-postgres/src/main/config.py` and
+`duui-video-emotion-cas-to-postgres/src/main/config.py`,
+`duui-video-emotion-global-identity/src/identity/config.py` and
 `duui-video-emotion-visualization-webapp/src/backend/config.py`.
 The few that appear in both (`DUUI_DB_*`, `DUUI_VIDEO_DIR`) are exactly
 the two contracts the containers share — the database and the video
@@ -481,13 +540,14 @@ everything else unaffected):
 | `DUUI_QUERY_STATEMENT_TIMEOUT_MS` | `8000` |
 | `DUUI_QUERY_MAX_TOOL_ITERATIONS` | `6` |
 
-**Post-processing** (runs during import):
+**Cross-video person identity** (read only by the `global-identity`
+job, which you run explicitly — there is no on/off switch, since
+running it *is* the opt-in):
 
 | Variable | Default | What it does |
 | :--- | :--- | :--- |
-| `DUUI_ENABLE_GLOBAL_PERSON_LINKING` | `true` | Links the same person across videos via pgvector similarity on face/voice embeddings |
-| `DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD` | `0.30` | Cosine distance; lower = stricter |
-| `DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD` | `0.35` | |
+| `DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD` | `0.30` | Cosine distance below which two faces from different videos count as the same person; lower = stricter |
+| `DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD` | `0.35` | The same, for voiceprints — used only when there is no face match |
 
 ---
 
@@ -522,19 +582,52 @@ everything else unaffected):
 
 ---
 
-## Post-processing during import
+## Cross-video person identity
 
-One thing is computed by the importer rather than read from the CAS,
-because the CAS doesn't contain it:
+One thing in the database is computed rather than read from a CAS,
+because the CAS doesn't contain it: whether a person in one video is
+the same person as someone in another. That is the
+`duui-video-emotion-global-identity` container.
 
-1. **Cross-video person identity** — each new person's face/voice
-   embedding centroid is compared (pgvector cosine distance) against
-   every already-imported video's people; a close enough match links
-   both to one global person. This is a **similarity heuristic, not
-   verified identity** — tune the thresholds against your own data
-   before relying on it.
+```bash
+docker compose run --rm global-identity
+```
 
-It can be switched off (see the table above).
+**What it does.** Every person's face embeddings are averaged into one
+centroid (likewise voice), and each person is compared against the
+people of every *other* video by pgvector cosine distance. A pair that
+is close enough gets linked to a shared `global_persons` row — that
+link, and nothing else, is what the viewer's "Also appears in" panel
+shows. Face is tried first; the voiceprint is a fallback for people who
+are never clearly on camera. `real_name` is never filled in: nothing in
+this pipeline resolves a name, the rows exist purely to group people.
+
+**Each run clears every existing global identity and rebuilds the whole
+set.** That is deliberate. It makes the result depend only on what is
+in the database, not on the order videos happened to be imported in,
+and it lets a link that a newly imported video contradicts actually
+disappear — which is why re-running it after each batch is the intended
+workflow rather than a waste. The wipe and the rebuild are one
+transaction, so an interrupted run leaves the identities you had
+before, never a half-cleared corpus.
+
+**Why it isn't part of `up`.** It is corpus-wide, so running it per
+imported file would be both wasteful and order-dependent, and it gets
+more accurate the more videos are loaded. When to run it is a decision;
+making it a side effect of importing took that decision away.
+
+**It is a similarity heuristic, not verified identity.** The per-pair
+distance isn't even stored (the schema has no column for it), so treat
+a shared `global_person_id` as "probably the same person". Matching is
+greedy nearest-neighbour rather than proper clustering: A links to B,
+and B to C, without anything checking that A and C belong together.
+Tune `DUUI_GLOBAL_PERSON_*_DISTANCE_THRESHOLD` against duplicates you
+can verify in your own data before relying on it for anything beyond
+suggestions — and see "Operating it" on the GDPR implications of
+linking identifiable people across recordings.
+
+Skipping it entirely is fine: `global_person_id` stays NULL, the "Also
+appears in" panel hides itself, and nothing else in the stack changes.
 
 ---
 
@@ -578,11 +671,13 @@ It can be switched off (see the table above).
 
 Each container has its own suite next to its code
 (`duui-video-emotion-cas-to-postgres/tests/`,
+`duui-video-emotion-global-identity/tests/`,
 `duui-video-emotion-visualization-webapp/tests/`). From the stack root,
-`pytest` runs both:
+`pytest` runs all three:
 
 ```bash
 pip install -r duui-video-emotion-cas-to-postgres/requirements.txt \
+            -r duui-video-emotion-global-identity/requirements.txt \
             -r duui-video-emotion-visualization-webapp/requirements.txt \
             -r requirements-dev.txt
 pytest
@@ -594,6 +689,9 @@ Or one side on its own, needing only that side's requirements:
 cd duui-video-emotion-cas-to-postgres && pytest
 ```
 ```bash
+cd duui-video-emotion-global-identity && pytest
+```
+```bash
 cd duui-video-emotion-visualization-webapp && pytest
 ```
 
@@ -603,8 +701,13 @@ writes, not just the keyword check), the viewer's HTTP surface via
 `TestClient` (route wiring, the frontend being served, the `/media`
 mount), subtitle assembly from token timings, the agent-result →
 playable-clip conversion, the separation of the two annotators that
-share `modality = 'text'`, the cross-video linking logic against a real
-database, the video-placement logic, and batch path resolution.
+share `modality = 'text'`, the video-placement logic, batch path
+resolution, and — against a real database — the cross-video linking
+logic: that similar faces link and dissimilar ones don't, that a
+voiceprint carries a person with no face embedding, that two people in
+the *same* video are never merged, and that a full recompute both drops
+identities the embeddings no longer support and finds matches
+regardless of import order.
 
 Database-backed tests are **skipped**, not failed, when no Postgres is
 reachable, so the suite runs anywhere. To run them fully, start the db
@@ -616,12 +719,17 @@ DUUI_DB_HOST=localhost DUUI_DB_USER=duui DUUI_DB_PASSWORD=duui \
   DUUI_DB_NAME=duui_bundestag pytest
 ```
 
-The importer's tests run in one transaction that is rolled back
-afterwards. The viewer reads through a fresh connection per query and
-so cannot see an uncommitted transaction: its one writing test commits
-a throwaway video and deletes it again in the fixture's teardown.
-Either way the suite is safe against a populated database and leaves
-nothing behind.
+The importer's and the identity job's tests run in one transaction that
+is rolled back afterwards. The viewer reads through a fresh connection
+per query and so cannot see an uncommitted transaction: its one writing
+test commits a throwaway video and deletes it again in the fixture's
+teardown. Either way the suite is safe against a populated database and
+leaves nothing behind.
+
+That rollback carries real weight for the identity job: its tests
+exercise the actual corpus-wide `DELETE FROM global_persons`, so they
+would wipe a populated database if anything there ever committed.
+Nothing does.
 
 ---
 
@@ -629,16 +737,23 @@ nothing behind.
 
 ```
 .
-├── docker-compose.yml     all three services, for convenience
+├── docker-compose.yml     all four services, for convenience
 ├── .env.example           every setting, with defaults
 ├── db/                    Dockerfile, schema.sql
 ├── duui-video-emotion-cas-to-postgres/
 │                          Dockerfile, requirements.txt
 │   ├── src/               source root (on the path, not a package)
-│   │   ├── main/          the CAS parsers, post-processing, DB layer,
-│   │   │                  and __main__.py (the `python -m main` entry)
+│   │   ├── main/          the CAS parsers, DB layer, and __main__.py
+│   │   │                  (the `python -m main` entry)
 │   │   └── resources/     typesystems/ + sample-input/ (demo .xmi
 │   │                      + video, the default input)
+│   └── tests/             pytest suite for the above
+├── duui-video-emotion-global-identity/
+│                          Dockerfile, requirements.txt
+│   ├── src/               source root (on the path, not a package)
+│   │   └── identity/      the embedding-matching logic, DB layer, and
+│   │                      __main__.py (the `python -m identity` entry).
+│   │                      No resources/ -- it never opens a CAS
 │   └── tests/             pytest suite for the above
 ├── duui-video-emotion-visualization-webapp/
 │                          Dockerfile, requirements.txt
@@ -654,14 +769,15 @@ nothing behind.
 
 Each folder is self-contained — it holds all the code its image needs
 and nothing it doesn't, which is why each builds with its own folder as
-the Docker context. The importer never imports the viewer's code or
-vice versa; they share only the database and the video store, wired up
-in `docker-compose.yml`. The price is a little deliberate duplication
-(the DB connection helper, the `DUUI_DB_*` / `DUUI_VIDEO_DIR` settings,
-the pytest DB fixture) — a handful of lines each, and what lets either
-container be built, tested or lifted out of this repo on its own.
+the Docker context. None of the three imports another's code; they
+share only the database (and, for the importer and the viewer, the
+video store), wired up in `docker-compose.yml`. The price is a little
+deliberate duplication (the DB connection helper, the `DUUI_DB_*` /
+`DUUI_VIDEO_DIR` settings, the pytest DB fixture) — a handful of lines
+each, and what lets any of them be built, tested or lifted out of this
+repo on its own.
 
-The two packages are named differently (`main` and `backend`) on
-purpose: the stack root's `pyproject.toml` puts both source roots on
-one path so `pytest` can run the suites together, and a shared package
-name would make one shadow the other.
+The three packages are named differently (`main`, `identity`,
+`backend`) on purpose: the stack root's `pyproject.toml` puts all three
+source roots on one path so `pytest` can run the suites together, and a
+shared package name would make one shadow the others.

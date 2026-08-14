@@ -22,9 +22,15 @@ def select_across_views(cas, type_name):
 
     If `type_name` isn't defined in the CAS's typesystem at all, this
     prints a one-time warning and yields nothing rather than raising --
-    some optional types (e.g. GlobalPerson) may simply not be part of
-    a given pipeline's typesystem, and that shouldn't abort the whole
+    a pipeline that doesn't run every annotator (no diarization, no
+    shot detection, ...) legitimately produces a typesystem without
+    those types, and a missing optional layer shouldn't abort the whole
     parse.
+
+    The warning is meant to stay rare enough to be worth reading: a
+    type this importer selects on every run but no typesystem ever
+    defines is noise, and belongs in config.IGNORED_ABSENT_TYPES or
+    nowhere at all rather than here.
     """
     seen_ids = set()
     for view in cas.views:

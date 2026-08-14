@@ -18,6 +18,14 @@ earlier steps, and the real Postgres schema has FK constraints (e.g.
 `segments.person_id -> persons.person_id`) that fail outright if a
 referenced row hasn't been inserted yet. `person` therefore runs right
 after `video`/`model`, before anything that can reference a person.
+
+Every step here reads the CAS and writes what it found. Nothing in this
+package derives data the CAS doesn't contain: cross-video person
+identity (`global_persons`/`persons.global_person_id`) used to be a
+step in this list, but it is corpus-wide rather than per-file, so it
+now lives in its own container and is run explicitly -- see
+duui-video-emotion-global-identity/. This importer never writes those
+two columns at all.
 """
 
 from . import (
@@ -27,7 +35,6 @@ from . import (
     segment,
     token,
     embedding,
-    global_identity,
     presence,
     detection,
     emotion,
@@ -37,15 +44,12 @@ from . import (
 PARSE_STEPS = [
     video,          # must run first: resolves context["global_video_id"]
     model,
-    person,         # includes GlobalPerson + Person; builds face/voice -> person maps.
+    person,         # video-local Person rows; builds face/voice -> person maps.
                     # Must run before anything with a person_id FK (segment, embedding,
                     # presence, detection, emotion all reference persons.person_id).
     segment,
     token,
     embedding,      # Face + Voice embeddings (uses the maps built by `person`)
-    global_identity, # cross-video person linking -- needs this video's persons
-                    # (person) + embeddings (embedding) already inserted, and reads
-                    # every other already-imported video's embeddings via pgvector.
     presence,       # uses the maps built by `person`
     detection,      # Face + Person detections (uses the maps built by `person`)
     emotion,        # video/audio BaseEmotion + EmotionScore

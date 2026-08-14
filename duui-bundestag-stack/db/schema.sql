@@ -77,8 +77,8 @@ CREATE TABLE voice_embeddings (
 -- HNSW, cosine distance (`<=>`) -- the doc in data_schema_with_types.md
 -- has always described these embeddings as "pgvector HNSW-Index:
 -- cosine", but the index itself was never actually created until now.
--- Drives both the cross-video global-person linking step
--- (duui-video-emotion-cas-to-postgres/src/main/parsers/global_identity.py)
+-- Drives both the cross-video global-person linking job
+-- (duui-video-emotion-global-identity/src/identity/linking.py)
 -- and any similarity search the NL->SQL query agent writes.
 -- `vector_cosine_ops` matches the
 -- `<=>` operator used everywhere else in this codebase.
@@ -159,8 +159,8 @@ CREATE TABLE emotion_scores (
 -- 6. Supporting indexes
 -- Not required for correctness (every FK already has an implicit
 -- index on its own PK side), but these back the join/filter patterns
--- the per-video post-processing step runs on every import
--- (duui-video-emotion-cas-to-postgres/src/main/parsers/global_identity.py)
+-- the cross-video identity job runs over the whole corpus
+-- (duui-video-emotion-global-identity/src/identity/linking.py)
 -- and that the NL->SQL query agent tends to write.
 CREATE INDEX IF NOT EXISTS base_emotions_video_modality_idx
     ON base_emotions (video_id, modality);
