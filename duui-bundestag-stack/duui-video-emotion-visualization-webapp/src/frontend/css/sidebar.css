@@ -58,6 +58,35 @@
 .dot-live { background: var(--accent-live); color: var(--accent-live); }
 .dot-cross { background: var(--accent-cross); color: var(--accent-cross); }
 
+/* Names the .person-meta column before any row does, the same idiom
+   .emo-legend uses for the emotion panels' now/avg columns -- so what
+   the number means is on the page whether or not anyone hovers
+   anything. Right-padding matches .person-row's so the label's right
+   edge sits over the percentages it's naming. */
+.person-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 0 10px;
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  /* Signals there's more to read on hover -- the title is the only way
+     to reach the fuller explanation, there's no click target. */
+  cursor: help;
+}
+
+.person-legend .info-icon {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
 .person-list, .active-list {
   list-style: none;
   margin: 0;

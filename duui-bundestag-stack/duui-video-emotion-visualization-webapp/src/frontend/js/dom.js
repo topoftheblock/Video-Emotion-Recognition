@@ -29,6 +29,7 @@ export const el = {
   audioEmotionBody: document.getElementById("audioEmotionBody"),
   videoEmotionPanel: document.getElementById("videoEmotionPanel"),
   videoEmotionBody: document.getElementById("videoEmotionBody"),
+  personLegend: document.getElementById("personLegend"),
   personList: document.getElementById("personList"),
   activeList: document.getElementById("activeList"),
   crossVideoPanel: document.getElementById("crossVideoPanel"),
