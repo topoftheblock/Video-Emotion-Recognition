@@ -1,0 +1,102 @@
+/* ---------------- Insights panel ---------------- */
+
+.insights-body { display: flex; flex-direction: column; gap: 14px; }
+
+.insights-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0 0 7px;
+}
+
+.agreement-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.agreement-value {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--signal-2);
+}
+
+.agreement-caption {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.dist-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+.dist-group:last-child { margin-bottom: 0; }
+
+.dist-group-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+}
+
+.dist-row {
+  display: grid;
+  grid-template-columns: 76px 1fr 26px;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+
+.dist-row-label {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dist-track {
+  position: relative;
+  height: 6px;
+  background: var(--surface-alt);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dist-fill {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  background: var(--gradient-brand);
+  border-radius: 3px;
+}
+
+.dist-row-n {
+  font-family: var(--font-mono);
+  color: var(--text-faint);
+  text-align: right;
+}
+
+.person-avg-row {
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+  margin-bottom: 6px;
+}
+
+.person-avg-row:last-child { margin-bottom: 0; }
+
+.person-avg-name { font-weight: 600; margin-right: 6px; }
+
+.person-avg-modalities {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  display: block;
+  margin-top: 2px;
+}
+
