@@ -1,41 +1,68 @@
+/* ---------------- Base ----------------
+   Element defaults plus the page backdrop. Mirrors the Gateway's
+   app.postcss: Oxanium everywhere, and the soft two-stop `.gradient`
+   wash behind the whole page.
+------------------------------------------------------------------*/
+
+/* Oxanium, self-hosted from fonts/ -- the same file DUUIWeb ships in
+   static/fonts/, copied with its OFL alongside it.
+
+   It is a variable font (wght 200-800) in a single 42KB file. DUUIWeb's
+   @font-face omits the weight range, which pins the axis at 400 and
+   leaves the browser to synthesise every bold; declaring the real range
+   here means 600/700 render as drawn glyphs instead. Same typeface,
+   just not faked. */
+@font-face {
+  font-family: "Oxanium";
+  src: url("../fonts/Oxanium.ttf") format("truetype-variations");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
 
 * { box-sizing: border-box; }
+
+html {
+  background: var(--bg);
+}
 
 html, body {
   margin: 0;
   min-height: 100%;
-  background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.006em;
 }
 
-body { position: relative; isolation: isolate; }
+/* The Gateway's `.gradient`: bg-gradient-to-tr, tertiary-100 at 20%
+   into surface-200 at 50%, over the surface floor. Warm off-white at
+   the bottom-left grading to a cool grey at the top-right. Fixed so it
+   reads as a backdrop rather than something that scrolls with content
+   -- this is what the old .mesh-bg layer was doing, folded into body
+   now that it is a single gradient instead of three radials. */
+body {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--bg);
+  background-image: linear-gradient(
+    to top right,
+    rgba(251, 235, 212, 0.2),
+    rgba(200, 201, 205, 0.5)
+  );
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 { font-weight: bold; }
 
 ::selection { background: var(--signal-soft); color: var(--signal-strong); }
 
-/* Thin, quiet scrollbars everywhere -- fits the instrumentation feel */
+/* Skeleton paints the scrollbar thumb in primary-500. */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 8px;
-  border: 2px solid var(--surface);
+  background: var(--signal);
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
-
-/* ---------------- Ambient background ---------------- */
-
-.mesh-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(640px circle at 8% -6%, rgba(79, 70, 229, 0.10), transparent 60%),
-    radial-gradient(560px circle at 96% 8%, rgba(147, 51, 234, 0.08), transparent 60%),
-    radial-gradient(720px circle at 50% 115%, rgba(79, 70, 229, 0.06), transparent 60%),
-    var(--bg);
-}
-
+::-webkit-scrollbar-thumb:hover { background: var(--signal-strong); background-clip: padding-box; }

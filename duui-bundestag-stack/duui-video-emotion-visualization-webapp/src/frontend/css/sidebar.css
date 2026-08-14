@@ -1,30 +1,41 @@
-/* ---------------- Sidebar panels ---------------- */
+/* ---------------- Sidebar panels ----------------
+   Each panel is the Gateway's .section-wrapper (rounded-base, hairline
+   border, shadow-md, flat surface fill) with its .card-fancy hover
+   (faint surface wash, border goes primary). Colour-only transitions at
+   300ms -- nothing lifts or glows.
+------------------------------------------------------------------*/
 
 .panel {
   position: relative;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--theme-border-base) solid var(--border);
   border-radius: var(--radius-md);
   padding: 17px 18px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: background-color var(--transition), border-color var(--transition);
 }
 
-.panel:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.panel:hover {
+  background: rgba(200, 201, 205, 0.2);
+  border-color: var(--signal);
+}
 
+/* Flat accent, one per modality -- the panels are otherwise identical
+   and the titles alone are easy to skim past. Kin to the Gateway's
+   border-l-8 toast accents, moved to the top edge. */
 .panel::before {
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 2.5px;
+  height: 2px;
   background: var(--panel-accent, var(--signal));
-  opacity: 0.85;
 }
 
-.panel:has(.dot-emotion)::before { --panel-accent: linear-gradient(90deg, var(--warm), var(--warm-2)); }
-.panel:has(.dot-people)::before { --panel-accent: linear-gradient(90deg, #16a34a, #4ade80); }
-.panel:has(.dot-live)::before { --panel-accent: linear-gradient(90deg, var(--danger), #f87171); }
+.panel:has(.dot-emotion)::before { --panel-accent: var(--tertiary-500); }
+.panel:has(.dot-people)::before { --panel-accent: var(--success-500); }
+.panel:has(.dot-live)::before { --panel-accent: var(--error-500); }
+.panel:has(.dot-cross)::before { --panel-accent: var(--secondary-500); }
 
 .panel-title {
   display: flex;
@@ -43,18 +54,15 @@
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 0 3px currentColor;
   box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
 }
 
-/* Amber is reserved for emotion read-outs (see tokens.css), so all
-   three per-modality panels share it -- their titles tell them apart. */
-.dot-emotion { background: var(--warm); color: var(--warm); }
-.dot-people { background: var(--green); color: var(--green); }
-.dot-live { background: var(--danger); color: var(--danger); }
-.dot-cross { background: #0891b2; color: #0891b2; }
-
-.panel:has(.dot-cross)::before { --panel-accent: linear-gradient(90deg, #0891b2, #22d3ee); }
+/* Tertiary is the Gateway's accent and carries all three emotion
+   read-outs (see tokens.css); their titles tell them apart. */
+.dot-emotion { background: var(--tertiary-500); color: var(--tertiary-500); }
+.dot-people { background: var(--success-500); color: var(--success-500); }
+.dot-live { background: var(--error-500); color: var(--error-500); }
+.dot-cross { background: var(--secondary-500); color: var(--secondary-500); }
 
 .person-list, .active-list {
   list-style: none;
@@ -76,17 +84,29 @@
   font-weight: 500;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
-  background: var(--surface-alt);
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  border: var(--theme-border-base) solid transparent;
+  /* surface-50, not the surface-100 that inputs and track grooves take:
+     still visibly recessed against the panel, but light enough to keep
+     the dimmed .person-meta above 4.5:1. On surface-100 it lands at
+     4.48 -- close enough to look fine and still be a fail. */
+  background: var(--surface-50);
+  transition: background-color var(--transition), border-color var(--transition),
+    color var(--transition);
 }
 
-.person-row:hover, .active-list li:hover { background: var(--signal-soft); }
+/* variant-soft-primary on hover, variant-filled-primary when selected
+   -- the Gateway's two states for the same control, so a row that is
+   merely under the cursor never reads as the active filter. */
+.person-row:hover, .active-list li:not(.empty-hint):hover {
+  background: var(--signal-soft);
+  border-color: var(--primary-200);
+  color: var(--signal-strong);
+}
 
 .person-list li { display: block; }
 
 .person-row {
   width: 100%;
-  border: 1px solid transparent;
   font-family: inherit;
   color: inherit;
   text-align: left;
@@ -95,16 +115,20 @@
 
 /* Selected = these are the readings the three emotion panels are
    currently describing. */
-.person-row.is-selected {
-  background: var(--signal-soft);
+.person-row.is-selected,
+.person-row.is-selected:hover {
+  background: var(--signal);
   border-color: var(--signal);
-  color: var(--signal-strong);
+  color: #fff;
 }
+
+.person-row.is-selected .person-meta { color: rgba(255, 255, 255, 0.75); }
 
 .person-row:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
 /* Names the person the emotion panels are filtered to; empty (and so
-   collapsed) whenever nothing is selected. */
+   collapsed) whenever nothing is selected. The Gateway's .tag: a
+   rounded-full chip in variant-soft-primary. */
 .panel-filter {
   margin-left: auto;
   max-width: 55%;
@@ -124,6 +148,9 @@
 
 .panel-filter:empty { display: none; }
 
+/* Per-person identity colours -- set inline from js/state.js and
+   deliberately outside the theme, since they have to stay mutually
+   distinguishable rather than on-brand. */
 .person-swatch {
   width: 9px;
   height: 9px;
@@ -136,15 +163,16 @@
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 400;
-  color: var(--text-faint);
+  color: var(--text-dim);
   margin-left: auto;
+  transition: color var(--transition);
 }
 
 .empty-hint {
-  color: var(--text-faint);
+  color: var(--text-dim);
   font-size: 12px;
   font-style: italic;
   background: none !important;
+  border-color: transparent !important;
   padding: 4px 0 !important;
 }
-

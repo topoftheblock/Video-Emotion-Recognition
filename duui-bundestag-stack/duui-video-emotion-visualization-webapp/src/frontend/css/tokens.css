@@ -1,39 +1,162 @@
 /* ---------------------------------------------------------------
-   Design tokens
-   Direction: bright, sophisticated SaaS-review-tool -- soft gradient
-   mesh backdrop, glass topbar, one confident indigo->violet gradient
-   accent for interactive/"live"/AI-adjacent elements, warm amber
-   reserved for the one emotional read-out. Data still sets in mono
-   for a light "instrumentation" touch.
-------------------------------------------------------------------*/
-:root {
-  --bg: #f5f6fb;
-  --surface: #ffffff;
-  --surface-alt: #f1f2f7;
-  --border: #e7e9f2;
-  --border-strong: #d6d9e6;
-  --text: #171a26;
-  --text-dim: #676c80;
-  --text-faint: #9a9fb0;
-  --signal: #4f46e5;        /* indigo -- interactive, live, structure */
-  --signal-2: #9333ea;      /* violet -- gradient partner */
-  --signal-soft: #eef0fd;
-  --signal-strong: #4338ca;
-  --gradient-brand: linear-gradient(135deg, var(--signal), var(--signal-2));
-  --warm: #c2740a;          /* amber -- reserved for emotion/valence readouts only */
-  --warm-2: #e0973b;
-  --warm-soft: #fdf3e2;
-  --green: #16a34a;
-  --danger: #dc2626;
-  --danger-soft: #fef2f2;
-  --shadow-sm: 0 1px 2px rgba(23, 26, 51, 0.05);
-  --shadow-md: 0 4px 12px rgba(23, 26, 51, 0.07), 0 1px 3px rgba(23, 26, 51, 0.05);
-  --shadow-lg: 0 20px 48px rgba(23, 26, 51, 0.14), 0 4px 12px rgba(23, 26, 51, 0.06);
-  --glow-signal: 0 8px 24px rgba(79, 70, 229, 0.22);
-  --radius-lg: 18px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
+   Design tokens -- a port of the DUUI Gateway's Skeleton "theme-blue"
+   (DUUIWeb/static/themes/theme-blue.ts) into plain custom properties,
+   so this app reads as part of the same ecosystem without taking on
+   Svelte, Tailwind or Skeleton.
 
-  --font-ui: "Inter", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+   Light mode only. The Gateway ships both and defaults to dark; this
+   viewer stays light, so every ramp below is resolved at its light-mode
+   value -- where the Gateway writes `bg-surface-50-900-token`, we take
+   surface-50 and nothing else.
+
+   Two layers, and the split matters when you edit this file:
+     1. The raw theme ramps. Verbatim from theme-blue.ts. Don't tune
+        these -- if the Gateway's theme changes, they get replaced
+        wholesale.
+     2. The semantic aliases the rest of the stylesheets actually use.
+        Every name here predates the port and is referenced across
+        base/topbar/sidebar/stage/ask/jobs/emotions.css, which is why
+        they kept their names: re-pointing them was the whole migration.
+------------------------------------------------------------------*/
+
+:root {
+  /* ============ 1. theme-blue ramps (verbatim) ============ */
+
+  /* primary | #006c98 -- interactive, focus, selection, brand */
+  --primary-50: #d9e9f0;
+  --primary-100: #cce2ea;
+  --primary-200: #bfdae5;
+  --primary-300: #99c4d6;
+  --primary-400: #4d98b7;
+  --primary-500: #006c98;
+  --primary-600: #006189;
+  --primary-700: #005172;
+  --primary-800: #00415b;
+  --primary-900: #00354a;
+
+  /* secondary | #00bcff */
+  --secondary-500: #00bcff;
+  --secondary-700: #008dbf;
+
+  /* tertiary | #e99b26 -- the Gateway's accent; here it carries the
+     emotion read-outs, which were already amber before the port */
+  --tertiary-50: #fcf0de;
+  --tertiary-100: #fbebd4;
+  --tertiary-200: #fae6c9;
+  --tertiary-300: #f6d7a8;
+  --tertiary-400: #f0b967;
+  --tertiary-500: #e99b26;
+  --tertiary-600: #d28c22;
+  --tertiary-700: #af741d;
+  --tertiary-800: #8c5d17;
+  --tertiary-900: #724c13;
+
+  /* success | #5cb85c */
+  --success-100: #def1de;
+  --success-500: #5cb85c;
+  --success-700: #458a45;
+
+  /* warning | #f0ad4e */
+  --warning-500: #f0ad4e;
+  --warning-700: #b4823b;
+
+  /* error | #f95959 */
+  --error-100: #fedede;
+  --error-500: #f95959;
+  --error-700: #bb4343;
+  --error-800: #953535;
+
+  /* surface | #242735 -- 50..300 are the light-mode greys, 400+ are the
+     dark blue-greys the Gateway uses for dark mode. We only reach past
+     400 for hairlines and dimmed text. */
+  --surface-50: #f2f2f2;
+  --surface-100: #e7e7e7;
+  --surface-200: #c8c9cd;
+  --surface-300: #a7a9ae;
+  --surface-400: #666872;
+  --surface-500: #242735;
+  --surface-600: #202330;
+  --surface-700: #1b1d28;
+  --surface-800: #161720;
+  --surface-900: #12131a;
+
+  /* --theme-rounded-base / --theme-border-base */
+  --theme-rounded-base: 6px;
+  --theme-border-base: 1px;
+
+  /* ============ 2. Semantic aliases ============ */
+
+  /* Surfaces. --bg is the page floor under .gradient (see base.css);
+     --surface is every card, panel and bar; --surface-alt is anything
+     recessed into one -- track grooves, input fills, table row hovers. */
+  --bg: var(--surface-50);
+  --surface: #ffffff;
+  --surface-alt: var(--surface-100);
+  --border: var(--surface-200);
+  --border-strong: var(--surface-300);
+  /* The Gateway's .bordered-soft -- surface-400 at 20%. Used where a
+     border should register as an edge without drawing a line. */
+  --border-soft: rgba(102, 104, 114, 0.2);
+
+  /* Text. theme-blue sets --theme-font-color-base to literal black, so
+     body copy is #000 rather than the near-black this file used to
+     carry. --text-dim is the Gateway's .dimmed (surface-400). */
+  --text: #000000;
+  --text-dim: var(--surface-400);
+  --text-faint: var(--surface-300);
+
+  /* Interactive. Was indigo->violet; now flat primary. --gradient-brand
+     is deliberately a solid colour and not a gradient: every fill in
+     the Gateway is flat, and keeping the name means the ~8 rules that
+     referenced it did not have to change. */
+  --signal: var(--primary-500);
+  --signal-strong: var(--primary-700);
+  --signal-soft: var(--primary-50);
+  --gradient-brand: var(--primary-500);
+  --signal-hover: var(--primary-600);
+
+  /* Emotion read-outs. Split on purpose: tertiary-500 is the Gateway's
+     accent and is right for a 6px-tall bar fill, but as text on white
+     it only reaches 2.5:1, so labels take tertiary-800 (5.7:1, clears
+     AA). This is the same split the pre-port #c2740a/#e0973b pair was
+     already making -- just further, since that darker-amber-for-text
+     value only reached 3.4:1 and the label it carries is real data. */
+  --warm: var(--tertiary-800);
+  --warm-fill: var(--tertiary-500);
+
+  /* Status. --danger-text is the on-white value; error text on the
+     error-100 job banner needs --error-800 instead (see jobs.css). */
+  --green: var(--success-500);
+  --danger: var(--error-500);
+  --danger-text: var(--error-700);
+  --danger-soft: var(--error-100);
+
+  /* Elevation -- Tailwind's defaults, which is what Skeleton's
+     shadow-md resolves to. The indigo --glow-signal is gone; nothing in
+     the Gateway glows. */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* One radius, everywhere. theme-blue sets --theme-rounded-base and
+     --theme-rounded-container to the same 6px, so the three sizes this
+     file used to distinguish all collapse onto it. The names survive
+     for the same reason --gradient-brand does. Pills stay pills: the
+     Gateway's chips are rounded-full and those rules hardcode 999px. */
+  --radius-lg: var(--theme-rounded-base);
+  --radius-md: var(--theme-rounded-base);
+  --radius-sm: var(--theme-rounded-base);
+
+  /* Oxanium for everything, per DUUIWeb/src/app.postcss, which
+     overrides theme-blue's system-ui for both base and heading.
+     Mono is Tailwind's default stack -- the Gateway ships UbuntuMono
+     but never references it, and the numeric read-outs here (timecodes,
+     scores) genuinely want tabular glyphs. */
+  --font-ui: "Oxanium", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+
+  /* The Gateway's .transition-300. Replaces the 150ms transform-and-
+     glow transitions this app used; hovers there are colour-only. */
+  --transition: 300ms;
 }

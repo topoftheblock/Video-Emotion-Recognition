@@ -4,10 +4,10 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #0a0c12;
+  background: var(--surface-900);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   isolation: isolate;
 }
 
@@ -27,7 +27,7 @@
   height: 100%;
 }
 
-#player { object-fit: contain; background: #0a0c12; }
+#player { object-fit: contain; background: var(--surface-900); }
 #overlay { pointer-events: none; }
 
 .subtitle-bar {
@@ -45,7 +45,8 @@
 
 /* Covers the video frame when there is nothing to play -- nothing
    imported yet, or a DB row whose file isn't in the video store. Both
-   otherwise render as a silent black rectangle. */
+   otherwise render as a silent black rectangle. Uses the theme's own
+   dark surfaces, which is what the Gateway shows in dark mode. */
 .empty-state {
   position: absolute;
   inset: 0;
@@ -56,7 +57,7 @@
   gap: 10px;
   padding: 32px;
   text-align: center;
-  background: linear-gradient(160deg, #1b1f2e, #10121b);
+  background: linear-gradient(160deg, var(--surface-700), var(--surface-900));
   color: #fff;
 }
 
@@ -79,7 +80,7 @@
   font-size: 12.5px;
   color: #fff;
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: var(--theme-border-base) solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-sm);
   padding: 9px 14px;
   user-select: all;
@@ -90,22 +91,23 @@
   font-size: clamp(14px, 1.5vw, 18px);
   font-weight: 500;
   color: #fff;
-  background: rgba(10, 12, 18, 0.78);
+  background: rgba(18, 19, 26, 0.78);
   backdrop-filter: blur(8px);
   padding: 7px 16px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   text-align: center;
   line-height: 1.35;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
+/* Sits over video, so it keeps a light tertiary rather than the
+   tertiary-700 the same read-out takes against white in the panels. */
 .subtitle-emotion {
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.05em;
   font-weight: 500;
-  color: #ffd699;
-  background: rgba(10, 12, 18, 0.7);
+  color: var(--tertiary-300);
+  background: rgba(18, 19, 26, 0.7);
   backdrop-filter: blur(8px);
   padding: 3px 10px;
   border-radius: 999px;
@@ -124,15 +126,14 @@
   align-items: center;
   gap: 16px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: var(--theme-border-base) solid var(--border);
   border-radius: var(--radius-md);
   padding: 12px 18px;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease;
+  box-shadow: var(--shadow-md);
 }
 
-.transport:hover { box-shadow: var(--shadow-md); }
-
+/* variant-filled-primary. Round because it is a play button, not
+   because the theme rounds anything this far. */
 .transport-btn {
   width: 40px;
   height: 40px;
@@ -146,43 +147,45 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--glow-signal);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  transition: background-color var(--transition);
 }
 
-.transport-btn:hover { transform: scale(1.06); box-shadow: 0 10px 28px rgba(79, 70, 229, 0.3); }
-.transport-btn:active { transform: scale(0.94); }
+.transport-btn:hover { background: var(--signal-hover); }
+.transport-btn:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
-/* CC switch. Off is a quiet outline so the play button stays the one
-   filled control in the transport; on picks up the brand fill. */
+/* CC switch, built as the Gateway's .button-neutral: soft border while
+   off, filling solid primary on hover. On is the filled state outright,
+   so the toggle reads the same way the Gateway's active controls do. */
 .transport-toggle {
   flex-shrink: 0;
   height: 28px;
   padding: 0 11px;
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
+  border-radius: var(--radius-sm);
+  border: var(--theme-border-base) solid var(--border-soft);
+  background: transparent;
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.06em;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: background-color var(--transition), color var(--transition),
+    border-color var(--transition);
 }
 
 .transport-toggle:hover {
+  background: var(--signal);
   border-color: var(--signal);
-  color: var(--signal);
+  color: #fff;
 }
 
 .transport-toggle.is-on {
-  background: var(--gradient-brand);
-  border-color: transparent;
+  background: var(--signal);
+  border-color: var(--signal);
   color: #fff;
-  box-shadow: var(--glow-signal);
 }
+
+.transport-toggle.is-on:hover { background: var(--signal-hover); border-color: var(--signal-hover); }
 
 .transport-toggle:focus-visible {
   outline: 2px solid var(--signal);
@@ -204,4 +207,3 @@
   accent-color: var(--signal);
   cursor: pointer;
 }
-

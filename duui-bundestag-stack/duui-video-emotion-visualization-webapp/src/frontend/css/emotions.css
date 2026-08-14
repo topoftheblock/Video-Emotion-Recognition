@@ -3,6 +3,9 @@
    js/panels/emotions.js. Every row is one grid so the labels, the
    tracks and both numbers line up down the whole panel and across all
    three of them.
+
+   Colour comes entirely from the theme's tertiary ramp -- flat fills,
+   no gradients, matching the Gateway's treatment of its accent.
 ---------------------------------------------------------------*/
 
 .emo-body { display: flex; flex-direction: column; gap: 5px; }
@@ -28,7 +31,7 @@
 .emo-count {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--text-faint);
+  color: var(--text-dim);
   flex-shrink: 0;
 }
 
@@ -47,7 +50,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-dim);
   margin-bottom: 1px;
 }
 
@@ -68,7 +71,7 @@
    the label scores, and are separated from them accordingly. */
 .emo-row-dim { margin-top: 2px; }
 .emo-row-dim:first-of-type { margin-top: 7px; }
-.emo-row-dim .emo-label { color: var(--text-faint); font-style: italic; }
+.emo-row-dim .emo-label { font-style: italic; }
 
 .emo-track {
   position: relative;
@@ -92,7 +95,7 @@
   position: absolute;
   top: 0; bottom: 0; left: 0;
   width: 0%;
-  background: linear-gradient(90deg, var(--warm), var(--warm-2));
+  background: var(--warm-fill);
   border-radius: 3px;
   transition: left 0.1s linear, width 0.1s linear;
 }
@@ -103,7 +106,7 @@
   top: -1px; bottom: -1px;
   width: 2px;
   margin-left: -1px;
-  background: var(--text-faint);
+  background: var(--text-dim);
   border-radius: 1px;
 }
 
@@ -115,4 +118,4 @@
 }
 
 .emo-now { color: var(--text); font-weight: 500; }
-.emo-avg { color: var(--text-faint); }
+.emo-avg { color: var(--text-dim); }
