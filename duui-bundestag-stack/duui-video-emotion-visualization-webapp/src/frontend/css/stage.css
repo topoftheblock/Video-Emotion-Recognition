@@ -197,8 +197,8 @@
   background: transparent;
   color: var(--text-dim);
   font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0.06em;
   cursor: pointer;
   transition: background-color var(--transition), color var(--transition),
