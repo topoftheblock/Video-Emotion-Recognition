@@ -78,4 +78,13 @@ export function renderSubtitle(data, t) {
   const textEmotion = rowAt(data.emotions.text, t);
   el.subtitleEmotion.textContent =
     showTextEmotion && textEmotion ? textEmotion.dominant_label || "" : "";
+
+  // The two lines share one background now (see .subtitle-box in
+  // stage.css), so hiding an empty line can no longer take its
+  // background with it via :empty -- both overlays can be on and still
+  // land here with nothing to show for this instant (no sentence, or no
+  // text-emotion reading, covering time t). Without this the box would
+  // render as a blank translucent card.
+  el.subtitleBox.style.display =
+    el.subtitleText.textContent || el.subtitleEmotion.textContent ? "" : "none";
 }

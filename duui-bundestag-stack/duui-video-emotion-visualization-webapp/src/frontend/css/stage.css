@@ -30,16 +30,18 @@
 #player { object-fit: contain; background: var(--surface-900); }
 #overlay { pointer-events: none; }
 
+/* Positioning layer only -- pulled down to 2% so the box sits close to
+   the bottom edge, the way a streaming player's captions do, rather
+   than floating mid-frame. The visual card itself is .subtitle-box, one
+   level in, so this can stay a plain non-visual wrapper. */
 .subtitle-bar {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 6%;
+  bottom: 2%;
   padding: 0 3%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
+  justify-content: center;
   pointer-events: none;
 }
 
@@ -86,38 +88,51 @@
   user-select: all;
 }
 
+/* The one translucent card, holding both lines -- plain translucency,
+   no blur, the flat dark band streaming players use under a caption
+   rather than a frosted-glass pill. Hidden by JS (subtitles.js) rather
+   than :empty when both lines are empty, since a container with two
+   (possibly textless) child spans is never DOM-:empty itself. */
+.subtitle-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  background: rgba(18, 19, 26, 0.85);
+  border-radius: var(--radius-sm);
+  padding: 7px 16px;
+}
+
 .subtitle-text {
   max-width: 100%;
   font-family: var(--font-subtitle);
   font-size: clamp(14px, 1.5vw, 18px);
   font-weight: 500;
   color: #fff;
-  background: rgba(18, 19, 26, 0.78);
-  backdrop-filter: blur(8px);
-  padding: 7px 16px;
-  border-radius: var(--radius-sm);
   text-align: center;
   line-height: 1.35;
 }
 
 /* Sits over video, so it takes the light end of the primary ramp
    rather than the primary-700 the same read-out uses against white in
-   the sidebar panels. */
+   the sidebar panels. Sized off .subtitle-text's own clamp() rather
+   than a fixed px, so "very slightly smaller" holds at every viewport
+   instead of just the one it was tuned at. */
 .subtitle-emotion {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: clamp(12px, 1.3vw, 16px);
   letter-spacing: 0.05em;
-  font-weight: 500;
+  font-weight: 700;
+  font-style: italic;
   color: var(--emotion-on-dark);
-  background: rgba(18, 19, 26, 0.7);
-  backdrop-filter: blur(8px);
-  padding: 3px 10px;
-  border-radius: 999px;
   text-transform: uppercase;
 }
 
 /* Padding alone would otherwise leave a small dark blob over the
-   video wherever the playhead has no caption. */
+   video wherever the playhead has no caption -- collapses an empty
+   line's own box so it doesn't hold the shared gap open when the other
+   line is the only one with something to show. */
 .subtitle-text:empty { display: none; }
 .subtitle-emotion:empty { display: none; }
 

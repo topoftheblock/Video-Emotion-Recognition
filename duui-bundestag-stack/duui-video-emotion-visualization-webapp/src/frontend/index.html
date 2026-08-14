@@ -59,10 +59,19 @@
         <video id="player" playsinline></video>
         <canvas id="overlay"></canvas>
         <!-- Hidden until the first render fills it, and whenever the
-             CC button turns subtitles off. -->
+             CC button turns subtitles off. subtitleBox is the one
+             translucent card -- transcript line on top, emotion label
+             beneath, sharing a single background rather than each
+             carrying its own pill. js/subtitles.js hides it too,
+             separately from subtitleBar, for the frame-by-frame case
+             where captions are on but neither line has anything to
+             say at this instant (see the comment above
+             SUBTITLE_GAP_TOLERANCE). -->
         <div class="subtitle-bar" id="subtitleBar" style="display:none;">
-          <span class="subtitle-text" id="subtitleText"></span>
-          <span class="subtitle-emotion" id="subtitleEmotion"></span>
+          <div class="subtitle-box" id="subtitleBox">
+            <span class="subtitle-text" id="subtitleText"></span>
+            <span class="subtitle-emotion" id="subtitleEmotion"></span>
+          </div>
         </div>
         <div class="empty-state" id="emptyState" style="display:none;" role="status">
           <h2 class="empty-state-title" id="emptyStateTitle"></h2>

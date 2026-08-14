@@ -15,6 +15,7 @@ export const el = {
   overlay: document.getElementById("overlay"),
   stageFrame: document.getElementById("stageFrame"),
   subtitleBar: document.getElementById("subtitleBar"),
+  subtitleBox: document.getElementById("subtitleBox"),
   subtitleText: document.getElementById("subtitleText"),
   subtitleEmotion: document.getElementById("subtitleEmotion"),
   subtitleToggle: document.getElementById("subtitleToggle"),
