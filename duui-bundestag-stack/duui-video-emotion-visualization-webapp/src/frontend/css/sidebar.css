@@ -142,6 +142,57 @@
 
 .panel-filter:empty { display: none; }
 
+/* ---- "Also appears in" rows ----
+   The other two person lists fit on one line, so they are flex rows
+   with the meta pushed right. These carry a comma-joined list of other
+   videos instead, which is far too long for that -- so they are a
+   two-row grid: swatch and name on top, the video list underneath and
+   aligned to the name rather than to the swatch.
+
+   Without this the rows inherit `.person-list li { display: block }`,
+   which leaves .person-swatch as an inline span -- and an inline span
+   ignores width and height, so the colour never renders at all. */
+.cross-list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 9px;
+  row-gap: 3px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-50);
+}
+
+.cross-list .person-swatch { grid-column: 1; grid-row: 1; }
+
+.cross-list .person-name {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Overrides the shared .person-meta: no `margin-left: auto` (it is not
+   sharing a line any more), wraps instead of ellipsing, and steps from
+   --text-dim up to the theme charcoal -- these filenames are the point
+   of the panel, not a footnote. */
+.cross-list .person-meta {
+  grid-column: 2;
+  grid-row: 2;
+  margin-left: 0;
+  /* One appearance per line -- see crossVideo.js. A column rather than
+     plain block elements so the gap between entries is separate from
+     the line-height inside a single wrapped one. */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--surface-500);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* Per-person identity colours -- set inline from js/state.js and
    deliberately outside the theme, since they have to stay mutually
    distinguishable rather than on-brand. */

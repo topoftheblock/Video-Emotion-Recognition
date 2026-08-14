@@ -52,12 +52,21 @@ export function renderCrossVideoPanel(data) {
   el.crossVideoList.innerHTML = rows
     .map(({ person, others }) => {
       const name = personName(person);
-      const otherList = others
-        .map((o) => `${o.video_filename} (${o.clip_label || "person " + o.person_id})`)
-        .join(", ");
+      // One element per appearance rather than a comma-joined string --
+      // the filenames are long enough that a run-on line was hard to
+      // read. html`` passes an array of nested results through as-is.
+      const otherList = others.map(
+        (o) => html`<span class="cross-video"
+          >${o.video_filename} (${o.clip_label || "person " + o.person_id})</span
+        >`
+      );
+      // The name is wrapped, unlike in the two single-line person
+      // lists: these rows are a grid (see .cross-list in sidebar.css)
+      // and the video list below needs an element to align under.
       return html`<li>
         <span class="person-swatch" style="background:${personColorFor(person.person_id)}"></span>
-        ${name}<span class="person-meta">${otherList}</span>
+        <span class="person-name">${name}</span>
+        <span class="person-meta">${otherList}</span>
       </li>`;
     })
     .join("");
