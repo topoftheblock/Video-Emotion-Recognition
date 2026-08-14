@@ -309,6 +309,47 @@ No .xmi files found in: /data/input/xmi
 - *none named `*.xmi`* — right folder, no CAS in it (the entries it did
   find are listed, so a wrong subfolder is obvious).
 
+#### Large CAS files (embedded video)
+
+DUUI pipelines can carry the video inside the CAS, base64-encoded on a
+sofa. That makes a self-contained export — no companion `.mp4` needed —
+but it also makes the `.xmi` enormous, and almost all of it is that one
+attribute. A real example: 181 MB on disk, 62 k elements, **169 MB of
+it a single `sofaString`** holding the video, plus 1.2 MB of audio and
+5.6 kB of actual transcript.
+
+cassis turns every feature structure into Python objects, and it does
+not cope with a payload that size: loading that file cost **more than
+20 GB** and was killed by the OOM killer, on a 31 GB machine. The
+importer therefore reads the XML itself first (lxml, ~0.4 s, ~0.6 GB),
+lifts the media payloads out, and hands cassis the same document with
+those attributes blanked — 11 MB instead of 181 MB.
+
+Measured on that file, before and after:
+
+| | document cassis sees | peak memory |
+| --- | --- | --- |
+| before | 181 MB | **killed, >20 GB** |
+| after | 11 MB | **634 MiB** |
+
+What this does and doesn't touch:
+
+- **Your `.xmi` files are never modified.** The blanking happens in an
+  in-memory tree; the input directory is mounted read-only.
+- **Only non-`text/*` sofas are blanked**, plus whichever sofa
+  `DUUI_VIDEO_VIEW` selects. Text sofas are left intact because
+  annotations over them are offset-based, and blanking one would
+  silently invalidate every annotation on it.
+- **No annotation is affected.** Annotations live in the views' member
+  lists, not in the sofa. Verified by importing the same CAS through
+  both code paths into separate databases and diffing every table: all
+  13 identical, including 16,792 `emotion_scores` rows — the only
+  difference was `videos.processed_at`, which is a clock.
+- **The video still ends up in the store**, by the same precedence as
+  always: companion file first, embedded sofa as the fallback, and
+  neither is touched if the file is already there. The payload is kept
+  encoded until that check has run, so a re-import decodes nothing.
+
 ### 3. Link people across videos (optional, explicit)
 
 ```bash

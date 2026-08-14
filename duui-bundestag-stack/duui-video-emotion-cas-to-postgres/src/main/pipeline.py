@@ -12,11 +12,18 @@ import os
 from pathlib import Path
 
 from cassis import load_cas_from_xmi
+from lxml import etree
 
 from .config import INPUT_VIDEO_DIR, INPUT_XMI_DIR, XMI_FILE
 from .db import get_db_connection
 from .job_runs import JobRun
-from .media import ensure_video_available
+from .media import (
+    cas_source,
+    ensure_video_available,
+    find_media_sofas,
+    select_video_sofa,
+    strip_media_sofas,
+)
 from .parsers import PARSE_STEPS
 from .typesystem import load_merged_typesystem, loading_cas_quietly
 
@@ -175,16 +182,38 @@ def run(xmi_file=None, typesystem=None, job=None):
         typesystem = load_merged_typesystem()
 
     print(f"Loading CAS data from {xmi_file}...")
-    # No sub-progress to report here: this is one lxml call, and on a
+    # Read the XML first and take the media payloads out of it before
+    # cassis ever sees them -- see media.py's docstring for why this is
+    # the difference between "imports in a second" and "needs 20 GB".
+    # huge_tree, because these documents carry attributes far past
+    # libxml2's default limits.
+    if job is not None:
+        job.update(phase=f"reading {Path(xmi_file).name}")
+    tree = etree.parse(str(xmi_file), etree.XMLParser(huge_tree=True))
+
+    sofas = find_media_sofas(tree)
+    # Captured before the blanking below, and decoded only if the video
+    # turns out not to be on disk already (see ensure_video_available).
+    video_payload = select_video_sofa(sofas)
+    stripped = strip_media_sofas(sofas, video=video_payload)
+    if stripped:
+        print(f"[duui_parser] media sofas held back from the CAS: {', '.join(stripped)}")
+
+    # No sub-progress to report here: this is one cassis call, and on a
     # multi-hour export it is usually the longest phase of the import.
     # The phase name plus the elapsed time the viewer shows is the
     # whole of what can honestly be said about it.
     if job is not None:
         job.update(phase=f"parsing {Path(xmi_file).name}")
-    with open(xmi_file, "rb") as f, loading_cas_quietly():
+    with loading_cas_quietly():
         # trusted=True enables lxml's huge_tree parsing, needed for large
         # multi-hour-session XMI exports that exceed lxml's default buffer.
-        cas = load_cas_from_xmi(f, typesystem=typesystem, lenient=True, trusted=True)
+        cas = load_cas_from_xmi(
+            cas_source(tree), typesystem=typesystem, lenient=True, trusted=True
+        )
+    # The tree is 60x the size of what cassis now holds; nothing below
+    # needs it, and the payload keeps its own reference to the bytes.
+    del tree
 
     print("Connecting to database and inserting data...")
     conn = get_db_connection()
@@ -210,11 +239,16 @@ def run(xmi_file=None, typesystem=None, job=None):
     # DUUI_INPUT_VIDEO_DIR (see README "Docker architecture") -- which
     # may or may not be the same directory the .xmi came from, so the
     # configured location is used rather than the .xmi's own parent.
-    # `cas` is passed so a CAS that embeds its own video can supply it
-    # when no companion file exists (see media.py).
+    # The sofa payload read above is passed as the fallback for a CAS
+    # that embeds its own video and has no companion file.
+    #
+    # Deliberately still after the parse: `videos.filename` is resolved
+    # by the video parser, so this stays the one place that decides
+    # what the file is called -- the payload was only *captured* early,
+    # not interpreted.
     if job is not None:
         job.update(phase=f"placing video for {Path(xmi_file).name}")
-    ensure_video_available(context.get("video_filename"), INPUT_VIDEO_DIR, cas)
+    ensure_video_available(context.get("video_filename"), INPUT_VIDEO_DIR, video_payload)
 
     print(f"Finished {xmi_file}")
 
