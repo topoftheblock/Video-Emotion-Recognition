@@ -1,10 +1,37 @@
 -- Enable the vector extension for embeddings
 CREATE EXTENSION IF NOT EXISTS vector;
 
+-- Identity note (read before adding a table)
+-- ------------------------------------------
+-- Everything imported from a CAS is keyed by (video_id, <the CAS's own
+-- xmi:id>), never by the xmi:id alone. XMI ids are a per-document
+-- counter: every file restarts at 1, so they are unique *within* a
+-- document and meaningless across documents. Keying on them alone
+-- silently merged whole videos into one another -- nine files landed
+-- on a single `videos` row because each declared its DocumentMetaData
+-- at xmi:id 3, and 4,420 of 42,939 emotion ids collided between files,
+-- each one either dropped or overwritten with another video's reading.
+--
+-- `video_id` is therefore a real surrogate (BIGSERIAL), and `videos`
+-- is keyed for the importer by `filename`, which is the one identifier
+-- that is stable per video and already the join key to the video store
+-- the webapp plays from.
+--
+-- Two exceptions, both deliberate:
+--   * `models` is corpus-global (the same face model processes every
+--     video), so it uses its natural key instead of being duplicated
+--     per video.
+--   * `global_persons` is corpus-wide by definition and its ids are
+--     assigned by the database, not by any CAS.
+
 -- 1. Core Infrastructure & Models
 CREATE TABLE videos (
     video_id BIGSERIAL PRIMARY KEY,
-    filename TEXT NOT NULL,
+    -- The importer upserts on this: one row per video file, however
+    -- many times it is imported. It is also how the webapp finds the
+    -- playable file in the video store, so two different recordings
+    -- sharing a filename would already be indistinguishable there.
+    filename TEXT NOT NULL UNIQUE,
     duration DOUBLE PRECISION,
     processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fps DOUBLE PRECISION,
@@ -16,7 +43,12 @@ CREATE TABLE models (
     model_id BIGSERIAL PRIMARY KEY,
     name TEXT,
     version TEXT,
-    source TEXT
+    source TEXT,
+    -- NULLS NOT DISTINCT: a model annotation that carries no version or
+    -- source must still match the row it wrote last time, rather than
+    -- inserting a new one on every import (Postgres treats NULLs in a
+    -- unique constraint as distinct by default).
+    UNIQUE NULLS NOT DISTINCT (name, version, source)
 );
 
 -- 2. Identity Layer
@@ -26,52 +58,76 @@ CREATE TABLE global_persons (
 );
 
 CREATE TABLE persons (
-    person_id BIGSERIAL PRIMARY KEY,
-    video_id BIGINT REFERENCES videos(video_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    person_id BIGINT NOT NULL,
     global_person_id BIGINT REFERENCES global_persons(global_person_id) ON DELETE SET NULL,
     clip_label TEXT,
-    match_score DOUBLE PRECISION
+    match_score DOUBLE PRECISION,
+    PRIMARY KEY (video_id, person_id)
 );
 
 -- 3. Text & Segments Layer
 CREATE TABLE segments (
-    segment_id BIGSERIAL PRIMARY KEY,
-    video_id BIGINT REFERENCES videos(video_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    segment_id BIGINT NOT NULL,
     kind TEXT CHECK (kind IN ('shot', 'sentence')),
     seg_index INT,
     start_time DOUBLE PRECISION,
     end_time DOUBLE PRECISION,
     begin_offset INT,
     end_offset INT,
-    person_id BIGINT REFERENCES persons(person_id) ON DELETE SET NULL
+    person_id BIGINT,
+    PRIMARY KEY (video_id, segment_id),
+    -- SET NULL names the column explicitly: video_id is half of this
+    -- row's own identity and cannot be nulled, so only the speaker
+    -- reference is cleared. A segment with no person_id is a normal
+    -- state (a shot has no speaker), which is also why this FK is
+    -- MATCH SIMPLE -- a NULL person_id leaves it unenforced.
+    FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
+        ON DELETE SET NULL (person_id)
 );
 
 CREATE TABLE linguistic_tokens (
-    token_id BIGSERIAL PRIMARY KEY,
-    video_id BIGINT REFERENCES videos(video_id) ON DELETE CASCADE,
-    segment_id BIGINT REFERENCES segments(segment_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    token_id BIGINT NOT NULL,
+    segment_id BIGINT,
     start_time DOUBLE PRECISION,
     end_time DOUBLE PRECISION,
     begin_offset INT,
     end_offset INT,
     word TEXT,
     pos_tag TEXT,
-    ner_label TEXT
+    ner_label TEXT,
+    PRIMARY KEY (video_id, token_id),
+    -- segment_id is not always populated on the source annotation
+    -- (see media/pipeline notes on time-range matching), hence
+    -- nullable rather than NOT NULL.
+    FOREIGN KEY (video_id, segment_id) REFERENCES segments(video_id, segment_id)
+        ON DELETE CASCADE
 );
 
 -- 4. Embeddings, Presence & Detections Layer
 CREATE TABLE face_embeddings (
-    embedding_id BIGSERIAL PRIMARY KEY,
-    person_id BIGINT REFERENCES persons(person_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    embedding_id BIGINT NOT NULL,
+    person_id BIGINT,
+    -- Single-column FK: models are corpus-global, not per video.
     model_id BIGINT REFERENCES models(model_id) ON DELETE SET NULL,
-    embedding vector(512)
+    embedding vector(512),
+    PRIMARY KEY (video_id, embedding_id),
+    FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE voice_embeddings (
-    embedding_id BIGSERIAL PRIMARY KEY,
-    person_id BIGINT REFERENCES persons(person_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    embedding_id BIGINT NOT NULL,
+    person_id BIGINT,
     model_id BIGINT REFERENCES models(model_id) ON DELETE SET NULL,
-    embedding vector(192)
+    embedding vector(192),
+    PRIMARY KEY (video_id, embedding_id),
+    FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
+        ON DELETE CASCADE
 );
 
 -- HNSW, cosine distance (`<=>`) -- the doc in data_schema_with_types.md
@@ -88,49 +144,64 @@ CREATE INDEX IF NOT EXISTS voice_embeddings_embedding_hnsw_idx
     ON voice_embeddings USING hnsw (embedding vector_cosine_ops);
 
 CREATE TABLE presences (
-    presence_id BIGSERIAL PRIMARY KEY,
-    person_id BIGINT REFERENCES persons(person_id) ON DELETE CASCADE,
-    video_id BIGINT REFERENCES videos(video_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    presence_id BIGINT NOT NULL,
+    person_id BIGINT,
     modality TEXT CHECK (modality IN ('visible', 'speech')),
     start_time DOUBLE PRECISION,
     end_time DOUBLE PRECISION,
     begin_offset INT,
-    end_offset INT
+    end_offset INT,
+    PRIMARY KEY (video_id, presence_id),
+    FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE face_detections (
-    detection_id BIGSERIAL PRIMARY KEY,
-    presence_id BIGINT REFERENCES presences(presence_id) ON DELETE CASCADE,
-    person_id BIGINT REFERENCES persons(person_id) ON DELETE CASCADE,
-    video_id BIGINT REFERENCES videos(video_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    detection_id BIGINT NOT NULL,
+    presence_id BIGINT,
+    person_id BIGINT,
     frame_index INT,
     t_time DOUBLE PRECISION,
     x REAL,
     y REAL,
     w REAL,
     h REAL,
-    detection_score DOUBLE PRECISION
+    detection_score DOUBLE PRECISION,
+    PRIMARY KEY (video_id, detection_id),
+    FOREIGN KEY (video_id, presence_id) REFERENCES presences(video_id, presence_id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE person_detections (
-    detection_id BIGSERIAL PRIMARY KEY,
-    presence_id BIGINT REFERENCES presences(presence_id) ON DELETE CASCADE,
-    person_id BIGINT REFERENCES persons(person_id) ON DELETE CASCADE,
-    video_id BIGINT REFERENCES videos(video_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    detection_id BIGINT NOT NULL,
+    presence_id BIGINT,
+    person_id BIGINT,
     frame_index INT,
     t_time DOUBLE PRECISION,
     x REAL,
     y REAL,
     w REAL,
     h REAL,
-    detection_score DOUBLE PRECISION
+    detection_score DOUBLE PRECISION,
+    PRIMARY KEY (video_id, detection_id),
+    FOREIGN KEY (video_id, presence_id) REFERENCES presences(video_id, presence_id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
+        ON DELETE CASCADE
 );
 
 -- 5. Emotion Layer
 CREATE TABLE base_emotions (
-    emotion_id BIGSERIAL PRIMARY KEY,
-    person_id BIGINT REFERENCES persons(person_id) ON DELETE CASCADE,
-    video_id BIGINT REFERENCES videos(video_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
+    emotion_id BIGINT NOT NULL,
+    -- Regularly NULL: video-modality frames the importer could not
+    -- attribute to anyone still belong to the video.
+    person_id BIGINT,
     modality TEXT CHECK (modality IN ('audio', 'video', 'text')),
     granularity TEXT CHECK (granularity IN ('frame', 'segment', 'sentence', 'shot')),
     start_time DOUBLE PRECISION,
@@ -145,15 +216,21 @@ CREATE TABLE base_emotions (
     valence DOUBLE PRECISION,
     arousal DOUBLE PRECISION,
     dominance DOUBLE PRECISION,
-    dominant_label TEXT
+    dominant_label TEXT,
+    PRIMARY KEY (video_id, emotion_id),
+    FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE emotion_scores (
     score_id BIGSERIAL PRIMARY KEY,
-    emotion_id BIGINT REFERENCES base_emotions(emotion_id) ON DELETE CASCADE,
+    video_id BIGINT NOT NULL,
+    emotion_id BIGINT NOT NULL,
     label TEXT,
     score DOUBLE PRECISION,
-    UNIQUE (emotion_id, label)
+    UNIQUE (video_id, emotion_id, label),
+    FOREIGN KEY (video_id, emotion_id) REFERENCES base_emotions(video_id, emotion_id)
+        ON DELETE CASCADE
 );
 
 -- 6. Supporting indexes
@@ -167,9 +244,33 @@ CREATE INDEX IF NOT EXISTS base_emotions_video_modality_idx
 CREATE INDEX IF NOT EXISTS segments_video_kind_idx
     ON segments (video_id, kind);
 CREATE INDEX IF NOT EXISTS face_embeddings_person_idx
-    ON face_embeddings (person_id);
+    ON face_embeddings (video_id, person_id);
 CREATE INDEX IF NOT EXISTS voice_embeddings_person_idx
-    ON voice_embeddings (person_id);
+    ON voice_embeddings (video_id, person_id);
+
+-- Referencing sides of the composite FKs. A composite PRIMARY KEY
+-- indexes (video_id, own_id), which is no help to a cascade that
+-- deletes by person or presence -- and `--on-existing replace` deletes
+-- a whole video's subtree on every re-import, so these are the
+-- difference between a delete that seeks and one that scans every
+-- detection in the corpus.
+CREATE INDEX IF NOT EXISTS segments_person_idx
+    ON segments (video_id, person_id);
+CREATE INDEX IF NOT EXISTS linguistic_tokens_segment_idx
+    ON linguistic_tokens (video_id, segment_id);
+CREATE INDEX IF NOT EXISTS presences_person_idx
+    ON presences (video_id, person_id);
+CREATE INDEX IF NOT EXISTS face_detections_presence_idx
+    ON face_detections (video_id, presence_id);
+CREATE INDEX IF NOT EXISTS face_detections_person_idx
+    ON face_detections (video_id, person_id);
+CREATE INDEX IF NOT EXISTS person_detections_presence_idx
+    ON person_detections (video_id, presence_id);
+CREATE INDEX IF NOT EXISTS person_detections_person_idx
+    ON person_detections (video_id, person_id);
+CREATE INDEX IF NOT EXISTS base_emotions_person_idx
+    ON base_emotions (video_id, person_id);
+
 -- 7. Job status
 -- One row per run of a long-running job (the importer, the
 -- cross-video identity job), so the viewer can say "an import is
