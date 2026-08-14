@@ -81,18 +81,21 @@
       <!-- One panel per modality. The bodies are built by
            js/panels/emotions.js once per video and then only updated
            in place, so the row set is not in this file. -->
+      <!-- The empty [data-emo-filter] chips name the selected person
+           while the People panel is filtering these three panels, and
+           collapse (:empty) when nothing is selected. -->
       <div class="panel" id="textEmotionPanel" style="display:none;">
-        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Text emotion</h2>
+        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Text emotion<span class="panel-filter" data-emo-filter></span></h2>
         <div class="emo-body" id="textEmotionBody"></div>
       </div>
 
       <div class="panel" id="audioEmotionPanel" style="display:none;">
-        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Audio emotion</h2>
+        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Audio emotion<span class="panel-filter" data-emo-filter></span></h2>
         <div class="emo-body" id="audioEmotionBody"></div>
       </div>
 
       <div class="panel" id="videoEmotionPanel" style="display:none;">
-        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Video emotion</h2>
+        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Video emotion<span class="panel-filter" data-emo-filter></span></h2>
         <div class="emo-body" id="videoEmotionBody"></div>
       </div>
 

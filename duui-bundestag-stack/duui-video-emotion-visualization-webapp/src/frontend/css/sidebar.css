@@ -65,7 +65,10 @@
   gap: 6px;
 }
 
-.person-list li, .active-list li {
+/* The People rows are buttons (they filter the emotion panels), the
+   "on screen now" rows are not -- so the row styling lives on the
+   button there and on the li here. */
+.person-row, .active-list li {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -74,10 +77,52 @@
   padding: 7px 10px;
   border-radius: var(--radius-sm);
   background: var(--surface-alt);
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.person-list li:hover, .active-list li:hover { background: var(--signal-soft); }
+.person-row:hover, .active-list li:hover { background: var(--signal-soft); }
+
+.person-list li { display: block; }
+
+.person-row {
+  width: 100%;
+  border: 1px solid transparent;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Selected = these are the readings the three emotion panels are
+   currently describing. */
+.person-row.is-selected {
+  background: var(--signal-soft);
+  border-color: var(--signal);
+  color: var(--signal-strong);
+}
+
+.person-row:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+/* Names the person the emotion panels are filtered to; empty (and so
+   collapsed) whenever nothing is selected. */
+.panel-filter {
+  margin-left: auto;
+  max-width: 55%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--signal-soft);
+  color: var(--signal-strong);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-filter:empty { display: none; }
 
 .person-swatch {
   width: 9px;

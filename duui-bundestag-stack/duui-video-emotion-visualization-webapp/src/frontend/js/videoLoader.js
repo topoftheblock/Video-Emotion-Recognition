@@ -90,6 +90,9 @@ export async function loadVideo(videoId) {
   }
 
   state.data = data;
+  // person_ids are per video, so a selection carried over from the
+  // previous one would filter every panel down to nothing.
+  state.selectedPersonId = null;
   assignPersonColors(data.persons);
   renderPersonList(data.persons);
   renderCrossVideoPanel(data);

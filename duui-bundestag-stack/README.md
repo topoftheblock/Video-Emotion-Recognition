@@ -568,7 +568,12 @@ running it *is* the opt-in):
   payload, so it stays in sync with the frame being shown rather than
   with a separate request.
 - **People / On screen now**: who was identified in the video, and who
-  is visible at this exact frame, colour-matched to their box.
+  is visible at this exact frame, colour-matched to their box. Clicking
+  a person in **People** narrows all three emotion panels to their
+  readings — live values and whole-video averages both — and clicking
+  them again widens it back to everyone. While a person is selected,
+  each panel's title names them, and readings the importer could not
+  attribute to anyone (unattributed video frames, mostly) are left out.
 - **Also appears in**: for each person, other videos they were linked
   to across the corpus (only when such a link exists).
 - **`GET /api/stats/{video_id}`**: three fixed statistics — video-vs-text

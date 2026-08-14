@@ -18,7 +18,9 @@ import { renderBoundingBoxes, syncCanvasSize } from "./overlay.js";
 import { initPlayer, onFrame, render } from "./player.js";
 import { initSubtitleToggle, renderSubtitle } from "./subtitles.js";
 import { initAskPanel } from "./panels/ask.js";
-import { renderEmotionPanels } from "./panels/emotions.js";
+import { initEmotionPanels, renderEmotionPanels } from "./panels/emotions.js";
+import { initPersonList } from "./panels/people.js";
+import { state } from "./state.js";
 import { loadVideo, loadVideoList } from "./videoLoader.js";
 
 // Registration order is render order.
@@ -29,6 +31,15 @@ onFrame(renderBoundingBoxes);
 initPlayer();
 initSubtitleToggle(render);
 initAskPanel();
+
+// Picking a person narrows the emotion panels to them. The rows are
+// rebuilt rather than just re-filled: the whole-video averages drawn
+// into the markup are that person's now, not the room's.
+initPersonList(() => {
+  if (!state.data) return;
+  initEmotionPanels(state.data);
+  render();
+});
 
 el.videoSelect.addEventListener("change", (e) => loadVideo(Number(e.target.value)));
 

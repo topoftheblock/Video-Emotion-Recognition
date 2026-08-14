@@ -17,7 +17,7 @@
  */
 
 import { el, html } from "../dom.js";
-import { overlayEnabled } from "../state.js";
+import { overlayEnabled, personName, state } from "../state.js";
 import { coveredBy } from "../subtitles.js";
 
 /**
@@ -96,14 +96,49 @@ const SAMPLE_TOLERANCE = 0.15;
 /** Built by initEmotionPanels(), read by renderEmotionPanels(). */
 let tracks = [];
 
+/**
+ * This modality's readings, narrowed to the selected person while the
+ * People panel has one.
+ *
+ * Both the per-frame render and the whole-video averages go through
+ * here, which is the point: an average over everyone next to a live
+ * reading for one person would be a comparison against a baseline
+ * that isn't theirs. Readings with no person_id (video-modality
+ * frames the importer couldn't attribute to anyone) drop out of a
+ * filtered view -- they are not known to be this person's.
+ */
+function readingsFor(data, modality) {
+  const readings = data.emotions[modality] || [];
+  if (state.selectedPersonId == null) return readings;
+  return readings.filter((r) => r.person_id === state.selectedPersonId);
+}
+
+/** The selected person's row in `data.persons`, if there is one. */
+function selectedPerson(data) {
+  if (state.selectedPersonId == null) return null;
+  return data.persons.find((p) => p.person_id === state.selectedPersonId) || null;
+}
+
 export function initEmotionPanels(data) {
   tracks = [];
 
+  const person = selectedPerson(data);
+
   for (const config of PANELS) {
-    const readings = data.emotions[config.modality] || [];
+    const readings = readingsFor(data, config.modality);
+    el[config.panel].querySelector("[data-emo-filter]").textContent = person
+      ? personName(person)
+      : "";
+
     if (!readings.length) {
-      el[config.panel].style.display = "none";
-      el[config.body].innerHTML = "";
+      // A modality this video has nothing for stays hidden, as before.
+      // One the *selected person* has nothing for is a different
+      // statement and worth making: the panel stays up and says so,
+      // rather than vanishing as if the filter had broken something.
+      el[config.panel].style.display = person ? "" : "none";
+      el[config.body].innerHTML = person
+        ? html`<p class="empty-hint">No ${config.modality} readings for this person.</p>`
+        : "";
       continue;
     }
 
@@ -138,7 +173,7 @@ export function renderEmotionPanels(data, t) {
     // stay (they are context, not a claim about this instant), the
     // live readings blank out.
     const live = overlayEnabled(config.overlay)
-      ? currentReadings(data.emotions[config.modality], t)
+      ? currentReadings(readingsFor(data, config.modality), t)
       : [];
     const scores = live.length ? meanScores(live, data) : null;
 

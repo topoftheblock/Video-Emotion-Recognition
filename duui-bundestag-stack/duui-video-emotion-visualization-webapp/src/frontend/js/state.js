@@ -36,6 +36,13 @@ export const state = {
    */
   subtitlesVisible: true,
   /**
+   * null = the emotion panels describe everyone in the video (their
+   * readings averaged together). Set by clicking a row in the People
+   * panel, which narrows all three panels -- live readings *and*
+   * whole-video averages -- to that one person's readings.
+   */
+  selectedPersonId: null,
+  /**
    * null = show every overlay (default browsing mode). Once a query
    * result is opened this becomes a Set of the overlay keys the agent
    * picked as relevant, and the renderers hide whatever isn't in it.
@@ -57,4 +64,9 @@ export function assignPersonColors(persons) {
 
 export function personColorFor(personId) {
   return state.personColor.get(personId) || UNKNOWN_PERSON_COLOR;
+}
+
+/** What to call a person: the importer's CLIP label, else their id. */
+export function personName(person) {
+  return person.clip_label || `person ${person.person_id}`;
 }
