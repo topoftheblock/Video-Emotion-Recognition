@@ -11,15 +11,18 @@ Three containers, each buildable on its own:
 | :--- | :--- | :--- |
 | `db/` | `duui-db` | Postgres 16 + pgvector, schema baked in |
 | `duui-video-emotion-cas-to-postgres/` | `duui-video-emotion-cas-to-postgres` | **One-off job**: parses `.xmi` → Postgres, and copies the videos where the viewer can find them. Runs, works, exits |
-| `webapp/` | `duui-webapp` | The viewer (FastAPI + static frontend). Long-running |
+| `duui-video-emotion-visualization-webapp/` | `duui-video-emotion-visualization-webapp` | The viewer (FastAPI + static frontend). Long-running |
 
 ```
-YOUR pipeline output folder      duui-video-emotion-cas-to-postgres           duui-webapp
+YOUR pipeline output folder      duui-video-emotion-cas-to-postgres    ...-visualization-webapp
 (stays exactly where it is)      ┌──▶ 1. parse .xmi ──▶ Postgres ◀───────────── reads DB
   session1.xmi + session1.mp4 ───┤                                                  ▲
   session2.xmi + session2.mp4 ───┘    2. copy .mp4 ──▶ video store ────────────────┘
         mounted READ-ONLY                                (shared)         reads read-only
 ```
+
+Both application folders use the same layout: `src/` is the source root
+(it goes on the path, it is not a package), with `tests/` beside it.
 
 ---
 
@@ -371,15 +374,16 @@ this stack only consumes its output.)
 ## Running without compose
 
 Every image builds with **its own folder** as the context — `db/`,
-`duui-video-emotion-cas-to-postgres/` and `webapp/` are self-contained,
-with no code shared between them:
+`duui-video-emotion-cas-to-postgres/` and
+`duui-video-emotion-visualization-webapp/` are self-contained, with no
+code shared between them:
 
 ```bash
 docker build -t duui-db db/
 docker build -t duui-video-emotion-cas-to-postgres duui-video-emotion-cas-to-postgres/
-docker build -t duui-webapp webapp/
+docker build -t duui-video-emotion-visualization-webapp duui-video-emotion-visualization-webapp/
 
-docker build -t duui-webapp:v2 webapp/     # custom tag
+docker build -t duui-video-emotion-visualization-webapp:v2 duui-video-emotion-visualization-webapp/   # custom tag
 ```
 
 Then wire them up by hand — compose otherwise does exactly this:
@@ -409,7 +413,7 @@ docker run -d --name duui-webapp --network duui \
   -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
   -v duui_videos:/data/videos:ro \
   -p 8010:8000 \
-  duui-webapp:latest
+  duui-video-emotion-visualization-webapp:latest
 ```
 
 The importer and the viewer must share the same video volume
@@ -423,7 +427,7 @@ shared between them.
 Everything is an environment variable, read from `.env` or the real
 environment. Each container defines the ones it reads:
 `duui-video-emotion-cas-to-postgres/src/main/config.py` and
-`webapp/duui_webapp/config.py`.
+`duui-video-emotion-visualization-webapp/src/backend/config.py`.
 The few that appear in both (`DUUI_DB_*`, `DUUI_VIDEO_DIR`) are exactly
 the two contracts the containers share — the database and the video
 store — and compose passes the same values to both services.
@@ -565,26 +569,33 @@ It can be switched off (see the table above).
 ## Tests
 
 Each container has its own suite next to its code
-(`duui-video-emotion-cas-to-postgres/tests/`, `webapp/tests/`). From
-the stack root, `pytest` runs both:
+(`duui-video-emotion-cas-to-postgres/tests/`,
+`duui-video-emotion-visualization-webapp/tests/`). From the stack root,
+`pytest` runs both:
 
 ```bash
 pip install -r duui-video-emotion-cas-to-postgres/requirements.txt \
-            -r webapp/requirements.txt -r requirements-dev.txt
+            -r duui-video-emotion-visualization-webapp/requirements.txt \
+            -r requirements-dev.txt
 pytest
 ```
 
 Or one side on its own, needing only that side's requirements:
 
 ```bash
-cd duui-video-emotion-cas-to-postgres && pytest        # or: cd webapp && pytest
+cd duui-video-emotion-cas-to-postgres && pytest
+```
+```bash
+cd duui-video-emotion-visualization-webapp && pytest
 ```
 
 Covers the read-only SQL guard the Ask panel's generated queries pass
 through (including that the `READ ONLY` transaction itself blocks
-writes, not just the keyword check), the cross-video linking logic
-against a real database, the video-placement logic, and batch path
-resolution.
+writes, not just the keyword check), the viewer's HTTP surface via
+`TestClient` (route wiring, the frontend being served, the `/media`
+mount), subtitle assembly from token timings, the agent-result →
+playable-clip conversion, the cross-video linking logic against a real
+database, the video-placement logic, and batch path resolution.
 
 Database-backed tests are **skipped**, not failed, when no Postgres is
 reachable, so the suite runs anywhere. To run them fully, start the db
@@ -616,8 +627,14 @@ suite is safe against a populated database and needs no cleanup.
 │   │   └── resources/     typesystems/ + sample-input/ (demo .xmi
 │   │                      + video, the default input)
 │   └── tests/             pytest suite for the above
-├── webapp/                Dockerfile, server.py, static/
-│   ├── duui_webapp/       settings, DB layer, NL→SQL agent
+├── duui-video-emotion-visualization-webapp/
+│                          Dockerfile, requirements.txt
+│   ├── src/               source root (on the path, not a package)
+│   │   ├── backend/       settings, DB layer, queries/, routes/, the
+│   │   │                  NL→SQL agent, and __main__.py (the
+│   │   │                  `python -m backend` entry)
+│   │   └── frontend/      index.html + css/ + js/ (ES modules, no
+│   │                      build step), served as static files
 │   └── tests/             pytest suite for the above
 └── docs/                  schema reference, screenshots
 ```
@@ -630,3 +647,8 @@ in `docker-compose.yml`. The price is a little deliberate duplication
 (the DB connection helper, the `DUUI_DB_*` / `DUUI_VIDEO_DIR` settings,
 the pytest DB fixture) — a handful of lines each, and what lets either
 container be built, tested or lifted out of this repo on its own.
+
+The two packages are named differently (`main` and `backend`) on
+purpose: the stack root's `pyproject.toml` puts both source roots on
+one path so `pytest` can run the suites together, and a shared package
+name would make one shadow the other.
