@@ -1,8 +1,8 @@
 /* ---------------- Sidebar panels ----------------
-   Each panel is the Gateway's .section-wrapper (rounded-base, hairline
-   border, shadow-md, flat surface fill) with its .card-fancy hover
-   (faint surface wash, border goes primary). Colour-only transitions at
-   300ms -- nothing lifts or glows.
+   Each panel is the Gateway's .section-wrapper: rounded-base, hairline
+   border, shadow-md, flat surface fill. Static -- panels are read, not
+   clicked, so they do not respond to the cursor at all. The rows inside
+   them still do.
 ------------------------------------------------------------------*/
 
 .panel {
@@ -13,12 +13,6 @@
   padding: 17px 18px;
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  transition: background-color var(--transition), border-color var(--transition);
-}
-
-.panel:hover {
-  background: rgba(200, 201, 205, 0.2);
-  border-color: var(--signal);
 }
 
 /* Flat accent, one per modality -- the panels are otherwise identical
@@ -32,10 +26,10 @@
   background: var(--panel-accent, var(--signal));
 }
 
-.panel:has(.dot-emotion)::before { --panel-accent: var(--tertiary-500); }
-.panel:has(.dot-people)::before { --panel-accent: var(--success-500); }
-.panel:has(.dot-live)::before { --panel-accent: var(--error-500); }
-.panel:has(.dot-cross)::before { --panel-accent: var(--secondary-500); }
+.panel:has(.dot-emotion)::before { --panel-accent: var(--accent-emotion); }
+.panel:has(.dot-people)::before { --panel-accent: var(--accent-people); }
+.panel:has(.dot-live)::before { --panel-accent: var(--accent-live); }
+.panel:has(.dot-cross)::before { --panel-accent: var(--accent-cross); }
 
 .panel-title {
   display: flex;
@@ -57,12 +51,12 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
 }
 
-/* Tertiary is the Gateway's accent and carries all three emotion
-   read-outs (see tokens.css); their titles tell them apart. */
-.dot-emotion { background: var(--tertiary-500); color: var(--tertiary-500); }
-.dot-people { background: var(--success-500); color: var(--success-500); }
-.dot-live { background: var(--error-500); color: var(--error-500); }
-.dot-cross { background: var(--secondary-500); color: var(--secondary-500); }
+/* All three emotion panels share one accent (see tokens.css); their
+   titles tell them apart. */
+.dot-emotion { background: var(--accent-emotion); color: var(--accent-emotion); }
+.dot-people { background: var(--accent-people); color: var(--accent-people); }
+.dot-live { background: var(--accent-live); color: var(--accent-live); }
+.dot-cross { background: var(--accent-cross); color: var(--accent-cross); }
 
 .person-list, .active-list {
   list-style: none;

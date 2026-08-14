@@ -4,8 +4,8 @@
    tracks and both numbers line up down the whole panel and across all
    three of them.
 
-   Colour comes entirely from the theme's tertiary ramp -- flat fills,
-   no gradients, matching the Gateway's treatment of its accent.
+   Colour comes entirely from the theme's primary ramp -- flat fills,
+   no gradients, matching the Gateway's treatment of its accents.
 ---------------------------------------------------------------*/
 
 .emo-body { display: flex; flex-direction: column; gap: 5px; }
@@ -22,7 +22,7 @@
   font-family: var(--font-mono);
   font-size: 16px;
   font-weight: 600;
-  color: var(--warm);
+  color: var(--emotion);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -95,7 +95,7 @@
   position: absolute;
   top: 0; bottom: 0; left: 0;
   width: 0%;
-  background: var(--warm-fill);
+  background: var(--emotion-fill);
   border-radius: 3px;
   transition: left 0.1s linear, width 0.1s linear;
 }

@@ -99,14 +99,15 @@
   line-height: 1.35;
 }
 
-/* Sits over video, so it keeps a light tertiary rather than the
-   tertiary-700 the same read-out takes against white in the panels. */
+/* Sits over video, so it takes the light end of the primary ramp
+   rather than the primary-700 the same read-out uses against white in
+   the sidebar panels. */
 .subtitle-emotion {
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.05em;
   font-weight: 500;
-  color: var(--tertiary-300);
+  color: var(--emotion-on-dark);
   background: rgba(18, 19, 26, 0.7);
   backdrop-filter: blur(8px);
   padding: 3px 10px;

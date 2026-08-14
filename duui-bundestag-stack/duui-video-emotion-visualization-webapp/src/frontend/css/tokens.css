@@ -35,11 +35,15 @@
   --primary-900: #00354a;
 
   /* secondary | #00bcff */
+  --secondary-300: #99e4ff;
   --secondary-500: #00bcff;
   --secondary-700: #008dbf;
 
-  /* tertiary | #e99b26 -- the Gateway's accent; here it carries the
-     emotion read-outs, which were already amber before the port */
+  /* tertiary | #e99b26 -- the Gateway's accent. Nothing in the UI takes
+     it any more (the emotion read-outs it briefly carried moved onto
+     the primary ramp); tertiary-100 survives only as the warm end of
+     the page wash in base.css. Kept whole because these ramps are a
+     verbatim port, not a hand-picked selection. */
   --tertiary-50: #fcf0de;
   --tertiary-100: #fbebd4;
   --tertiary-200: #fae6c9;
@@ -115,14 +119,35 @@
   --gradient-brand: var(--primary-500);
   --signal-hover: var(--primary-600);
 
-  /* Emotion read-outs. Split on purpose: tertiary-500 is the Gateway's
-     accent and is right for a 6px-tall bar fill, but as text on white
-     it only reaches 2.5:1, so labels take tertiary-800 (5.7:1, clears
-     AA). This is the same split the pre-port #c2740a/#e0973b pair was
-     already making -- just further, since that darker-amber-for-text
-     value only reached 3.4:1 and the label it carries is real data. */
-  --warm: var(--tertiary-800);
-  --warm-fill: var(--tertiary-500);
+  /* Emotion read-outs, and the base every sidebar panel accent derives
+     from. This was the theme's tertiary amber -- which is a theme-blue
+     colour, but reads as foreign next to everything else on the page,
+     so the read-outs now sit on the primary ramp like the rest of the
+     app. Still split by role: 500 for the bar fills, 700 for the
+     dominant-emotion label, which is text and needs 8.7:1 rather than
+     the 3.9:1 a mid-ramp value gives on white.
+
+     Trade-off worth knowing: amber used to mark "this is a measurement,
+     not chrome". Emotion bars and primary buttons are now the same
+     blue, so only position distinguishes them. */
+  --emotion: var(--primary-700);
+  --emotion-fill: var(--primary-500);
+  /* Sits on the video, not on white -- needs to go lighter, not darker. */
+  --emotion-on-dark: var(--primary-300);
+
+  /* Panel accents, keyed off --accent-emotion. Spreading them along the
+     primary ramp alone put the closest pair 75 apart in RGB, which is
+     not enough at 7px, so People and "Also appears in" step sideways
+     instead of just lighter/darker: to the theme's secondary, and to
+     its signature surface charcoal. Closest pair is now 126.
+
+     "On screen now" is the one deliberate outsider. It is an alert --
+     someone is on screen at this instant -- and error-500 is the only
+     colour on the page that says so. */
+  --accent-emotion: var(--primary-500);
+  --accent-people: var(--secondary-500);
+  --accent-live: var(--error-500);
+  --accent-cross: var(--surface-500);
 
   /* Status. --danger-text is the on-white value; error text on the
      error-100 job banner needs --error-800 instead (see jobs.css). */
