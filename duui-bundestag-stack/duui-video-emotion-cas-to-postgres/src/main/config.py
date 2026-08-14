@@ -6,7 +6,7 @@ rest of the codebase never hardcodes a UIMA type name or a DB
 setting inline -- everything is imported from here.
 
 Deliberately separate from the viewer's own config (see
-webapp/duui_webapp/config.py): the two containers are independent
+duui-video-emotion-visualization-webapp/src/backend/config.py): the two containers are independent
 images with independent code, and share nothing but the database and
 the video store. The settings they *both* read -- DB_CONFIG and
 VIDEO_MEDIA_DIR -- are defined in each of them from the same
@@ -115,8 +115,8 @@ GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
 
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
-# (copies into it, see src/main/media.py) and the webapp (reads from
-# it, see webapp/duui_webapp/config.py's copy of this setting) agree a
+# (copies into it, see src/main/media.py) and the webapp (reads from it,
+# see the viewer's src/backend/config.py copy of this setting) agree a
 # video for `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. This
 # is the output side, deliberately separate from the input dirs above so the
 # webapp only ever sees videos that belong to a committed DB row, and

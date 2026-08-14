@@ -143,8 +143,8 @@ services:
 
   webapp:
     build:
-      context: ./webapp
-    image: duui-webapp:latest
+      context: ./duui-video-emotion-visualization-webapp
+    image: duui-video-emotion-visualization-webapp:latest
     restart: unless-stopped
     depends_on:
       db:

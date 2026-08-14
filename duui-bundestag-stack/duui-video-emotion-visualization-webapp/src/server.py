@@ -9,8 +9,9 @@ Serves two things:
      with video playback time: sentences (with assembled subtitle
      text), per-modality emotions, and face/person detections.
 
-Run from this directory (webapp/ is self-contained -- it has no code
-outside itself):
+Run from `src/`, the source root (it goes on the path, it is not a
+package) -- the same layout the container uses, where src/ is copied to
+/app/src and exported as PYTHONPATH:
     uvicorn server:app --reload
 """
 
@@ -21,18 +22,21 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from psycopg2.extras import RealDictCursor
 
-from duui_webapp.config import VIDEO_MEDIA_DIR
-from duui_webapp.db import get_db_connection
-from duui_webapp.query_agent import QueryAgentError, answer_question
+from backend.config import VIDEO_MEDIA_DIR
+from backend.db import get_db_connection
+from backend.query_agent import QueryAgentError, answer_question
 
 # Same DUUI_VIDEO_DIR the importer writes into
 # (duui-video-emotion-cas-to-postgres/src/main/media.py) -- this is the
 # single place both sides agree a video for `videos.filename = X` lives
-# at `<VIDEO_DIR>/X`. See duui_webapp/config.py's VIDEO_MEDIA_DIR
+# at `<VIDEO_DIR>/X`. See backend/config.py's VIDEO_MEDIA_DIR
 # comment and README "Docker architecture".
 VIDEO_DIR = Path(VIDEO_MEDIA_DIR).resolve()
 VIDEO_DIR.mkdir(parents=True, exist_ok=True)
-STATIC_DIR = Path(__file__).parent / "static"
+# Sibling of the `backend` package under the source root -- the whole
+# src/ tree is copied verbatim into the image, so this resolves the
+# same in the repo and in the container.
+STATIC_DIR = Path(__file__).parent / "frontend"
 
 app = FastAPI(title="DUUI Bundestag Video Viewer")
 
@@ -325,7 +329,7 @@ class AskRequest(BaseModel):
 def ask_question(payload: AskRequest):
     """
     Natural-language question -> SQL agent. Runs the question through
-    the LLM-backed NL->SQL agent (duui_webapp.query_agent), which
+    the LLM-backed NL->SQL agent (backend.query_agent), which
     explores the schema, writes a query, and picks which display
     overlays (transcript/bounding boxes/emotion modalities) the
     frontend should show for the results.

@@ -1,13 +1,20 @@
 [tool.pytest.ini_options]
 # Runs both suites in one go from the stack root. Each container's code
-# lives entirely in its own directory, so both go on the path: that's
-# what makes `import main` (importer, whose source root is its `src/`)
-# and `import duui_webapp` (webapp) resolve exactly as they do inside
-# the respective images.
+# lives entirely in its own directory under a `src/` source root, so both
+# of those go on the path: that's what makes `import main` (importer) and
+# `import backend` (viewer) resolve exactly as they do inside the
+# respective images. The two packages are named differently on purpose --
+# both source roots share one path here, so a common name would shadow.
 #
 # Each directory also has its own pyproject.toml, so
-# `cd duui-video-emotion-cas-to-postgres && pytest` (or `cd webapp &&
-# pytest`) works standalone -- this file is only the "run everything"
-# convenience.
-pythonpath = ["duui-video-emotion-cas-to-postgres/src", "webapp"]
-testpaths = ["duui-video-emotion-cas-to-postgres/tests", "webapp/tests"]
+# `cd duui-video-emotion-cas-to-postgres && pytest` (or
+# `cd duui-video-emotion-visualization-webapp && pytest`) works
+# standalone -- this file is only the "run everything" convenience.
+pythonpath = [
+    "duui-video-emotion-cas-to-postgres/src",
+    "duui-video-emotion-visualization-webapp/src",
+]
+testpaths = [
+    "duui-video-emotion-cas-to-postgres/tests",
+    "duui-video-emotion-visualization-webapp/tests",
+]

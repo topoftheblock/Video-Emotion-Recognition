@@ -3,8 +3,9 @@
 # why its requirements.txt deliberately omits dkpro-cassis/lxml.
 #
 # Build context is THIS directory: everything the image needs lives in
-# webapp/, nothing is pulled in from elsewhere in the stack.
-#   docker build -t duui-webapp webapp/
+# duui-video-emotion-visualization-webapp/, nothing is pulled in from
+# elsewhere in the stack.
+#   docker build -t duui-video-emotion-visualization-webapp duui-video-emotion-visualization-webapp/
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -12,14 +13,16 @@ WORKDIR /app
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# The application code -- server.py imports duui_webapp.config (for
-# settings), duui_webapp.db (connection handling) and
-# duui_webapp.query_agent (the NL->SQL "Ask" panel).
-COPY duui_webapp ./duui_webapp
-COPY server.py ./server.py
-COPY static ./static
+# The whole source root: the `backend` package (settings, DB layer, the
+# NL->SQL "Ask" agent) plus `frontend/` -- the HTML/CSS/JS the server
+# mounts as static files. Copied verbatim so the layout inside the
+# image matches the repo exactly.
+COPY src ./src
 
 ENV PYTHONUNBUFFERED=1
+# `src` is the source root, not a package -- putting it on the path is
+# what makes `import backend` resolve, here and in the test suite.
+ENV PYTHONPATH=/app/src
 
 # Where it looks for video files -- must point at the same store the
 # importer writes into (see README).
