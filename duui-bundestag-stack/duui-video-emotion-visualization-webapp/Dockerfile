@@ -32,4 +32,7 @@ ENV DUUI_VIDEO_DIR=/data/videos
 # like (compose defaults to 8010).
 EXPOSE 8000
 
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+# --factory because backend.app exposes create_app() rather than a
+# module-level `app` -- see its docstring for why importing the package
+# is kept free of side effects.
+CMD ["uvicorn", "backend.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

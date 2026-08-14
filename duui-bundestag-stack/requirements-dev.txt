@@ -1,10 +1,16 @@
 # Dev/test-only deps -- not needed to run either container, only to run
 # the test suites (duui-video-emotion-cas-to-postgres/tests/ and
-# webapp/tests/). The app code itself lives entirely inside
-# duui-video-emotion-cas-to-postgres/ and webapp/; this is the one
-# thing both suites need and neither image ships.
+# duui-video-emotion-visualization-webapp/tests/). The app code itself
+# lives entirely inside those two directories; this is the one thing
+# both suites need and neither image ships.
 #
 #   pip install -r duui-video-emotion-cas-to-postgres/requirements.txt \
-#               -r webapp/requirements.txt -r requirements-dev.txt
+#               -r duui-video-emotion-visualization-webapp/requirements.txt \
+#               -r requirements-dev.txt
 #   pytest
 pytest>=8.0
+
+# Required by fastapi.testclient.TestClient, which the viewer's route
+# tests use to exercise create_app() without binding a port. Test-only:
+# the viewer image serves through uvicorn and never imports it.
+httpx>=0.27

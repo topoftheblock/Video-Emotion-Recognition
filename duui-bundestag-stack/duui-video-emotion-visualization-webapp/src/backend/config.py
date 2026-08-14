@@ -15,6 +15,7 @@ docker-compose.yml, where both services get the same values).
 """
 
 import os
+from pathlib import Path
 
 try:
     from dotenv import load_dotenv
@@ -30,7 +31,7 @@ except ImportError:
 # Where *served* video files live -- the one place both the importer
 # (copies into it, see
 # duui-video-emotion-cas-to-postgres/src/main/media.py) and the webapp
-# (reads from it, see webapp/server.py) agree a video for
+# (reads from it, see backend/routes/videos.py) agree a video for
 # `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. The viewer only
 # ever reads from it; it never sees the importer's input directory at
 # all.
@@ -42,6 +43,19 @@ except ImportError:
 # /data/videos, and the webapp mounts /data/videos read-only (see
 # docker-compose.yml).
 VIDEO_MEDIA_DIR = os.environ.get("DUUI_VIDEO_DIR", "cas")
+
+# Resolved once, here, so the routes that check "is this video's file
+# actually present" and the /media static mount cannot drift apart.
+# Creating it is deliberately NOT done at import time -- create_app()
+# does that, so importing this package never touches the filesystem.
+VIDEO_DIR = Path(VIDEO_MEDIA_DIR).resolve()
+
+# --- Frontend ---------------------------------------------------------
+# The HTML/CSS/JS served as static files: a sibling of this package
+# under the source root (src/backend/ -> src/frontend/). The whole src/
+# tree is copied verbatim into the image, so this resolves identically
+# in the repo and in the container.
+STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 # --- Database ---------------------------------------------------------
 # The same Postgres the importer writes into; the viewer only reads.
