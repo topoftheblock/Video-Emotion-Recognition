@@ -1,6 +1,12 @@
 /* ---------------- Responsive ---------------- */
 
 @media (max-width: 860px) {
+  /* One column: the stage -- player, transport, then the three emotion
+     panels -- stacks above the sidebar's three person panels. That
+     ordering falls out of source order, so neither group needs
+     reordering here; the sidebar just stops being a side bar. It keeps
+     wrapping as a row so two person panels can still share a line on a
+     tablet rather than each taking a full-width strip. */
   .layout { grid-template-columns: 1fr; padding: 16px; }
   .sidebar { flex-direction: row; flex-wrap: wrap; }
   .sidebar .panel { flex: 1 1 240px; }

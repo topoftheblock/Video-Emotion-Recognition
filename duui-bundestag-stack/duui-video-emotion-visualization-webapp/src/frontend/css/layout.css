@@ -16,6 +16,22 @@
   gap: 16px;
 }
 
+/* The three emotion panels, in a row under the player. auto-fit rather
+   than a fixed `repeat(3, 1fr)` for two reasons: the stage column is
+   still ~1060px wide here, so three ~340px panels sit at the same width
+   as the sidebar ones; and any of the three can be display:none when a
+   video has no readings for that modality, which auto-fit absorbs by
+   widening the survivors instead of leaving a hole.
+
+   Mirrors the Gateway's auto-fit-420 grid template, at the narrower
+   minimum these panels need. The min(100%, …) keeps a single panel from
+   overflowing a container narrower than the minimum. */
+.emotion-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 16px;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;

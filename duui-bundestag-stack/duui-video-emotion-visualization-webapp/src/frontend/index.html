@@ -78,40 +78,52 @@
         <span class="time-readout"><span id="timeCurrent">0:00.0</span> <span class="time-sep">/</span> <span id="timeTotal">0:00.0</span></span>
         <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0" step="1">
       </div>
+
+      <!-- One panel per modality, and they live with the player rather
+           than in the sidebar: they describe what is happening at the
+           playhead, so they belong next to the thing being played.
+           Ordered video -> audio -> text, from the most to the least
+           directly observable in the frame.
+
+           The bodies are built by js/panels/emotions.js once per video
+           and then only updated in place, so the row set is not in this
+           file. The empty [data-emo-filter] chips name the selected
+           person while the People panel is filtering these three, and
+           collapse (:empty) when nothing is selected. -->
+      <div class="emotion-panels">
+        <div class="panel" id="videoEmotionPanel" style="display:none;">
+          <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Video emotion<span class="panel-filter" data-emo-filter></span></h2>
+          <div class="emo-body" id="videoEmotionBody"></div>
+        </div>
+
+        <div class="panel" id="audioEmotionPanel" style="display:none;">
+          <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Audio emotion<span class="panel-filter" data-emo-filter></span></h2>
+          <div class="emo-body" id="audioEmotionBody"></div>
+        </div>
+
+        <div class="panel" id="textEmotionPanel" style="display:none;">
+          <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Text emotion<span class="panel-filter" data-emo-filter></span></h2>
+          <div class="emo-body" id="textEmotionBody"></div>
+        </div>
+      </div>
     </section>
 
+    <!-- Who, rather than what: narrowing from this instant ("on screen
+         now") out to the whole corpus ("also appears in"). Source order
+         is the order they appear in both layouts -- the narrow layout
+         drops this whole column below the stage rather than reordering
+         anything inside it. -->
     <aside class="sidebar">
-      <!-- One panel per modality. The bodies are built by
-           js/panels/emotions.js once per video and then only updated
-           in place, so the row set is not in this file. -->
-      <!-- The empty [data-emo-filter] chips name the selected person
-           while the People panel is filtering these three panels, and
-           collapse (:empty) when nothing is selected. -->
-      <div class="panel" id="textEmotionPanel" style="display:none;">
-        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Text emotion<span class="panel-filter" data-emo-filter></span></h2>
-        <div class="emo-body" id="textEmotionBody"></div>
-      </div>
-
-      <div class="panel" id="audioEmotionPanel" style="display:none;">
-        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Audio emotion<span class="panel-filter" data-emo-filter></span></h2>
-        <div class="emo-body" id="audioEmotionBody"></div>
-      </div>
-
-      <div class="panel" id="videoEmotionPanel" style="display:none;">
-        <h2 class="panel-title"><span class="panel-dot dot-emotion"></span>Video emotion<span class="panel-filter" data-emo-filter></span></h2>
-        <div class="emo-body" id="videoEmotionBody"></div>
-      </div>
-
-      <div class="panel">
-        <h2 class="panel-title"><span class="panel-dot dot-people"></span>People</h2>
-        <ul class="person-list" id="personList"></ul>
-      </div>
-
       <div class="panel">
         <h2 class="panel-title"><span class="panel-dot dot-live"></span>On screen now</h2>
         <ul class="active-list" id="activeList">
           <li class="empty-hint">No one detected at this frame.</li>
         </ul>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title"><span class="panel-dot dot-people"></span>People</h2>
+        <ul class="person-list" id="personList"></ul>
       </div>
 
       <div class="panel" id="crossVideoPanel" style="display:none;">
