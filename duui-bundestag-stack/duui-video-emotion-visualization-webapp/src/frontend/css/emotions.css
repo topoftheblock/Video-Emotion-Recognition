@@ -1,0 +1,118 @@
+/* ---------------- Per-modality emotion panels ----------------
+   Three panels of the same shape (text / audio / video), built by
+   js/panels/emotions.js. Every row is one grid so the labels, the
+   tracks and both numbers line up down the whole panel and across all
+   three of them.
+---------------------------------------------------------------*/
+
+.emo-body { display: flex; flex-direction: column; gap: 5px; }
+
+.emo-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.emo-dominant {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--warm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emo-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+/* Same columns as .emo-row, so the two words sit exactly over the
+   numbers they name. */
+.emo-row, .emo-legend {
+  display: grid;
+  grid-template-columns: 62px 1fr 34px 34px;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+
+.emo-legend {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 1px;
+}
+
+/* Columns 1 and 2 are empty in the legend -- the two spans are the
+   value columns. */
+.emo-legend span { grid-column: 3; text-align: right; }
+.emo-legend span + span { grid-column: 4; }
+
+.emo-label {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Valence/arousal/dominance read as a different kind of quantity from
+   the label scores, and are separated from them accordingly. */
+.emo-row-dim { margin-top: 2px; }
+.emo-row-dim:first-of-type { margin-top: 7px; }
+.emo-row-dim .emo-label { color: var(--text-faint); font-style: italic; }
+
+.emo-track {
+  position: relative;
+  height: 6px;
+  background: var(--surface-alt);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* Signed values grow from the centre, so the centre gets a hairline to
+   grow away from. */
+.emo-track-signed::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: 1px;
+  background: var(--border-strong);
+}
+
+.emo-fill {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--warm), var(--warm-2));
+  border-radius: 3px;
+  transition: left 0.1s linear, width 0.1s linear;
+}
+
+/* The whole-video average, on the same track as the live value. */
+.emo-avg-mark {
+  position: absolute;
+  top: -1px; bottom: -1px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text-faint);
+  border-radius: 1px;
+}
+
+.emo-now, .emo-avg {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.emo-now { color: var(--text); font-weight: 500; }
+.emo-avg { color: var(--text-faint); }

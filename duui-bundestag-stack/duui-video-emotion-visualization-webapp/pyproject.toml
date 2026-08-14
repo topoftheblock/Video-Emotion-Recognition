@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+# `src` is the source root (not a package), so putting it on the path
+# is what makes `import backend` resolve the same way it does inside
+# the container (where it is copied to /app/src and exported as
+# PYTHONPATH). Lets `cd duui-video-emotion-visualization-webapp &&
+# pytest` work on its own; the stack root's pyproject.toml runs this
+# suite together with the importer's.
+pythonpath = ["src"]
+testpaths = ["tests"]

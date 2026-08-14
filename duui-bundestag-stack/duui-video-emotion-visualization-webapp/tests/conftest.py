@@ -3,7 +3,7 @@ Shared fixtures for the webapp's test suite.
 
 `db_available` reports whether a real Postgres is reachable using the
 same DUUI_DB_* env vars/`.env` the viewer itself reads via
-duui_webapp.config.DB_CONFIG. Tests that need a live DB skip (not
+backend.config.DB_CONFIG. Tests that need a live DB skip (not
 fail) when there isn't one, so `pytest` still works for anyone who
 just wants the pure-function tests without spinning up Postgres.
 
@@ -18,7 +18,7 @@ see README "Tests" for how to run against the compose db service.
 import psycopg2
 import pytest
 
-from duui_webapp.config import DB_CONFIG
+from backend.config import DB_CONFIG
 
 
 def _can_connect():

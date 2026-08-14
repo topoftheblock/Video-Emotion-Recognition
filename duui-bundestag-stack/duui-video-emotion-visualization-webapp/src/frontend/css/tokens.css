@@ -1,0 +1,39 @@
+/* ---------------------------------------------------------------
+   Design tokens
+   Direction: bright, sophisticated SaaS-review-tool -- soft gradient
+   mesh backdrop, glass topbar, one confident indigo->violet gradient
+   accent for interactive/"live"/AI-adjacent elements, warm amber
+   reserved for the one emotional read-out. Data still sets in mono
+   for a light "instrumentation" touch.
+------------------------------------------------------------------*/
+:root {
+  --bg: #f5f6fb;
+  --surface: #ffffff;
+  --surface-alt: #f1f2f7;
+  --border: #e7e9f2;
+  --border-strong: #d6d9e6;
+  --text: #171a26;
+  --text-dim: #676c80;
+  --text-faint: #9a9fb0;
+  --signal: #4f46e5;        /* indigo -- interactive, live, structure */
+  --signal-2: #9333ea;      /* violet -- gradient partner */
+  --signal-soft: #eef0fd;
+  --signal-strong: #4338ca;
+  --gradient-brand: linear-gradient(135deg, var(--signal), var(--signal-2));
+  --warm: #c2740a;          /* amber -- reserved for emotion/valence readouts only */
+  --warm-2: #e0973b;
+  --warm-soft: #fdf3e2;
+  --green: #16a34a;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --shadow-sm: 0 1px 2px rgba(23, 26, 51, 0.05);
+  --shadow-md: 0 4px 12px rgba(23, 26, 51, 0.07), 0 1px 3px rgba(23, 26, 51, 0.05);
+  --shadow-lg: 0 20px 48px rgba(23, 26, 51, 0.14), 0 4px 12px rgba(23, 26, 51, 0.06);
+  --glow-signal: 0 8px 24px rgba(79, 70, 229, 0.22);
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}

@@ -1,0 +1,105 @@
+/* ---------------- Sidebar panels ---------------- */
+
+.panel {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 17px 18px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.panel:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2.5px;
+  background: var(--panel-accent, var(--signal));
+  opacity: 0.85;
+}
+
+.panel:has(.dot-emotion)::before { --panel-accent: linear-gradient(90deg, var(--warm), var(--warm-2)); }
+.panel:has(.dot-people)::before { --panel-accent: linear-gradient(90deg, #16a34a, #4ade80); }
+.panel:has(.dot-live)::before { --panel-accent: linear-gradient(90deg, var(--danger), #f87171); }
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 0 12px;
+}
+
+.panel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+}
+
+/* Amber is reserved for emotion read-outs (see tokens.css), so all
+   three per-modality panels share it -- their titles tell them apart. */
+.dot-emotion { background: var(--warm); color: var(--warm); }
+.dot-people { background: var(--green); color: var(--green); }
+.dot-live { background: var(--danger); color: var(--danger); }
+.dot-cross { background: #0891b2; color: #0891b2; }
+
+.panel:has(.dot-cross)::before { --panel-accent: linear-gradient(90deg, #0891b2, #22d3ee); }
+
+.person-list, .active-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.person-list li, .active-list li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+  transition: background 0.15s ease;
+}
+
+.person-list li:hover, .active-list li:hover { background: var(--signal-soft); }
+
+.person-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.person-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-faint);
+  margin-left: auto;
+}
+
+.empty-hint {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-style: italic;
+  background: none !important;
+  padding: 4px 0 !important;
+}
+
