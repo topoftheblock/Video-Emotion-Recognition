@@ -15,7 +15,6 @@
   .ask-form { flex-wrap: wrap; }
   .topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
   .video-picker select { max-width: 60vw; }
-  .live-chip { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

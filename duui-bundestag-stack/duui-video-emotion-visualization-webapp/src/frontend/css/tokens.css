@@ -149,9 +149,11 @@
   --accent-live: var(--error-500);
   --accent-cross: var(--surface-500);
 
-  /* Status. --danger-text is the on-white value; error text on the
+  /* Status. Error only: the app has nothing that reports success as a
+     colour any more (the topbar's "Live sync" chip was the sole user of
+     the success ramp, and it claimed a health check that did not
+     exist). --danger-text is the on-white value; error text on the
      error-100 job banner needs --error-800 instead (see jobs.css). */
-  --green: var(--success-500);
   --danger: var(--error-500);
   --danger-text: var(--error-700);
   --danger-soft: var(--error-100);
