@@ -56,7 +56,10 @@ def person_emotion_averages(video_id):
         SELECT be.person_id, COALESCE(p.clip_label, 'person ' || be.person_id::text) AS clip_label,
                be.modality, avg(be.valence) AS avg_valence, avg(be.arousal) AS avg_arousal, count(*) AS n
         FROM base_emotions be
-        LEFT JOIN persons p ON p.person_id = be.person_id
+        -- Both halves of the key: person_id alone is a per-video
+        -- number, so joining on it would fan every reading out across
+        -- every video that happens to have a person with that id.
+        LEFT JOIN persons p ON p.video_id = be.video_id AND p.person_id = be.person_id
         WHERE be.video_id = %s AND be.person_id IS NOT NULL AND be.valence IS NOT NULL
         GROUP BY be.person_id, p.clip_label, be.modality
         ORDER BY be.person_id, be.modality

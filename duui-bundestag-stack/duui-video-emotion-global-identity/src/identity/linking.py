@@ -52,15 +52,19 @@ from .config import (
 # every centroid inside each of those means re-scanning the whole
 # embeddings table N times over.
 #
-# `video_id` is carried along so the "must be a different video" filter
-# below is a plain column comparison instead of a second join back to
-# `persons`.
+# A person is identified by (video_id, person_id), never by person_id
+# alone: person ids come from each CAS's own xmi:id counter, so two
+# videos routinely both have a "person 1" (see db/schema.sql's identity
+# note). Every join and lookup in this module therefore carries the
+# pair, and the embeddings table carries `video_id` itself -- which is
+# also why this no longer joins back to `persons` just to find out
+# which video an embedding belongs to.
 _BUILD_CENTROIDS_SQL = """
 CREATE TEMP TABLE {temp_table} AS
-SELECT e.person_id, p.video_id, avg(e.embedding) AS centroid
+SELECT e.video_id, e.person_id, avg(e.embedding) AS centroid
 FROM {source_table} e
-JOIN persons p ON p.person_id = e.person_id
-GROUP BY e.person_id, p.video_id
+WHERE e.person_id IS NOT NULL
+GROUP BY e.video_id, e.person_id
 """
 
 # `global_person_id` is read live from `persons` rather than from the
@@ -73,11 +77,12 @@ GROUP BY e.person_id, p.video_id
 # side makes the comparison NULL and drops the row -- a person not
 # attached to any video can't be said to appear in a *different* one.
 _MATCH_SQL = """
-SELECT c2.person_id, p2.global_person_id, (c1.centroid <=> c2.centroid) AS distance
+SELECT c2.video_id, c2.person_id, p2.global_person_id,
+       (c1.centroid <=> c2.centroid) AS distance
 FROM {temp_table} c1
 JOIN {temp_table} c2 ON c2.video_id != c1.video_id
-JOIN persons p2 ON p2.person_id = c2.person_id
-WHERE c1.person_id = %s
+JOIN persons p2 ON p2.video_id = c2.video_id AND p2.person_id = c2.person_id
+WHERE c1.video_id = %s AND c1.person_id = %s
 ORDER BY distance ASC
 LIMIT 1
 """
@@ -140,21 +145,27 @@ def build_centroids(cursor):
         cursor.execute(f"ANALYZE {temp_table}")
 
 
-def _best_cross_video_match(cursor, person_id, temp_table, threshold):
+def _best_cross_video_match(cursor, person, temp_table, threshold):
     """
-    Returns (candidate_person_id, candidate_global_person_id, distance)
+    Returns (candidate_person, candidate_global_person_id, distance)
     for the closest other-video person by embedding centroid, or None
     if there is no candidate at all or the closest one is farther than
     `threshold` (pgvector cosine distance -- lower is more similar).
+
+    `person` and `candidate_person` are (video_id, person_id) pairs.
     """
-    cursor.execute(_MATCH_SQL.format(temp_table=temp_table), (person_id,))
+    cursor.execute(_MATCH_SQL.format(temp_table=temp_table), person)
     row = cursor.fetchone()
     if row is None:
         return None
-    candidate_person_id, candidate_global_person_id, distance = row
+    candidate_video_id, candidate_person_id, candidate_global_person_id, distance = row
     if distance is None or distance > threshold:
         return None
-    return candidate_person_id, candidate_global_person_id, distance
+    return (
+        (candidate_video_id, candidate_person_id),
+        candidate_global_person_id,
+        distance,
+    )
 
 
 def _create_global_person(cursor):
@@ -162,26 +173,30 @@ def _create_global_person(cursor):
     return cursor.fetchone()[0]
 
 
-def _assign_global_person(cursor, person_id, global_person_id):
+def _assign_global_person(cursor, person, global_person_id):
+    video_id, person_id = person
     cursor.execute(
-        "UPDATE persons SET global_person_id = %s WHERE person_id = %s",
-        (global_person_id, person_id),
+        "UPDATE persons SET global_person_id = %s WHERE video_id = %s AND person_id = %s",
+        (global_person_id, video_id, person_id),
     )
 
 
-def _current_global_person_id(cursor, person_id):
+def _current_global_person_id(cursor, person):
+    video_id, person_id = person
     cursor.execute(
-        "SELECT global_person_id FROM persons WHERE person_id = %s", (person_id,)
+        "SELECT global_person_id FROM persons WHERE video_id = %s AND person_id = %s",
+        (video_id, person_id),
     )
     row = cursor.fetchone()
     return row[0] if row else None
 
 
-def link_person(cursor, person_id):
+def link_person(cursor, person):
     """
-    Link one person to a global identity if a close enough person from
-    another video exists. Returns the global_person_id it ended up
-    with, or None if it stays unlinked.
+    Link one person -- a (video_id, person_id) pair -- to a global
+    identity if a close enough person from another video exists.
+    Returns the global_person_id it ended up with, or None if it stays
+    unlinked.
 
     Assumes `build_centroids` has already run on this cursor.
     """
@@ -189,23 +204,23 @@ def link_person(cursor, person_id):
     # earlier person in this run may have matched *this* one and
     # already assigned it an id, and linking it a second time would
     # split a group that was just joined.
-    if _current_global_person_id(cursor, person_id) is not None:
+    if _current_global_person_id(cursor, person) is not None:
         return None
 
     match = None
     for temp_table, _source_table, threshold in _MODALITIES:
-        match = _best_cross_video_match(cursor, person_id, temp_table, threshold)
+        match = _best_cross_video_match(cursor, person, temp_table, threshold)
         if match is not None:
             break
     if match is None:
         return None
 
-    candidate_person_id, candidate_global_id, _distance = match
+    candidate_person, candidate_global_id, _distance = match
     global_id = candidate_global_id if candidate_global_id is not None else _create_global_person(cursor)
 
-    _assign_global_person(cursor, person_id, global_id)
+    _assign_global_person(cursor, person, global_id)
     if candidate_global_id is None:
-        _assign_global_person(cursor, candidate_person_id, global_id)
+        _assign_global_person(cursor, candidate_person, global_id)
 
     return global_id
 
@@ -229,16 +244,16 @@ def recompute_global_identities(cursor, progress=None):
 
     build_centroids(cursor)
 
-    cursor.execute("SELECT person_id FROM persons ORDER BY video_id, person_id")
-    person_ids = [row[0] for row in cursor.fetchall()]
+    cursor.execute("SELECT video_id, person_id FROM persons ORDER BY video_id, person_id")
+    persons = cursor.fetchall()
 
     linked_ids = set()
-    for index, person_id in enumerate(person_ids, start=1):
-        global_id = link_person(cursor, person_id)
+    for index, person in enumerate(persons, start=1):
+        global_id = link_person(cursor, person)
         if global_id is not None:
             linked_ids.add(global_id)
         if progress is not None:
-            progress(index, len(person_ids))
+            progress(index, len(persons))
 
     # Counted from `persons` rather than from the loop's own tally: a
     # match links both sides, so the candidate rows updated along the
@@ -249,7 +264,7 @@ def recompute_global_identities(cursor, progress=None):
     identities_created = cursor.fetchone()[0]
 
     return {
-        "persons_total": len(person_ids),
+        "persons_total": len(persons),
         "persons_unlinked": persons_unlinked,
         "identities_deleted": identities_deleted,
         "persons_linked": persons_linked,

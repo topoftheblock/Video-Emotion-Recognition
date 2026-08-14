@@ -26,16 +26,42 @@ output of a video-emotion analysis pipeline run on Bundestag debate
 recordings. Every row is time-anchored to a specific video, so most
 useful answers are "video sequences": a video_id plus a time window.
 
+## Identity: always join on video_id AND the row id
+
+Everything imported from a source file is keyed by
+**(video_id, <row id>)**, and the row id on its own means nothing. The
+ids come from each source document's own annotation counter, which
+restarts at 1 in every file -- so `person_id = 1`, `emotion_id = 16621`
+and `segment_id = 5` each exist in most videos in the corpus,
+identifying completely different things.
+
+Practical rules, and they are not optional:
+
+  - Every join between two of these tables carries both columns:
+    `JOIN persons p ON p.video_id = be.video_id AND p.person_id = be.person_id`.
+    Joining on `person_id` alone silently fans one video's rows out
+    across every other video that happens to use the same number, and
+    the result looks plausible -- inflated counts, averages mixed
+    between recordings.
+  - `WHERE person_id = 3` without a video_id is never a correct
+    filter; it selects a different person in each video.
+  - To identify a video, prefer `videos.filename` (unique) over
+    `video_id` (a surrogate that changes if a video is re-imported).
+  - Exceptions, both corpus-wide by design: `global_persons`
+    (`global_person_id`) and `models` (`model_id`, keyed by
+    (name, version, source)) are shared across videos and joined on
+    their id alone.
+
 ## Tables
 
-videos(video_id PK, filename, duration, processed_at, fps, width, height)
+videos(video_id PK surrogate, filename UNIQUE, duration, processed_at, fps, width, height)
     One row per source video. In practice `duration`, `fps`, `width`,
     `height` are frequently NULL -- the source annotator doesn't always
     populate them. Don't filter on them unless the question is
     specifically about video technical metadata, and don't assume
     `duration` is available to compute e.g. "last 10% of the video".
 
-models(model_id PK, name, version, source)
+models(model_id PK, name, version, source; UNIQUE (name, version, source))
     Provenance for every ML model used (face/voice embedding, video
     emotion, audio emotion, text emotion). `source` is a long
     human-readable pipeline-chain string (repo/commit/component list),
@@ -61,23 +87,24 @@ global_persons(global_person_id PK, real_name)
     is simply empty is a completely normal state, as is a single-video
     dataset having no clusters.
 
-persons(person_id PK, video_id FK->videos, global_person_id FK->global_persons NULL,
+persons(PK (video_id, person_id), global_person_id FK->global_persons NULL,
          clip_label, match_score)
     A person's identity *within one video*. `clip_label` is the
     human-readable label to show in results -- observed real values
     look like `'person_1'` (lower snake_case + local index), not
     always a named speaker. `match_score` is a 0..1 confidence
     (e.g. 0.83). Prefer joining to `persons` for display names
-    (`COALESCE(p.clip_label, 'person ' || p.person_id::text)`).
+    (`COALESCE(p.clip_label, 'person ' || p.person_id::text)`), joining on
+    BOTH video_id and person_id.
     `global_person_id` is set only where the global-identity job found
     a cross-video match (see global_persons above) -- still commonly
     NULL (no other video to match against, or no confident match), so
     always LEFT JOIN through it rather than assuming every person has
     one.
 
-segments(segment_id PK, video_id FK, kind CHECK IN ('shot','sentence'),
+segments(PK (video_id, segment_id), kind CHECK IN ('shot','sentence'),
           seg_index, start_time, end_time, begin_offset, end_offset,
-          person_id FK->persons NULL)
+          person_id NULL -> persons(video_id, person_id))
     kind='sentence' rows are spoken sentences (person_id = speaker),
     with BOTH a real time window (start_time/end_time, seconds) AND a
     text-character window (begin_offset/end_offset, offsets into the
@@ -89,7 +116,7 @@ segments(segment_id PK, video_id FK, kind CHECK IN ('shot','sentence'),
     transcript position for shots -- ignore it for shot rows. Sentence
     rows do NOT store their own text -- see linguistic_tokens.
 
-linguistic_tokens(token_id PK, video_id FK, segment_id FK->segments NULL,
+linguistic_tokens(PK (video_id, token_id), segment_id NULL -> segments(video_id, segment_id),
                    start_time, end_time, begin_offset, end_offset,
                    word, pos_tag, ner_label)
     One row per spoken word. To reconstruct a sentence's text, join on
@@ -104,14 +131,15 @@ linguistic_tokens(token_id PK, video_id FK, segment_id FK->segments NULL,
     POS/NER filtering to answer a question; if they're empty, say so
     rather than silently returning zero rows.
 
-face_embeddings / voice_embeddings(embedding_id PK, person_id FK, model_id FK, embedding vector)
+face_embeddings / voice_embeddings(PK (video_id, embedding_id),
+    person_id -> persons(video_id, person_id), model_id FK->models, embedding vector)
     Raw biometric vectors (512-dim face / 192-dim voice). Never needed
     for content questions; never SELECT the `embedding` column itself
     (a giant vector literal, not human-readable) -- if a question
     needs embedding similarity, use pgvector's `<=>` operator and
     return only the resulting distance/score, not the vectors.
 
-presences(presence_id PK, person_id FK, video_id FK,
+presences(PK (video_id, presence_id), person_id -> persons(video_id, person_id),
            modality CHECK IN ('visible','speech'), start_time, end_time,
            begin_offset, end_offset)
     Intervals when a person is on screen ('visible') or speaking
@@ -125,8 +153,9 @@ presences(presence_id PK, person_id FK, video_id FK,
     `persons` and expect/handle NULL clip_label for "who's on screen"
     questions rather than filtering them out.
 
-face_detections / person_detections(detection_id PK, presence_id FK,
-    person_id FK, video_id FK, frame_index, t_time, x, y, w, h,
+face_detections / person_detections(PK (video_id, detection_id),
+    presence_id -> presences(video_id, presence_id),
+    person_id -> persons(video_id, person_id), frame_index, t_time, x, y, w, h,
     detection_score)
     Per-frame bounding boxes (x/y/w/h normalized 0..1, origin top-left).
     Like `presences`, `person_id` is NULL on most rows in practice
@@ -138,7 +167,7 @@ face_detections / person_detections(detection_id PK, presence_id FK,
     literally about detections, box coordinates, or detection
     confidence.
 
-base_emotions(emotion_id PK, person_id FK, video_id FK,
+base_emotions(PK (video_id, emotion_id), person_id -> persons(video_id, person_id),
     modality CHECK IN ('audio','video','text'),
     granularity CHECK IN ('frame','segment','sentence','shot'),
     start_time, end_time, begin_offset, end_offset, frame_index,
@@ -221,7 +250,8 @@ base_emotions(emotion_id PK, person_id FK, video_id FK,
     'amusement'/'excitement' into one 'positive-high-energy' bucket),
     and say in your explanation that you did this mapping.
 
-emotion_scores(score_id PK, emotion_id FK->base_emotions, label, score)
+emotion_scores(score_id PK, video_id, emotion_id -> base_emotions(video_id, emotion_id),
+    label, score; UNIQUE (video_id, emotion_id, label))
     Full probability distribution behind a base_emotions row's
     dominant_label (same per-modality label vocabularies as above).
     Only join this in if the question needs specific class
@@ -248,22 +278,27 @@ WITH text_anchored AS (
   WHERE s.kind = 'sentence'
 ),
 video_per_sentence AS (
-  SELECT ta.segment_id, avg(ve.valence) AS video_valence, avg(ve.arousal) AS video_arousal,
+  -- Grouped by (video_id, segment_id), not segment_id alone: segment
+  -- ids repeat across videos, so grouping on one column would average
+  -- different recordings' sentences together.
+  SELECT ta.video_id, ta.segment_id,
+         avg(ve.valence) AS video_valence, avg(ve.arousal) AS video_arousal,
          mode() WITHIN GROUP (ORDER BY ve.dominant_label) AS video_label
   FROM text_anchored ta
   JOIN base_emotions ve
     ON ve.video_id = ta.video_id AND ve.modality = 'video'
    AND ve.person_id = ta.person_id
    AND ve.start_time BETWEEN ta.start_time AND ta.end_time
-  GROUP BY ta.segment_id
+  GROUP BY ta.video_id, ta.segment_id
 )
 SELECT ta.video_id, ta.start_time, ta.end_time,
        p.clip_label, ta.text_label, vp.video_label,
        ta.text_valence, vp.video_valence,
        ABS(ta.text_valence - vp.video_valence) AS valence_delta
 FROM text_anchored ta
-JOIN video_per_sentence vp ON vp.segment_id = ta.segment_id
-LEFT JOIN persons p ON p.person_id = ta.person_id
+JOIN video_per_sentence vp
+  ON vp.video_id = ta.video_id AND vp.segment_id = ta.segment_id
+LEFT JOIN persons p ON p.video_id = ta.video_id AND p.person_id = ta.person_id
 WHERE ta.text_valence IS NOT NULL AND vp.video_valence IS NOT NULL
 ORDER BY valence_delta DESC
 ```

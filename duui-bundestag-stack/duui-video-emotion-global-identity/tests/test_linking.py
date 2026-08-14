@@ -21,9 +21,15 @@ from identity import linking
 # Well outside any real CAS's xmi:id range (small integers in
 # practice) -- avoids any risk of colliding with genuine committed
 # data while these tests' own inserts stay uncommitted anyway.
+#
+# A person is a (video_id, person_id) pair everywhere in this module,
+# because person ids are only unique within one video: every CAS
+# numbers its own annotations from 1, so "person 1" exists in every
+# video in the corpus (see db/schema.sql's identity note). P1 and P3
+# deliberately share V1 to keep that visible.
 V1, V2 = 9_100_001, 9_100_002
-P1, P2 = 9_100_101, 9_100_102
-P3 = 9_100_103
+P1, P2 = (V1, 9_100_101), (V2, 9_100_102)
+P3 = (V1, 9_100_103)
 
 
 # The two embedding columns are different widths (see db/schema.sql):
@@ -36,38 +42,51 @@ def _vector_literal(dim, base):
     return "[" + ",".join(f"{base + i * 0.001:.4f}" for i in range(dim)) + "]"
 
 
-def _seed_video_and_person(cursor, video_id, person_id, clip_label):
+def _seed_person(cursor, person, clip_label):
+    video_id, person_id = person
     cursor.execute(
         "INSERT INTO videos (video_id, filename) VALUES (%s, %s) "
         "ON CONFLICT (video_id) DO NOTHING",
         (video_id, f"test-{video_id}.mp4"),
     )
     cursor.execute(
-        "INSERT INTO persons (person_id, video_id, clip_label) VALUES (%s, %s, %s)",
-        (person_id, video_id, clip_label),
+        "INSERT INTO persons (video_id, person_id, clip_label) VALUES (%s, %s, %s)",
+        (video_id, person_id, clip_label),
     )
 
 
-def _embed(cursor, table, person_id, base):
+def _embed(cursor, table, person, base, embedding_id=None):
+    video_id, person_id = person
     cursor.execute(
-        f"INSERT INTO {table} (person_id, embedding) VALUES (%s, %s)",
-        (person_id, _vector_literal(_DIMENSIONS[table], base)),
+        f"INSERT INTO {table} (video_id, embedding_id, person_id, embedding) "
+        f"VALUES (%s, %s, %s, %s)",
+        (
+            video_id,
+            embedding_id if embedding_id is not None else person_id,
+            person_id,
+            _vector_literal(_DIMENSIONS[table], base),
+        ),
     )
 
 
-def _global_ids(cursor, *person_ids):
-    cursor.execute(
-        "SELECT person_id, global_person_id FROM persons WHERE person_id = ANY(%s)",
-        (list(person_ids),),
-    )
-    return dict(cursor.fetchall())
+def _global_ids(cursor, *persons):
+    """global_person_id per (video_id, person_id), for the given people."""
+    result = {}
+    for video_id, person_id in persons:
+        cursor.execute(
+            "SELECT global_person_id FROM persons WHERE video_id = %s AND person_id = %s",
+            (video_id, person_id),
+        )
+        row = cursor.fetchone()
+        result[(video_id, person_id)] = row[0] if row else None
+    return result
 
 
 @pytest.fixture
 def linkable(db_cursor):
     """Two people in two different videos, nothing linked yet."""
-    _seed_video_and_person(db_cursor, V1, P1, "person_a")
-    _seed_video_and_person(db_cursor, V2, P2, "person_b")
+    _seed_person(db_cursor, P1, "person_a")
+    _seed_person(db_cursor, P2, "person_b")
     return db_cursor
 
 
@@ -112,11 +131,8 @@ def test_does_not_link_two_people_from_the_same_video(db_cursor):
     # one recording are the importer's business, not a *cross*-video
     # identity, and merging them here would invent a global identity
     # that spans exactly one video.
-    _seed_video_and_person(db_cursor, V1, P1, "person_a")
-    db_cursor.execute(
-        "INSERT INTO persons (person_id, video_id, clip_label) VALUES (%s, %s, %s)",
-        (P3, V1, "person_a_again"),
-    )
+    _seed_person(db_cursor, P1, "person_a")
+    _seed_person(db_cursor, P3, "person_a_again")
     _embed(db_cursor, "face_embeddings", P1, 1.0)
     _embed(db_cursor, "face_embeddings", P3, 1.0)
 
@@ -132,8 +148,8 @@ def test_does_not_relink_a_person_that_already_has_a_global_id(linkable):
     )
     existing_global_id = linkable.fetchone()[0]
     linkable.execute(
-        "UPDATE persons SET global_person_id = %s WHERE person_id = %s",
-        (existing_global_id, P2),
+        "UPDATE persons SET global_person_id = %s WHERE video_id = %s AND person_id = %s",
+        (existing_global_id, *P2),
     )
 
     _embed(linkable, "face_embeddings", P1, 1.0)
@@ -154,8 +170,9 @@ def test_clear_removes_every_global_identity(linkable):
     )
     global_id = linkable.fetchone()[0]
     linkable.execute(
-        "UPDATE persons SET global_person_id = %s WHERE person_id = ANY(%s)",
-        (global_id, [P1, P2]),
+        "UPDATE persons SET global_person_id = %s "
+        "WHERE (video_id, person_id) IN (%s, %s)",
+        (global_id, P1, P2),
     )
 
     persons_unlinked, identities_deleted = linking.clear_global_identities(linkable)
@@ -177,8 +194,9 @@ def test_recompute_clears_stale_identities_and_rebuilds_from_embeddings(linkable
     )
     stale_global_id = linkable.fetchone()[0]
     linkable.execute(
-        "UPDATE persons SET global_person_id = %s WHERE person_id = ANY(%s)",
-        (stale_global_id, [P1, P2]),
+        "UPDATE persons SET global_person_id = %s "
+        "WHERE (video_id, person_id) IN (%s, %s)",
+        (stale_global_id, P1, P2),
     )
 
     _embed(linkable, "face_embeddings", P1, 1.0)

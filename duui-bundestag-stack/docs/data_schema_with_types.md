@@ -14,6 +14,17 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 > (`org.texttechnologylab.annotation.Emotion`, GoEmotions-style — see
 > `duui-video-emotion-cas-to-postgres/src/main/parsers/text_emotion.py`). Keep this file as
 > the record of the intended design; correct the code, not the spec.
+>
+> **One divergence is load-bearing and worth stating here.** The "PK"
+> columns below (`person_id`, `segment_id`, `emotion_id`, …) are the
+> source document's own `xmi:id`, which is a *per-document* counter —
+> every CAS restarts it at 1. In the database each of those is
+> therefore only half of a composite primary key,
+> `(video_id, <the id>)`, and every foreign key between them is two
+> columns. Keying on the id alone merged nine files into a single
+> video row in practice. `videos` itself is keyed by `filename`, and
+> `models` by `(name, version, source)` since a model is corpus-wide.
+> See `db/schema.sql`'s identity note.
 
 ## Metadaten & Video Layer
 

@@ -13,17 +13,31 @@
  */
 
 import { el, html } from "../dom.js";
-import { personColorFor, state } from "../state.js";
+import { personColorFor, personName, state } from "../state.js";
+
+/**
+ * Whether a cluster member is this video's person.
+ *
+ * Both halves of the key: person_id comes from each CAS's own
+ * annotation numbering, so "person 1" exists in most videos in the
+ * corpus. This is the one place in the frontend where people from
+ * *different* videos are compared -- everywhere else a payload is a
+ * single video, where person_id alone is unambiguous.
+ */
+function isSamePerson(member, person, videoId) {
+  return member.person_id === person.person_id && member.video_id === videoId;
+}
 
 export function renderCrossVideoPanel(data) {
   const clusters = state.globalPersonClusters || [];
+  const videoId = data.video.video_id;
   const rows = [];
   for (const person of data.persons) {
     const cluster = clusters.find((c) =>
-      c.members.some((m) => m.person_id === person.person_id)
+      c.members.some((m) => isSamePerson(m, person, videoId))
     );
     if (!cluster) continue;
-    const others = cluster.members.filter((m) => m.person_id !== person.person_id);
+    const others = cluster.members.filter((m) => !isSamePerson(m, person, videoId));
     if (!others.length) continue;
     rows.push({ person, others });
   }
@@ -37,7 +51,7 @@ export function renderCrossVideoPanel(data) {
   el.crossVideoPanel.style.display = "";
   el.crossVideoList.innerHTML = rows
     .map(({ person, others }) => {
-      const name = person.clip_label || `person ${person.person_id}`;
+      const name = personName(person);
       const otherList = others
         .map((o) => `${o.video_filename} (${o.clip_label || "person " + o.person_id})`)
         .join(", ");

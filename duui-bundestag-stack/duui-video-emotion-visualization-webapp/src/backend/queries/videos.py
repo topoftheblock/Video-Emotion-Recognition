@@ -89,14 +89,23 @@ def get_timeline_emotions(video_id):
     )
 
 
-def get_emotion_scores(emotion_ids):
-    """Per-label scores for the given emotions, highest score first."""
+def get_emotion_scores(video_id, emotion_ids):
+    """
+    Per-label scores for the given emotions, highest score first.
+
+    Scoped to one video, not just to the ids: emotion_id comes from the
+    CAS's own per-document counter, so the same id exists in most other
+    videos too (see db/schema.sql's identity note). Without the
+    video_id this would pull in other videos' scores for the same
+    numbers -- for this corpus, up to nine readings' worth of labels
+    landing on one reading.
+    """
     if not emotion_ids:
         return []
     return query(
         "SELECT emotion_id, label, score FROM emotion_scores "
-        "WHERE emotion_id = ANY(%s) ORDER BY score DESC",
-        (emotion_ids,),
+        "WHERE video_id = %s AND emotion_id = ANY(%s) ORDER BY score DESC",
+        (video_id, emotion_ids),
     )
 
 
@@ -155,7 +164,7 @@ def build_playback_payload(video_id):
         emotions_by_modality.setdefault(e["modality"] or "video", []).append(e)
 
     scores_by_emotion = {}
-    for s in get_emotion_scores([e["emotion_id"] for e in emotions]):
+    for s in get_emotion_scores(video_id, [e["emotion_id"] for e in emotions]):
         scores_by_emotion.setdefault(s["emotion_id"], []).append(
             {"label": s["label"], "score": s["score"]}
         )

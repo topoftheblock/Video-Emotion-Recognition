@@ -274,6 +274,23 @@ It writes only what the CAS actually contains. Nothing is inferred, and
 in particular cross-video person identity is left entirely alone — see
 step 3 below.
 
+**Already-imported files are skipped.** A `.xmi` whose video (matched
+on `videos.filename`) is already in the database is left alone, and the
+CAS is not even loaded — re-running over a drop folder imports only
+what is new, and `docker compose up` re-running `init-import` costs
+seconds rather than minutes. To rebuild a video's rows from a
+re-exported CAS instead:
+
+```bash
+docker compose run --rm importer --on-existing replace
+```
+
+`replace` deletes the existing video and everything hanging off it
+(the schema cascades) before importing, so the rows match the CAS in
+front of it rather than merging two exports. The default is settable
+as `DUUI_ON_EXISTING` — see `.env.example`. Note that a replaced video
+gets a **new `video_id`**; `filename` is the identifier that survives.
+
 Useful behaviour when importing a whole folder:
 
 - **The typesystem is loaded once per run**, not per file — a folder
@@ -424,6 +441,37 @@ Two keys, one per hop:
    comes out of the CAS itself; the importer copies the video into the
    store under that exact name, and the viewer serves it from
    `<video store>/<filename>`.
+
+### One video per file: why the keys look the way they do
+
+`videos.filename` is `UNIQUE`, and it — not any id inside the CAS — is
+what says "this file is that video". Every row underneath is keyed by
+**`(video_id, the CAS's own xmi:id)`**, with two-column foreign keys
+between them.
+
+That is not decoration. `xmi:id` is a per-document counter: every CAS
+restarts it at 1. Keying rows on it alone means two files claim the
+same row, and the failure is silent — a corpus of nine exports from one
+pipeline all declared `DocumentMetaData` at `xmi:id 3`, so all nine
+landed on a single `videos` row, and 4,420 of 42,939 emotion ids
+collided between files, each either dropped or overwritten with another
+video's reading. The viewer showed one video where there should have
+been nine.
+
+Consequences worth knowing:
+
+- **A join on `person_id` alone is a bug.** So is one on `emotion_id`,
+  `segment_id`, or any other id from a CAS. Carry `video_id` too — the
+  query agent is told this explicitly (`query_agent/schema_context.py`),
+  because the wrong version returns plausible, silently mixed results.
+- **`video_id` is a surrogate and can change.** Re-importing with
+  `--on-existing replace` deletes the video and gives the new one a
+  fresh id. The filename is the stable handle; prefer it in anything
+  you save or bookmark.
+- **Two exceptions, both corpus-wide by design.** `models` is keyed by
+  `(name, version, source)` — the same face model processes every
+  video, so it is shared rather than duplicated per import — and
+  `global_persons` is assigned by the database, not by any CAS.
 
 The database never stores video bytes. Because hop 2 is a filename
 convention rather than a database constraint, the viewer **checks the
@@ -757,6 +805,15 @@ deliberately only reads the running ones.
   harmless and skipped):
   ```bash
   docker compose exec -T db psql -U duui -d duui_bundestag < db/schema.sql
+  ```
+  **This does not migrate a database created before the composite-key
+  change** (see "One video per file" below). Re-running the file leaves
+  the old single-column keys in place, and the rows in such a database
+  are merged across videos anyway. There is no in-place migration —
+  start a fresh volume and re-import:
+  ```bash
+  docker compose down -v && docker compose up -d
+  docker compose run --rm importer
   ```
 - **Deliberately not included**: no authentication, no TLS, no rate
   limiting on the Ask panel. That is a reasonable trade-off on a trusted
