@@ -10,7 +10,7 @@
  */
 
 import { el } from "./dom.js";
-import { formatTime } from "./format.js";
+import { formatClock } from "./format.js";
 import { state } from "./state.js";
 
 const frameSubscribers = [];
@@ -46,8 +46,8 @@ export function seekOnceLoaded(seconds) {
 }
 
 function updateTransport(t) {
-  el.timeCurrent.textContent = formatTime(t);
-  el.timeTotal.textContent = formatTime(el.player.duration || 0);
+  el.timeCurrent.textContent = formatClock(t);
+  el.timeTotal.textContent = formatClock(el.player.duration || 0);
   // Left alone while the user is dragging it, or the scrub would fight
   // the pointer.
   if (!el.scrub.matches(":active")) {
