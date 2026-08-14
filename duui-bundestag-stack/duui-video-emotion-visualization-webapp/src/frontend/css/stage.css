@@ -32,10 +32,10 @@
 
 .subtitle-bar {
   position: absolute;
-  left: 50%;
-  bottom: 8%;
-  transform: translateX(-50%);
-  max-width: 86%;
+  left: 0;
+  right: 0;
+  bottom: 6%;
+  padding: 0 3%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -86,7 +86,8 @@
 }
 
 .subtitle-text {
-  font-size: clamp(14px, 2.4vw, 22px);
+  max-width: 100%;
+  font-size: clamp(14px, 1.5vw, 18px);
   font-weight: 500;
   color: #fff;
   background: rgba(10, 12, 18, 0.78);
