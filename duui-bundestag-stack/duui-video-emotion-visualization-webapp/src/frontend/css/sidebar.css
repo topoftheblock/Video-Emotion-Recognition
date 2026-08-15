@@ -61,15 +61,16 @@
 /* Names the .person-meta column before any row does, the same idiom
    .emo-legend uses for the emotion panels' now/avg columns -- so what
    the number means is on the page whether or not anyone hovers
-   anything. Right-padding matches .person-row's so the label's right
-   edge sits over the percentages it's naming. */
+   anything. Right edge matches .person-row's padding so the label
+   sits over the percentages it's naming. */
 .person-legend {
+  position: absolute;
+  top: 17px;
+  right: 18px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
-  padding: 0 10px;
-  margin: 0 0 6px;
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
