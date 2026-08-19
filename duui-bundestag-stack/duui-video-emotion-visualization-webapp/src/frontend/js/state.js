@@ -66,6 +66,21 @@ export function personColorFor(personId) {
   return state.personColor.get(personId) || UNKNOWN_PERSON_COLOR;
 }
 
+/**
+ * Pick a text colour (dark or white) that keeps the WCAG contrast ratio
+ * readable against `hex` as a background. Uses sRGB relative luminance:
+ * light backgrounds get near-black text, dark ones get white.
+ */
+export function readableTextColor(hex) {
+  const c = hex.replace("#", "");
+  const channel = (i) => {
+    const s = parseInt(c.slice(i, i + 2), 16) / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const L = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+  return L > 0.45 ? "#0b0e14" : "#ffffff";
+}
+
 /** What to call a person: the importer's CLIP label, else their id. */
 export function personName(person) {
   return person.clip_label || `person ${person.person_id}`;

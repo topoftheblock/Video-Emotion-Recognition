@@ -17,7 +17,7 @@
  */
 
 import { el, html } from "../dom.js";
-import { overlayEnabled, personName, state } from "../state.js";
+import { overlayEnabled, personColorFor, personName, readableTextColor, state } from "../state.js";
 import { coveredBy } from "../subtitles.js";
 
 /**
@@ -126,9 +126,17 @@ export function initEmotionPanels(data) {
 
   for (const config of PANELS) {
     const readings = readingsFor(data, config.modality);
-    el[config.panel].querySelector("[data-emo-filter]").textContent = person
-      ? personName(person)
-      : "";
+    const chip = el[config.panel].querySelector("[data-emo-filter]");
+    if (person) {
+      chip.textContent = personName(person);
+      const bg = personColorFor(person.person_id);
+      chip.style.background = bg;
+      chip.style.color = readableTextColor(bg);
+    } else {
+      chip.textContent = "";
+      chip.style.background = "";
+      chip.style.color = "";
+    }
 
     if (!readings.length) {
       // A modality this video has nothing for stays hidden, as before.
