@@ -101,6 +101,8 @@ async function jumpToSegment(seg, overlays) {
   const needsVideoSwitch = !state.data || state.data.video.video_id !== seg.video_id;
   if (needsVideoSwitch) {
     await loadVideo(seg.video_id);
+    // Sync the picker's display to the jumped-to video (the setter only
+    // updates the visible value; loadVideo above did the actual switch).
     el.videoSelect.value = String(seg.video_id);
     seekOnceLoaded(seg.start_time);
   } else {

@@ -14,7 +14,7 @@
   .ask-card { padding: 16px; }
   .ask-form { flex-wrap: wrap; }
   .topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
-  .video-picker select { max-width: 60vw; }
+  .video-combobox-input { max-width: 60vw; }
 }
 
 @media (prefers-reduced-motion: reduce) {

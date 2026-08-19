@@ -50,8 +50,15 @@
 }
 
 /* The Gateway's .input-wrapper: recessed surface fill, soft border,
-   and a 2px primary ring on focus rather than a coloured glow. */
-.video-picker select {
+   and a 2px primary ring on focus rather than a coloured glow. The
+   combobox wraps a text input that doubles as the search field and a
+   list of matches that drops beneath it. */
+.video-combobox {
+  position: relative;
+  display: flex;
+}
+
+.video-combobox-input {
   background: var(--surface-alt);
   color: var(--text);
   border: var(--theme-border-base) solid var(--border-soft);
@@ -60,16 +67,71 @@
   font-family: var(--font-ui);
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  max-width: 46vw;
-  text-overflow: ellipsis;
+  width: 24ch;
+  cursor: text;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.video-picker select:hover { border-color: var(--signal); }
+.video-combobox-input::placeholder { color: var(--text-dim); }
 
-.video-picker select:focus {
+.video-combobox-input:hover { border-color: var(--signal); }
+
+.video-combobox-input:focus {
   outline: none;
   border-color: var(--signal);
   box-shadow: 0 0 0 2px var(--signal);
+}
+
+/* The dropdown list. Sits over the page (z-index above the sticky
+   topbar) with the same recessed card treatment as the panels. */
+.video-combobox-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: var(--theme-border-base) solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.video-combobox-list[hidden] { display: none; }
+
+.video-combo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-combo-item:hover,
+.video-combo-item.is-active {
+  background: var(--signal-soft);
+  color: var(--signal-strong);
+}
+
+.video-combo-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-combo-missing {
+  flex-shrink: 0;
+  color: var(--text-dim);
+  font-size: 12px;
 }

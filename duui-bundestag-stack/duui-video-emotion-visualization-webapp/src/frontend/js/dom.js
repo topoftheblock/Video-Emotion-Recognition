@@ -11,6 +11,8 @@
 
 export const el = {
   videoSelect: document.getElementById("videoSelect"),
+  videoComboInput: document.getElementById("videoComboInput"),
+  videoComboList: document.getElementById("videoComboList"),
   player: document.getElementById("player"),
   overlay: document.getElementById("overlay"),
   stageFrame: document.getElementById("stageFrame"),

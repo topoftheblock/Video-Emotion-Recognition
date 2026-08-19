@@ -59,22 +59,136 @@ export async function loadVideoList() {
   // actually in the store (GET /api/videos checks that per request).
   state.videos = videos;
 
-  const ordered = [...videos].sort((a, b) => a.filename.localeCompare(b.filename));
-
-  el.videoSelect.innerHTML = ordered
-    .map(
-      (v) =>
-        html`<option value="${v.video_id}">
-          ${v.filename}${v.video_file_available ? "" : " — file missing"}
-        </option>`
-    )
-    .join("");
+  initVideoCombobox();
+  applySelection(videos[0].video_id, false);
 
   // Cross-video person clusters don't change per video load -- fetched
   // once and filtered client-side in renderCrossVideoPanel().
   state.globalPersonClusters = await fetchGlobalPersons().catch(() => []);
 
   await loadVideo(videos[0].video_id);
+}
+
+/* ------------------------------------------------------------------
+   The video picker is a searchable combobox: a text input that doubles
+   as the search field, with a list of matching filenames under it. The
+   container (#videoSelect) carries a `value` property holding the
+   selected video_id and a `change` event, so the rest of the app keeps
+   treating it like the old <select>.
+   ------------------------------------------------------------------ */
+
+let comboReady = false;
+let selectedVideoId = null;
+let comboHighlight = -1;
+
+function initVideoCombobox() {
+  if (comboReady) return;
+  comboReady = true;
+
+  // Expose .value on the container so el.videoSelect.value still works
+  // for both reads and the Ask panel's programmatic selection.
+  Object.defineProperty(el.videoSelect, "value", {
+    configurable: true,
+    get() {
+      return selectedVideoId == null ? "" : String(selectedVideoId);
+    },
+    set(v) {
+      applySelection(v == null || v === "" ? null : Number(v), false);
+    },
+  });
+
+  el.videoComboInput.addEventListener("focus", () => {
+    // Empty the field so the user types a fresh query rather than
+    // filtering against the currently shown filename; the committed
+    // selection is restored on blur if nothing new is picked.
+    el.videoComboInput.value = "";
+    openCombo();
+  });
+  el.videoComboInput.addEventListener("input", openCombo);
+  el.videoComboInput.addEventListener("keydown", onComboKeydown);
+  el.videoComboInput.addEventListener("blur", () =>
+    setTimeout(() => {
+      closeCombo();
+      const current = state.videos.find((v) => v.video_id === selectedVideoId);
+      el.videoComboInput.value = current ? current.filename : "";
+    }, 120)
+  );
+  el.videoComboList.addEventListener("mousedown", (e) => {
+    const item = e.target.closest("[data-video-id]");
+    if (item) applySelection(Number(item.dataset.videoId), true);
+  });
+  document.addEventListener("click", (e) => {
+    if (!el.videoSelect.contains(e.target)) closeCombo();
+  });
+}
+
+/** Select a video, update the input, and optionally fire `change`. */
+function applySelection(videoId, dispatch) {
+  const video = videoId == null ? null : state.videos.find((v) => v.video_id === videoId);
+  selectedVideoId = video ? video.video_id : null;
+  el.videoComboInput.value = video ? video.filename : "";
+  closeCombo();
+  if (dispatch) el.videoSelect.dispatchEvent(new Event("change"));
+}
+
+function openCombo() {
+  renderVideoOptions();
+  el.videoSelect.setAttribute("aria-expanded", "true");
+  el.videoComboList.hidden = false;
+}
+
+function closeCombo() {
+  el.videoComboList.hidden = true;
+  el.videoComboList.innerHTML = "";
+  el.videoSelect.setAttribute("aria-expanded", "false");
+  comboHighlight = -1;
+}
+
+/**
+ * (Re)build the dropdown list from the full `state.videos` list, kept in
+ * ascending filename order and narrowed to names containing the input's
+ * text (case-insensitive).
+ */
+export function renderVideoOptions() {
+  const query = el.videoComboInput.value.trim().toLowerCase();
+  const matches = state.videos
+    .filter((v) => v.filename.toLowerCase().includes(query))
+    .sort((a, b) => a.filename.localeCompare(b.filename));
+
+  el.videoComboList.innerHTML = matches
+    .map(
+      (v) => html`<li class="video-combo-item" role="option" data-video-id="${v.video_id}">
+        <span class="video-combo-name">${v.filename}</span>
+        ${v.video_file_available ? "" : html`<span class="video-combo-missing">— file missing</span>`}
+      </li>`
+    )
+    .join("");
+}
+
+function onComboKeydown(e) {
+  const items = Array.from(el.videoComboList.querySelectorAll(".video-combo-item"));
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    if (el.videoComboList.hidden) return openCombo();
+    comboHighlight = Math.min(comboHighlight + 1, items.length - 1);
+    updateComboHighlight(items);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    comboHighlight = Math.max(comboHighlight - 1, 0);
+    updateComboHighlight(items);
+  } else if (e.key === "Enter") {
+    if (!el.videoComboList.hidden && items[comboHighlight]) {
+      e.preventDefault();
+      applySelection(Number(items[comboHighlight].dataset.videoId), true);
+    }
+  } else if (e.key === "Escape") {
+    closeCombo();
+  }
+}
+
+function updateComboHighlight(items) {
+  items.forEach((it, i) => it.classList.toggle("is-active", i === comboHighlight));
+  if (items[comboHighlight]) items[comboHighlight].scrollIntoView({ block: "nearest" });
 }
 
 export async function loadVideo(videoId) {

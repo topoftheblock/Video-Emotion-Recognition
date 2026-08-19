@@ -18,7 +18,13 @@
     </div>
     <label class="video-picker">
       <span>Video</span>
-      <select id="videoSelect"></select>
+      <div id="videoSelect" class="video-combobox">
+        <input id="videoComboInput" class="video-combobox-input" type="text"
+               placeholder="Search videos…" autocomplete="off" spellcheck="false"
+               role="combobox" aria-expanded="false" aria-controls="videoComboList"
+               aria-autocomplete="list" aria-label="Video">
+        <ul id="videoComboList" class="video-combobox-list" role="listbox" hidden></ul>
+      </div>
     </label>
   </header>
 
