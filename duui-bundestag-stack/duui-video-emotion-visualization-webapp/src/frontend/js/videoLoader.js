@@ -63,7 +63,7 @@ export async function loadVideoList() {
     .map(
       (v) =>
         html`<option value="${v.video_id}">
-          ${v.filename} (#${v.video_id})${v.video_file_available ? "" : " — file missing"}
+          ${v.filename}${v.video_file_available ? "" : " — file missing"}
         </option>`
     )
     .join("");
