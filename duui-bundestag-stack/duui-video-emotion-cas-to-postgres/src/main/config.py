@@ -68,7 +68,7 @@ VIDEO_VIEW = os.environ.get("DUUI_VIDEO_VIEW", "_InitialView")
 # What to do with a .xmi whose video (by filename) is already in the
 # database. `skip` leaves it alone and does not even load the CAS --
 # which is what makes re-running the importer over a growing drop
-# folder, or `docker compose up` re-running init-import, close to free.
+# folder close to free.
 # `replace` deletes the existing video and everything hanging off it
 # (the schema cascades) and imports the file fresh, for when a CAS has
 # been re-exported and its rows should match the new version.

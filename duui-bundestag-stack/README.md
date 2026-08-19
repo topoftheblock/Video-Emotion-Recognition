@@ -155,9 +155,20 @@ Postgres, no **ffmpeg** on your machine (see "Prerequisites").
 docker compose up -d
 ```
 
-That's it — open **http://localhost:8010** and the shipped sample video
-is playing. The first run builds the images (~1-2 min), then starts the
-database, **runs the import**, and starts the viewer.
+That starts the database and the viewer, but imports **nothing** — so a
+fresh start shows an empty dropdown until you run the import. The first
+run builds the images (~1-2 min), then starts the database and the
+viewer.
+
+To actually load data (the shipped sample, or your own once you've set
+`DUUI_INPUT_XMI_DIR`), run the import job:
+
+```bash
+docker compose run --rm importer          # the sample, or whatever DUUI_INPUT_XMI_DIR points at
+```
+
+Then open **http://localhost:8010** — with data imported, the viewer's
+dropdown is populated and the sample video plays.
 
 To use your own data instead of the sample, set the input folders once
 first (you do not move your files — see the section above):
@@ -165,6 +176,7 @@ first (you do not move your files — see the section above):
 ```bash
 cp .env.example .env && $EDITOR .env      # set DUUI_INPUT_XMI_DIR
 docker compose up -d
+docker compose run --rm importer
 ```
 
 Verify at any time:
@@ -173,15 +185,15 @@ Verify at any time:
 docker compose ps
 ```
 
-You should see `db` and `webapp` as `(healthy)`, plus `init-import` as
-`Exited (0)` — that one is the import job, which is *supposed* to exit
-once it's finished.
+You should see `db` and `webapp` as `(healthy)`. The `importer` and
+`global-identity` jobs are *not* started by `up` — they're run on demand,
+and exit once finished.
 
-> **Why the import runs as part of `up`:** starting only the database
-> and the viewer left the database empty, so the app came up with an
-> empty dropdown and a blank player — indistinguishable from a broken
-> deployment. If the database *is* ever empty, the viewer now says so
-> explicitly instead of showing a black rectangle.
+> **Why the import is NOT part of `up`:** it is a deliberate job like
+> cross-video identity, not an always-on service. An empty database now
+> makes the viewer say so explicitly (instead of a black rectangle)
+> rather than silently importing your files on every `up`. Run the
+> importer when you have data to load.
 
 One thing `up` deliberately does **not** do is work out which people
 appear in more than one video. That is a separate job, because it looks
@@ -277,7 +289,7 @@ step 3 below.
 **Already-imported files are skipped.** A `.xmi` whose video (matched
 on `videos.filename`) is already in the database is left alone, and the
 CAS is not even loaded — re-running over a drop folder imports only
-what is new, and `docker compose up` re-running `init-import` costs
+what is new, and re-running `importer` costs
 seconds rather than minutes. To rebuild a video's rows from a
 re-exported CAS instead:
 

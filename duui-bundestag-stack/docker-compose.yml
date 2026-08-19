@@ -1,22 +1,26 @@
 # Convenience wrapper around the four images (each of which can also be
 # built and run on its own -- see README "Running without compose").
 #
-#   docker compose up -d          # everything: db -> import -> viewer
+#   docker compose up -d          # db -> viewer (no import)
 #
-# ...then open http://localhost:8010. That single command also runs the
-# import, so a fresh start ends with data visible rather than an empty
-# dropdown. To import more files later, without restarting anything:
+# ...then open http://localhost:8010. That single command starts the
+# database and the viewer but imports NOTHING -- so a fresh start shows
+# an empty dropdown until you run an import. To import (whole dir or a
+# single file), without restarting anything:
 #
 #   docker compose run --rm importer
+#   docker compose run --rm importer /data/input/xmi/one_file.xmi
 #
-# One job is NOT part of `up` and has to be asked for -- cross-video
-# person identity, which is computed over the whole corpus at once
-# rather than per file:
+# Two jobs are NOT part of `up` and have to be asked for:
+#
+#   1. The importer (`importer`, profile "import") -- loads .xmi files
+#      into Postgres. Run it whenever you have files to load.
+#   2. Cross-video person identity (`global-identity`, profile
+#      "identity") -- computed over the whole corpus at once rather than
+#      per file. Run it after importing, whenever you want the viewer's
+#      "Also appears in" panel to reflect the videos currently loaded:
 #
 #   docker compose run --rm global-identity
-#
-# Run it after importing, whenever you want the viewer's "Also appears
-# in" panel to reflect the videos currently loaded.
 #
 # The ONE thing you normally need to set is where your CAS files and
 # videos already live. You do NOT move them -- point at them in place:
@@ -33,8 +37,8 @@
 # you end up debugging one while running the other).
 name: duui-bundestag-stack
 
-# Shared by `init-import` (runs automatically on `up`) and `importer`
-# (the same job, invoked manually) so the two can never drift apart.
+# Shared by `importer` (profile "import") and anything else that needs to
+# run the cas-to-postgres job, so the two can never drift apart.
 x-importer-common: &importer-common
   build:
     context: ./duui-video-emotion-cas-to-postgres
@@ -57,7 +61,7 @@ x-importer-common: &importer-common
     # setting it there actually reaches the importer.
     DUUI_VIDEO_VIEW: ${DUUI_VIDEO_VIEW:-_InitialView}
     # What to do with a .xmi whose video is already imported (matched
-    # by filename). `skip` is why `up` re-running init-import is now
+    # by filename). `skip` is why re-running the importer is now
     # nearly free -- it does not even load the CAS. Set `replace` (or
     # pass `--on-existing replace`) to rebuild a video's rows from a
     # re-exported CAS.
@@ -124,32 +128,23 @@ services:
       timeout: 5s
       retries: 10
 
-  # Runs automatically as part of `docker compose up`, so a fresh start
-  # ends with data in the viewer instead of an empty dropdown -- which
-  # previously looked like a broken app rather than "nothing imported
-  # yet". Exits when done; `restart: no` keeps it from looping.
-  #
-  # Importing is idempotent (rows are upserted, already-placed videos are
-  # left alone), so this re-running on every `up` is harmless. It is not
-  # a dependency of `webapp`: if one CAS in a batch fails, you still want
-  # the viewer up for everything that did import.
-  init-import:
-    <<: *importer-common
-    restart: "no"
-    depends_on:
-      db:
-        condition: service_healthy
-
-  # The same job, for importing more files later without touching the
-  # running stack. Excluded from `up` by the "import" profile so it only
-  # runs when asked for explicitly (paths are container paths -- the
-  # .xmi directory is /data/input/xmi in here, whatever it is on the
-  # host):
+  # The cas-to-postgres job. Deliberately NOT part of `up` (the
+  # "import" profile keeps it out), so a fresh stack starts with an
+  # empty viewer rather than auto-importing. Run it when you have files
+  # to load, without touching the running stack (paths are container
+  # paths -- the .xmi directory is /data/input/xmi in here, whatever it
+  # is on the host):
   #   docker compose run --rm importer                                # whole xmi dir
   #   docker compose run --rm importer /data/input/xmi/one_file.xmi   # a single file
+  #
+  # Importing is idempotent (rows are upserted, already-placed videos
+  # are left alone), so re-running is harmless. It is not a dependency of
+  # `webapp`: if one CAS in a batch fails, you still want the viewer up
+  # for everything that did import.
   importer:
     <<: *importer-common
     profiles: ["import"]
+    restart: "no"
     depends_on:
       db:
         condition: service_healthy
