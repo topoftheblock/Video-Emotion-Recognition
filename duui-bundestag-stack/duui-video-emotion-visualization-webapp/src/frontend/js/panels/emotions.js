@@ -149,9 +149,10 @@ export function initEmotionPanels(data) {
     const body = el[config.body];
     body.innerHTML = renderBody(config, labels, averageScores, averageDimensions, readings.length);
 
-    // Row order in the markup is labels-then-dimensions, which is what
-    // lets the per-frame update address rows by index instead of
-    // re-querying the DOM.
+    // Row order in the markup is dimensions-then-labels (the dimensional
+    // readings -- valence/arousal/dominance -- sit at the top, under a
+    // divider, which is what lets the per-frame update address rows by
+    // index instead of re-querying the DOM.
     const fills = body.querySelectorAll("[data-emo-fill]");
     const values = body.querySelectorAll("[data-emo-now]");
     tracks.push({
@@ -179,11 +180,11 @@ export function renderEmotionPanels(data, t) {
 
     track.dominant.textContent = (scores && dominantOf(live, scores)) || "—";
 
-    labels.forEach((label, i) => {
-      setScoreRow(rows[i], scores ? scores.get(label) || 0 : null);
-    });
     config.dimensions.forEach((dimension, j) => {
-      setSignedRow(rows[labels.length + j], live.length ? meanDimension(live, dimension) : null);
+      setSignedRow(rows[j], live.length ? meanDimension(live, dimension) : null);
+    });
+    labels.forEach((label, i) => {
+      setScoreRow(rows[config.dimensions.length + i], scores ? scores.get(label) || 0 : null);
     });
   }
 }
@@ -279,8 +280,9 @@ function renderBody(config, labels, averageScores, averageDimensions, nReadings)
       <span class="emo-count">${nReadings} reading${nReadings === 1 ? "" : "s"}</span>
     </div>
     <div class="emo-legend"><span>now</span><span>avg</span></div>
-    ${labels.map((label) => scoreRow(label, averageScores.get(label) || 0))}
-    ${config.dimensions.map((dimension, j) => signedRow(dimension, averageDimensions[j]))}`;
+    ${config.dimensions.map((dimension, j) => signedRow(dimension, averageDimensions[j]))}
+    ${config.dimensions.length ? html`<hr class="emo-divider">` : ""}
+    ${labels.map((label) => scoreRow(label, averageScores.get(label) || 0))}`;
 }
 
 function scoreRow(label, average) {

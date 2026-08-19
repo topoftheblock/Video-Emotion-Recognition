@@ -88,10 +88,18 @@
 }
 
 /* Valence/arousal/dominance read as a different kind of quantity from
-   the label scores, and are separated from them accordingly. */
-.emo-row-dim { margin-top: 2px; }
-.emo-row-dim:first-of-type { margin-top: 7px; }
+   the label scores; they sit at the top of the panel under a hairline
+   divider (see .emo-divider) rather than inline with the label scores. */
 .emo-row-dim .emo-label { font-style: italic; }
+
+/* The hairline between the dimensional readings and the label scores.
+   Same treatment as the page's other section edges (.topbar, .ask
+   panel): one 1px line in --border. */
+.emo-divider {
+  border: 0;
+  border-top: var(--theme-border-base) solid var(--border);
+  margin: 4px 0;
+}
 
 .emo-track {
   position: relative;
