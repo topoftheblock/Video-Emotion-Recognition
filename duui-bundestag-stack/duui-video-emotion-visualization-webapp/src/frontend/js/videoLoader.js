@@ -59,7 +59,9 @@ export async function loadVideoList() {
   // actually in the store (GET /api/videos checks that per request).
   state.videos = videos;
 
-  el.videoSelect.innerHTML = videos
+  const ordered = [...videos].sort((a, b) => a.filename.localeCompare(b.filename));
+
+  el.videoSelect.innerHTML = ordered
     .map(
       (v) =>
         html`<option value="${v.video_id}">
