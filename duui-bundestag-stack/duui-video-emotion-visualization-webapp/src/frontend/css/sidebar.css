@@ -152,11 +152,18 @@
 
 /* Names the person the emotion panels are filtered to; empty (and so
    collapsed) whenever nothing is selected. The Gateway's .tag: a
-   rounded-full chip in variant-soft-primary. */
+   rounded-full chip in variant-soft-primary.
+
+   min-height + line-height reserve the chip's full height even when
+   empty (visibility:hidden below), so the three panels keep the same
+   title height whether or not a person is selected -- an empty chip
+   would otherwise collapse to just its padding and shrink the row. */
 .panel-filter {
   margin-left: auto;
   max-width: 55%;
   padding: 2px 8px;
+  min-height: calc(1.2em + 4px);
+  line-height: 1.2;
   border-radius: 999px;
   background: var(--signal-soft);
   color: var(--signal-strong);
