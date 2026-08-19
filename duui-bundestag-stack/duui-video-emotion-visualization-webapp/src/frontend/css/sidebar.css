@@ -32,6 +32,7 @@
 .panel:has(.dot-cross)::before { --panel-accent: var(--accent-cross); }
 
 .panel-title {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -154,12 +155,16 @@
    collapsed) whenever nothing is selected. The Gateway's .tag: a
    rounded-full chip in variant-soft-primary.
 
-   min-height + line-height reserve the chip's full height even when
-   empty (visibility:hidden below), so the three panels keep the same
-   title height whether or not a person is selected -- an empty chip
-   would otherwise collapse to just its padding and shrink the row. */
+   Absolutely positioned (top-right of the title) so it is taken out of
+   the title's flow: the title row keeps the height of its text alone,
+   and the gap down to the emotion rows is identical whether or not a
+   person is selected. min-height/line-height keep the chip itself a
+   stable size when it holds no name. */
 .panel-filter {
-  margin-left: auto;
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
   max-width: 55%;
   padding: 2px 8px;
   min-height: calc(1.2em + 4px);
