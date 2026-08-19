@@ -170,7 +170,9 @@
   white-space: nowrap;
 }
 
-.panel-filter:empty { display: none; }
+.panel-filter:empty {
+  visibility: hidden;
+}
 
 /* ---- "Also appears in" rows ----
    The other two person lists fit on one line, so they are flex rows
