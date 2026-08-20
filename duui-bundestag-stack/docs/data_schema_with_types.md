@@ -101,7 +101,8 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 | video_id | bigint | FK | Reference to the video |
 | global_person_id | bigint | FK | Reference to GlobalPerson (nullable, until assigned) |
 | clip_label | text | | Local label (e.g., P8 / Speaker_01) |
-| match_score | double | | Confidence of the match (nullable, aus Label geparst) |
+| audio_video_match_score | double | | Import-pipeline confidence of the match (nullable, parsed from the CAS label, 0..1) |
+| global_person_match_score | double | | Cross-video match distance: minimum cosine distance to this person's nearest lookalike in another video (0 = identical, 2 = opposite, lower = more confident). Computed by the global-identity job. |
 
 **FaceEmbedding** (pgvector HNSW-Index: cosine)
 
@@ -241,7 +242,7 @@ Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeli
 ### Person
 - **Type System:** IdentityEmotionTypeSystem, MultimodalIdentityTypeSystem
 - **UIMA Type:** `org.texttechnologylab.annotation.identity.Person`
-- **Features/Columns:** `global_person_id, real_name, person_id, clip_label, match_score`
+- **Features/Columns:** `global_person_id, real_name, person_id, clip_label, audio_video_match_score, global_person_match_score`
 
 ### FaceEmbedding
 - **Type System:** IdentityEmotionTypeSystem, MultimodalIdentityTypeSystem

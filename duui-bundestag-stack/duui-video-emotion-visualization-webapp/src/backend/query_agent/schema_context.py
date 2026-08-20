@@ -77,8 +77,10 @@ global_persons(global_person_id PK, real_name)
     embedding centroid against every other video's persons and links
     both sides to the same global_persons row below a cosine-distance
     threshold (see its config.py). This is a similarity HEURISTIC, not a
-    verified identity match, and the per-pair distance isn't stored
-    (no column for it) -- treat a shared global_person_id as
+    verified identity match, and each linked person's nearest
+    cross-video centroid distance is stored in
+    `persons.global_person_match_score` (lower = more confident) --
+    treat a shared global_person_id as
     "probably the same person," not ground truth, and always check
     whether any rows actually share one (`GROUP BY global_person_id
     HAVING count(DISTINCT video_id) > 1`) before answering a
@@ -88,12 +90,14 @@ global_persons(global_person_id PK, real_name)
     dataset having no clusters.
 
 persons(PK (video_id, person_id), global_person_id FK->global_persons NULL,
-         clip_label, match_score)
+         clip_label, audio_video_match_score, global_person_match_score)
     A person's identity *within one video*. `clip_label` is the
     human-readable label to show in results -- observed real values
     look like `'person_1'` (lower snake_case + local index), not
-    always a named speaker. `match_score` is a 0..1 confidence
-    (e.g. 0.83). Prefer joining to `persons` for display names
+    always a named speaker. `audio_video_match_score` is a 0..1 confidence
+    from the import pipeline (e.g. 0.83); `global_person_match_score` is the separate
+    cross-video cosine distance (0 = identical, 2 = opposite) computed
+    by the global-identity job. Prefer joining to `persons` for display names
     (`COALESCE(p.clip_label, 'person ' || p.person_id::text)`), joining on
     BOTH video_id and person_id.
     `global_person_id` is set only where the global-identity job found

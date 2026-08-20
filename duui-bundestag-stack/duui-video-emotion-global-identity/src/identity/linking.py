@@ -25,12 +25,14 @@ distance between embedding centroids, and either joins an existing
 global identity or mints a new one shared by both sides.
 
 This is a similarity heuristic, not a verified identity match --
-`match_score`/the distance itself is not stored per-link (the schema
-has no column for it), so treat `global_person_id` groupings as
-"probably the same person", not ground truth, and retune the distance
-thresholds in config.py against real cross-video duplicates before
-relying on this for anything beyond suggestions or the query agent's
-own use.
+each linked person's nearest cross-video embedding-centroid distance is
+stored in `persons.global_person_match_score` (the minimum cosine
+distance to any person in another video, computed order-independently
+as a pure function of the centroids), so treat `global_person_id`
+groupings as "probably the same person", not ground truth, and retune
+the distance thresholds in config.py against real cross-video
+duplicates before relying on this for anything beyond suggestions or
+the query agent's own use.
 """
 
 from .config import (

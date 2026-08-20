@@ -676,7 +676,10 @@ running it *is* the opt-in):
   each panel's title names them, and readings the importer could not
   attribute to anyone (unattributed video frames, mostly) are left out.
 - **Also appears in**: for each person, other videos they were linked
-  to across the corpus (only when such a link exists).
+  to across the corpus (only when such a link exists). Each linked
+  person shows their `global_person_match_score` -- the cosine distance
+  to their nearest cross-video lookalike (lower = more confident) -- and
+  the shared `global_person_id` (and `real_name`, if resolved).
 - **`GET /api/stats/{video_id}`**: three fixed statistics — video-vs-text
   agreement, dominant-emotion distribution per emotion series, and
   average valence/arousal per person. Computed on request in plain SQL
@@ -727,11 +730,16 @@ imported file would be both wasteful and order-dependent, and it gets
 more accurate the more videos are loaded. When to run it is a decision;
 making it a side effect of importing took that decision away.
 
-**It is a similarity heuristic, not verified identity.** The per-pair
-distance isn't even stored (the schema has no column for it), so treat
-a shared `global_person_id` as "probably the same person". Matching is
-greedy nearest-neighbour rather than proper clustering: A links to B,
-and B to C, without anything checking that A and C belong together.
+**It is a similarity heuristic, not verified identity.** Each linked
+person's nearest cross-video centroid distance is stored in
+`persons.global_person_match_score` (a cosine distance: 0 = identical,
+2 = opposite, lower = more confident) and shown in the panel -- it is a
+*different* quantity from `audio_video_match_score`, the import
+pipeline's 0..1 confidence shown in the People panel, so don't conflate
+the two. Treat a shared `global_person_id` as "probably the same
+person". Matching is greedy nearest-neighbour rather than proper
+clustering: A links to B, and B to C, without anything checking that A
+and C belong together.
 Tune `DUUI_GLOBAL_PERSON_*_DISTANCE_THRESHOLD` against duplicates you
 can verify in your own data before relying on it for anything beyond
 suggestions — and see "Operating it" on the GDPR implications of
