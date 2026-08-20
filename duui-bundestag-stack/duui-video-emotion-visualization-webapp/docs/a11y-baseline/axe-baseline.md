@@ -1,6 +1,6 @@
 # axe-core baseline
 
-Phase 0.2 of [../accessibility-plan.md](../accessibility-plan.md).
+Phase 0.2 of [../accessibility.md](../accessibility.md).
 Captured 2026-08-20 against the running stack. Re-run this before Phase 6.1
 and diff.
 

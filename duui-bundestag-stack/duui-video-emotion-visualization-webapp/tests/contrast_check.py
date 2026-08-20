@@ -1,7 +1,7 @@
 """
 WCAG contrast checker for the viewer's frontend palette.
 
-Phase 0.1 of docs/accessibility-plan.md. Reads the committed colours out
+Phase 0.1 of docs/accessibility.md. Reads the committed colours out
 of css/tokens.css and js/state.js and reports the contrast ratio of every
 pair the app actually composites, so a palette change that breaks a
 threshold fails in CI rather than in someone's eyes.

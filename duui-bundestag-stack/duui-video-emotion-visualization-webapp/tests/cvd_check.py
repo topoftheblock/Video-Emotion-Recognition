@@ -1,7 +1,7 @@
 """
 Colour-vision-deficiency separability for the person palette.
 
-Phase 3.7 of docs/accessibility-plan.md. The six PERSON_COLORS (plus the
+Phase 3.7 of docs/accessibility.md. The six PERSON_COLORS (plus the
 unknown-person grey) are assigned to people at runtime and used in two
 places: a swatch beside a name in the sidebar, and the stroke around
 that person's face in the video. Nothing else links the two.

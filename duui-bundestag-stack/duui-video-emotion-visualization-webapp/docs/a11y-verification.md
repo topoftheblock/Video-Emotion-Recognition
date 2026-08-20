@@ -1,6 +1,6 @@
 # Accessibility verification — after Phases 1–5
 
-Phase 6.1 of [accessibility-plan.md](accessibility-plan.md). Run 2026-08-20
+Phase 6.1 of [accessibility.md](accessibility.md). Run 2026-08-20
 against the rebuilt container, diffed against
 [a11y-baseline/](a11y-baseline/README.md), which is left untouched as the
 before-picture.

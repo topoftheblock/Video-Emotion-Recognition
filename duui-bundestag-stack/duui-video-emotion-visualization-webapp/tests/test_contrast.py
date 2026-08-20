@@ -1,7 +1,7 @@
 """
 Contrast assertions over the committed frontend palette.
 
-Phase 0.1 of docs/accessibility-plan.md, tightened by Phase 3. The maths
+Phase 0.1 of docs/accessibility.md, tightened by Phase 3. The maths
 and the pair registry live in tests/contrast_check.py; this file is only
 the policy.
 

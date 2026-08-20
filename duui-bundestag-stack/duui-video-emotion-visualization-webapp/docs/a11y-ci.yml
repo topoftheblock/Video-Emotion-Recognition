@@ -1,6 +1,6 @@
 # Accessibility regression checks — ready to activate, not active here.
 #
-# Phase 6.3 of accessibility-plan.md, next to this file. It does nothing
+# Phase 6.3 of accessibility.md, next to this file. It does nothing
 # where it sits. To turn it on, move it into `.github/workflows/` at the
 # *repository root* -- which is the parent of `duui-bundestag-stack`, not
 # this directory and not the stack. Run these from the repository root:
@@ -31,10 +31,7 @@ on:
   push:
     paths:
       - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/src/frontend/**"
-      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/test_contrast.py"
-      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/test_palette.py"
-      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/contrast_check.py"
-      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/cvd_check.py"
+      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/**"
       - ".github/workflows/accessibility.yml"
   pull_request:
   workflow_dispatch:
@@ -55,20 +52,26 @@ jobs:
       # unrelated dependency break from masking a contrast regression.
       - run: pip install pytest
 
-      - name: Contrast and colour-vision checks
-        working-directory: duui-bundestag-stack
+      # Named individually rather than pointed at tests/, because the rest
+      # of that directory needs the application's own dependencies (a
+      # database, an LLM client) and this job deliberately has none.
+      - name: Accessibility checks
+        working-directory: duui-bundestag-stack/duui-video-emotion-visualization-webapp
         run: |
           pytest \
-            duui-video-emotion-visualization-webapp/tests/test_contrast.py \
-            duui-video-emotion-visualization-webapp/tests/test_palette.py \
-            -q
+            tests/test_contrast.py \
+            tests/test_palette.py \
+            tests/test_markup.py \
+            tests/test_stylesheets.py \
+            tests/test_scripts.py \
+            -q -p no:cacheprovider
 
       # Printed on success too: the reports are the useful artefact when
       # someone is changing a colour and wants to see the margins, not just
       # whether the thresholds held.
       - name: Report
         if: always()
-        working-directory: duui-bundestag-stack
+        working-directory: duui-bundestag-stack/duui-video-emotion-visualization-webapp
         run: |
-          python3 duui-video-emotion-visualization-webapp/tests/contrast_check.py || true
-          python3 duui-video-emotion-visualization-webapp/tests/cvd_check.py || true
+          python3 tests/contrast_check.py || true
+          python3 tests/cvd_check.py || true

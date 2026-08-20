@@ -1,7 +1,7 @@
 """
 The person palette's separability under colour-vision deficiency.
 
-Phase 3.7 of docs/accessibility-plan.md. The simulation and the distance
+Phase 3.7 of docs/accessibility.md. The simulation and the distance
 maths live in tests/cvd_check.py; this file is the policy.
 
 Why this is a test and not a judgement call: a person's colour is the

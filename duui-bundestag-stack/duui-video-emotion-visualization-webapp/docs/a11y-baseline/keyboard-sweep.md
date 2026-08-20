@@ -1,6 +1,6 @@
 # Keyboard sweep baseline
 
-Phase 0.3 of [../accessibility-plan.md](../accessibility-plan.md).
+Phase 0.3 of [../accessibility.md](../accessibility.md).
 Captured 2026-08-20 against `http://localhost:8010` in the default state
 (video `teil_007.mp4`, three identified people, no person selected).
 

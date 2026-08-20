@@ -2,7 +2,7 @@
  * The browser half of the accessibility checks: axe over five
  * application states, plus the keyboard sweep.
  *
- * Phase 6.3 of docs/accessibility-plan.md. The other half --
+ * Phase 6.3 of docs/accessibility.md. The other half --
  * contrast_check.py and cvd_check.py -- are pure functions over
  * committed values and run under pytest with no browser. These cannot:
  * three of the five states only exist after JS has run, and the tab
