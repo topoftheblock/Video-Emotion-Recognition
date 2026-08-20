@@ -1,0 +1,69 @@
+# Accessibility regression checks — ready to activate, not active here.
+#
+# Phase 6.3 of docs/accessibility-plan.md. This file does nothing where it
+# sits. To turn it on, move it to the *repository root* (which is the
+# parent of duui-bundestag-stack, not this directory):
+#
+#     mkdir -p ../../.github/workflows
+#     git mv docs/a11y-ci.yml ../../.github/workflows/accessibility.yml
+#
+# It is left inert deliberately. This repository has no CI at all, and its
+# root holds a dozen unrelated subprojects — adding a workflow there
+# introduces GitHub Actions to all of them and starts consuming CI minutes
+# on every push. That is a decision for whoever owns the repo, not a side
+# effect of an accessibility pass.
+#
+# What it covers: the pure-function half of the checks. No browser, no
+# database, no application dependencies — just pytest over values that are
+# committed to the repository. The browser half (five axe states and the
+# keyboard sweep) lives in
+# duui-video-emotion-visualization-webapp/tests/a11y_browser_check.js and
+# is not automated here; see the note at the bottom of that file for why.
+
+name: Accessibility
+
+on:
+  push:
+    paths:
+      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/src/frontend/**"
+      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/test_contrast.py"
+      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/test_palette.py"
+      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/contrast_check.py"
+      - "duui-bundestag-stack/duui-video-emotion-visualization-webapp/tests/cvd_check.py"
+      - ".github/workflows/accessibility.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  contrast-and-palette:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Deliberately not the project's requirements files: these two suites
+      # import nothing but the standard library, and keeping the job free of
+      # application dependencies is what makes it fast and what stops an
+      # unrelated dependency break from masking a contrast regression.
+      - run: pip install pytest
+
+      - name: Contrast and colour-vision checks
+        working-directory: duui-bundestag-stack
+        run: |
+          pytest \
+            duui-video-emotion-visualization-webapp/tests/test_contrast.py \
+            duui-video-emotion-visualization-webapp/tests/test_palette.py \
+            -q
+
+      # Printed on success too: the reports are the useful artefact when
+      # someone is changing a colour and wants to see the margins, not just
+      # whether the thresholds held.
+      - name: Report
+        if: always()
+        working-directory: duui-bundestag-stack
+        run: |
+          python3 duui-video-emotion-visualization-webapp/tests/contrast_check.py || true
+          python3 duui-video-emotion-visualization-webapp/tests/cvd_check.py || true

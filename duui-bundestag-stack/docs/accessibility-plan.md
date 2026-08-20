@@ -786,6 +786,23 @@ left as the constants they were at 12px.
 
 ## Phase 6 — Verification and regression guard
 
+**Status: 6.1, 6.3 and 6.4 complete. 6.2 is open and needs a human** — see
+below. Results in [a11y-verification.md](a11y-verification.md); the Phase 0
+baseline is left untouched as the before-picture.
+
+| | baseline | now |
+|---|---|---|
+| axe violations, all five states | 4 (2 critical) | **0** |
+| Contrast pairs failing | 25 of 82 | **0 of 79** |
+| Palette pairs converging under CVD | 5 | **0** |
+| Tab stops | 10 | 13 |
+| Stops with no accessible name | 1 | **0** |
+| Focusable elements in an Ask result | 0 | **3** |
+| Heading outline | starts at `h2` | `h1` + 8×`h2` |
+
+Nothing regressed, and the two expected *incomplete* results (`video-caption`,
+`color-contrast`) appeared exactly where this phase said they would.
+
 **6.1 — Re-run the full Phase 0 battery.**
 The same five application states and the same keyboard sweep, diffed against
 [a11y-baseline/](a11y-baseline/README.md). Anything that regressed is a Phase 5
@@ -809,17 +826,64 @@ actually announces, which is the whole point of 1.5. One pass with NVDA or
 Orca over: picking a video, selecting a person, asking a question, and jumping
 to a segment.
 
+> **Not done — this is the one item that cannot be completed from here.** No
+> screen reader is available in this environment, and there is no honest
+> substitute: everything else in this phase verifies the accessibility *tree*,
+> and what a screen reader announces from that tree is a different question.
+>
+> What to listen for, in order of how likely it is to be wrong:
+> 1. **Arrow-keying the video combobox.** Each option should be announced as
+>    focus moves. This is the whole point of 1.5 and the single most likely
+>    thing to be subtly wrong, because `aria-activedescendant` support varies
+>    between screen reader and browser pairings.
+> 2. **The Ask segment rows.** They should be reachable by Tab and activate on
+>    Enter *and* Space, announcing "video #4, 0:12.5–0:15.0, button".
+> 3. **Person rows.** "person_1 match confidence 100%, toggle button, not
+>    pressed" — check the name and the number do not run together, which is
+>    what 1.8 fixed.
+> 4. **The two disclosure buttons.** "What match confidence means, collapsed"
+>    then the paragraph on activation.
+> 5. **The scrubber.** "Seek, slider, 0:00 of 3:27" rather than a number out
+>    of 1000.
+> 6. **The Ask button mid-request.** It stays focused and reads as busy and
+>    unavailable rather than disappearing from the tab order.
+>
+> Worth doing in the same sitting: put the app in front of real Windows High
+> Contrast. Phase 4's forced-colours rules were verified as parsed and intact
+> through the CSSOM, never seen rendered.
+
 **6.3 — Wire the checks into CI.**
 - `tests/contrast_check.py` and `tests/test_contrast.py` already sit in the
   webapp suite and need no browser, no database and no third-party package
   beyond pytest itself. Nothing more is required than including them in whatever
-  already runs `pytest`.
+  already runs `pytest`. ✅ Confirmed: `pytest` from the stack root collects
+  both, alongside `tests/test_palette.py` and `tests/cvd_check.py` added in
+  Phase 3.
 - Once Phase 3 empties `KNOWN_FAILURES`, collapse the two baseline tests into a
-  direct `assert contrast_check.failures() == []`, so a later palette change
-  cannot quietly re-open a fixed pair by re-adding itself to the list.
-- Add axe-core to whatever runs the webapp tests, asserting zero violations on
-  the five states. That needs the stack up and a headless browser, so it belongs
-  in a separate job from the pure-function tests rather than gating them.
+  direct `assert contrast_check.failures() == []`. ✅ Done in Phase 3.
+- Add axe-core to whatever runs the webapp tests. **This is where the plan met
+  a fact it had not accounted for: there is no CI.** No workflow, no runner, no
+  pipeline anywhere in the repository — and the repository root is a monorepo
+  holding a dozen unrelated subprojects, so creating one there switches on
+  GitHub Actions for all of them and starts spending CI minutes on every push.
+  That is a decision for whoever owns the repo, not a side effect of an
+  accessibility pass, so it was **not** made unilaterally.
+
+  What was delivered instead, both ready to use:
+  - **`docs/a11y-ci.yml`** — the workflow, complete and YAML-validated, inert
+    where it sits. One `git mv` into `.github/workflows/` at the repo root
+    turns it on. It runs only the pure-function checks: no browser, no
+    database, no application dependencies.
+  - **`tests/a11y_browser_check.js`** — the browser half, which had been run by
+    hand at every phase, committed as a script. `await a11yCheck()` in the
+    console returns the five axe states, the combobox ARIA, and the keyboard
+    sweep as one object. Verified by running it against the live app: it
+    reproduces the manual results exactly (0 violations, 13 stops, 0 unnamed).
+
+  It is deliberately not driven by a headless browser. That would mean adding a
+  JavaScript toolchain and a browser download to a repository that is Python end
+  to end — a larger change than this sub-task should make on its own. The file
+  ends with the four lines of Playwright needed if that changes.
 
 **6.4 — Record the standing decisions.**
 The panel-dot exemption (3.6), the decorative-border exemption (3.4), whatever
@@ -828,6 +892,13 @@ be written into `css/tokens.css`, `tests/contrast_check.py` and this document,
 not left in a review thread. The token file's existing comments are
 the right precedent — the reasoning is already documented there, and this keeps
 the next person from re-litigating settled calls.
+
+✅ Nine standing decisions are indexed in
+[a11y-verification.md](a11y-verification.md#standing-decisions), each pointing
+at the file where it is argued rather than restating it. Every row was checked
+against the file it names — one had drifted (the `--border` exemption is
+recorded on `--border-input` in `tokens.css`, not in `emotions.css`) and the
+index was corrected rather than the claim left standing.
 
 ---
 
