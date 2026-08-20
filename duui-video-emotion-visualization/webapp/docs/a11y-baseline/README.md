@@ -11,7 +11,7 @@ and diffs against these.
 
 ## Reproducing
 
-Every command below runs from the **stack root** (`duui-bundestag-stack/`),
+Every command below runs from the **stack root** (`../../../`),
 which is two levels above this file — the paths in them are relative to it, not
 to this directory.
 

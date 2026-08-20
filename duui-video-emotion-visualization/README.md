@@ -502,7 +502,7 @@ docker run --rm -v duui-bundestag-stack_video_media:/data/videos \
 ```
 
 (The prefix is the compose project name, which `docker-compose.yml`
-pins to `duui-bundestag-stack` rather than deriving from the folder
+pins to `duui-video-emotion-visualization` rather than deriving from the folder
 name. `docker volume ls` shows the full names.)
 
 ---
