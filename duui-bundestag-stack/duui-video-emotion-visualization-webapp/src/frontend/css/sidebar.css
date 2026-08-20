@@ -216,6 +216,30 @@
   font-weight: 500;
 }
 
+/* Per-entry cross-video match distance, at the end of each "other
+   video/person" entry. Same dim, tooltip treatment as the People
+   panel's match-score badge; the number is a cosine distance, not the
+   import pipeline's confidence score. Font matches the entry line. */
+.cross-list .cross-video-distance {
+  margin-left: 6px;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  color: var(--surface-500);
+  cursor: help;
+}
+
+/* The global person this row's person belongs to, inline after their
+   name (in brackets): the global_person_id (always present once linked)
+   and the real_name if the identity job ever resolved one. Muted,
+   smaller than the name. */
+.cross-list .person-global-id {
+  display: inline;
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--surface-500);
+}
+
 /* Overrides the shared .person-meta: no `margin-left: auto` (it is not
    sharing a line any more), wraps instead of ellipsing, and steps from
    --text-dim up to the theme charcoal -- these filenames are the point

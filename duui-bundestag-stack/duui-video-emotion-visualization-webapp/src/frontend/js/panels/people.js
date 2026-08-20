@@ -44,13 +44,13 @@ export function renderPersonList(persons) {
   }
   el.personList.innerHTML = persons
     .map((p) => {
-      const score = p.match_score != null ? `${Math.round(p.match_score * 100)}%` : "";
+      const score = p.audio_video_match_score != null ? `${Math.round(p.audio_video_match_score * 100)}%` : "";
       // Repeats the legend's title on the number itself, so the
       // explanation is reachable by hovering either the column header
       // once or any one row -- no need to remember which row you
       // learned it from.
       const scoreTitle =
-        p.match_score != null
+        p.audio_video_match_score != null
           ? `Face/voice match confidence: ${score} -- how sure the import pipeline was that this person's face and voice recordings are the same person.`
           : "";
       const selected = state.selectedPersonId === p.person_id;

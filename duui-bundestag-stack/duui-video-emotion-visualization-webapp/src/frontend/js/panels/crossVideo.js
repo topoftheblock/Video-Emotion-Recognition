@@ -39,7 +39,7 @@ export function renderCrossVideoPanel(data) {
     if (!cluster) continue;
     const others = cluster.members.filter((m) => !isSamePerson(m, person, videoId));
     if (!others.length) continue;
-    rows.push({ person, others });
+    rows.push({ person, others, cluster });
   }
 
   if (!rows.length) {
@@ -50,22 +50,37 @@ export function renderCrossVideoPanel(data) {
 
   el.crossVideoPanel.style.display = "";
   el.crossVideoList.innerHTML = rows
-    .map(({ person, others }) => {
+    .map(({ person, others, cluster }) => {
       const name = personName(person);
       // One element per appearance rather than a comma-joined string --
       // the filenames are long enough that a run-on line was hard to
       // read. html`` passes an array of nested results through as-is.
-      const otherList = others.map(
-        (o) => html`<span class="cross-video"
-          >${o.video_filename} (${o.clip_label || "person " + o.person_id})</span
-        >`
-      );
+      // Each entry carries its own cross-video match distance (the
+      // global-identity job's cosine distance for *that* person), shown
+      // at the end of the entry with a tooltip.
+      const otherList = others.map((o) => {
+        const od = o.global_person_match_score;
+        const odText = od != null ? Number(od).toFixed(2) : "";
+        const odTitle =
+          od != null
+            ? `Cross-video match confidence: ${odText} -- cosine distance (0 = identical, 2 = opposite) between this person's embedding centroid and their nearest lookalike in another video, from the global-identity job. Lower is a more confident match; this is not the import pipeline's confidence score.`
+            : "";
+        return html`<span class="cross-video"
+          >${o.video_filename} (${o.clip_label || "person " + o.person_id})${odText != ""
+            ? html`<span class="cross-video-distance" title="${odTitle}">${odText}</span>`
+            : ""}</span
+        >`;
+      });
       // The name is wrapped, unlike in the two single-line person
       // lists: these rows are a grid (see .cross-list in sidebar.css)
       // and the video list below needs an element to align under.
+      const gpId = cluster && cluster.global_person_id;
+      const gpName = cluster && cluster.real_name;
       return html`<li>
         <span class="person-swatch" style="background:${personColorFor(person.person_id)}"></span>
-        <span class="person-name">${name}</span>
+        <span class="person-name">${name}${gpId != null
+          ? html`<span class="person-global-id">(global #${gpId}${gpName ? ` · ${gpName}` : ""})</span>`
+          : ""}</span>
         <span class="person-meta">${otherList}</span>
       </li>`;
     })
