@@ -11,11 +11,21 @@ result in.
 Two findings from the audit are deliberately **out of scope** and are not
 planned here: converting the subtitle `<div>` to a real `<track>`/WebVTT
 caption, and putting person names into the on-video bounding-box labels. See
-"Accepted residual risk" at the end for what the second exclusion costs.
+"Accepted residual risk" at the end for what the second exclusion costs. The
+first has a permanent signature in the tooling — axe reports `video-caption` as
+*incomplete* against `#player` in every state — which Phase 6.1 must expect
+rather than read as a regression.
+
+Phase 0 is complete. The findings it added to the audit are folded into the
+phases below and marked **found by Phase 0**.
 
 ---
 
 ## Phase 0 — Baseline and tooling
+
+**Status: complete (2026-08-20).** Artefacts in
+[a11y-baseline/](a11y-baseline/README.md). The checker is
+`tests/contrast_check.py`; its gate is `tests/test_contrast.py`.
 
 Cheap, and everything after it is measured against what this captures.
 
@@ -39,7 +49,26 @@ what each stop announces. This is the artefact Phase 1 is measured against;
 without it "did we fix it" is a matter of opinion.
 
 **Done when:** the checker runs from the repo, one axe report per state is
-saved, and the keyboard sweep is written down.
+saved, and the keyboard sweep is written down. — done.
+
+**What it changed about the rest of this plan.** Instrumenting the app found
+four things that reading it did not, each folded into its phase below: an
+unnamed `<section>` leaving the Ask panel outside every landmark (2.3), person
+rows whose accessible name runs the name into the score (1.8), placeholder text
+at 4.48:1 (3.3), and the emotion groove at 1.24:1 (3.4).
+
+It also settled how progress is tracked. `tests/test_contrast.py` carries a
+`KNOWN_FAILURES` baseline of all 25 currently-failing pairs, keyed by the phase
+that clears each. It fails on a *new* failure and equally on a known one that
+starts *passing*, so **striking an entry off that list is the last step of the
+sub-task**, not an afterthought. Each Phase 3 sub-task names the entries it owns.
+
+One caution the baseline established: axe found **none** of the contrast
+failures and **none** of the keyboard failures. Its `color-contrast` rule
+examined nine text nodes page-wide and passed them all while the page was
+rendering a 2.18:1 chip; it cannot see a click handler on a bare `<li>` at all.
+Do not read a clean axe run as evidence of anything beyond the rules it actually
+evaluated.
 
 ---
 
@@ -105,6 +134,17 @@ page. Separately, arrow-keying the list is entirely silent to assistive tech.
 - Fix the `ArrowUp` branch: it currently floors at `0`, so it cannot return to
   "nothing highlighted". Either allow `-1` and clear `aria-activedescendant`, or
   wrap to the end of the list. Pick one and make `ArrowDown` symmetric.
+- **Found by Phase 0:** axe reports `aria-toggle-field-name` as *incomplete*
+  here because `<label class="video-picker">` (`index.html:19`) wraps the
+  *entire* combobox — the input and the `role="listbox"` alike — so the label's
+  text can be pulled into each option's accessible name. Unwrap it while the
+  ARIA is open anyway: make it a sibling `<span>` the input points at, or drop
+  it in favour of the `aria-label` the input already carries.
+
+Confirmed live in the baseline: with the list open, `#videoSelect` reads
+`aria-expanded="true"` while `#videoComboInput` — the element that actually has
+`role="combobox"` — still reads `"false"`, and none of the ten options carries
+an `id` or `aria-selected`.
 
 **1.6 — Keep the Ask submit button named while it spins.**
 `css/ask.css:113-116` sets `color: transparent` on `:disabled` and spins a
@@ -131,9 +171,33 @@ meaning is written down.
   instead make sure the panel-level disclosure states the same thing, so the
   information is available somewhere non-hover.
 
+**1.8 — Separate the person's name from their match score.** *(found by Phase 0)*
+`js/panels/people.js:70` interpolates the score span immediately after the name
+text with no whitespace between them:
+
+```
+${personName(p)}<span class="person-meta" title="${scoreTitle}">${score}</span>
+```
+
+The row is a `<button>`, so its accessible name is computed from its contents —
+which concatenates to `person_1100%`. The keyboard sweep's stop 8 announces as
+"person eleven hundred percent".
+- A space in the template is the minimum fix. Better is to name the number,
+  since "100%" on its own does not say what it measures.
+- Preferred: give the score span an `aria-label` like `"match confidence 100%"`,
+  or take it out of the button's name entirely with `aria-hidden` plus
+  `aria-describedby`. Whichever is chosen has to agree with the wording 1.7
+  settles on.
+- `renderActiveList()` (`js/panels/people.js:88`) builds
+  `${l.name}<span class="person-meta">${l.emotion}</span>` the same way and needs
+  the same treatment.
+- `js/panels/crossVideo.js:85-88` was checked and is **not** affected — its two
+  spans sit on separate lines, so the template's newline already separates them.
+
 **Done when:** the Phase 0.3 sweep reaches every control including Ask segment
-results, every stop announces a name and a state, and axe reports no
-name/role/value violations in all three captured states.
+results, every stop announces a name and a state distinct from the adjacent one,
+and axe reports no name/role/value violations in any of the five captured
+states — `aria-allowed-attr` and `label` both gone.
 
 ---
 
@@ -167,17 +231,38 @@ player.
 - Ensure its `z-index` clears the topbar's `20` (`css/topbar.css:17`) and the
   combobox list's `30` (`css/topbar.css:~93`).
 
-**Done when:** the first Tab press reveals a working skip link, and a heading
+**2.3 — Make the Ask panel a real landmark.** *(found by Phase 0)*
+axe reports `region` in every captured state: `.ask-panel` (`index.html:36`) is
+a bare `<section>`, and an unnamed `section` is not a landmark, so
+`.ask-heading`, `#askInput` and `#askResults` all sit outside every landmark on
+the page. Landmark navigation skips the entire feature.
+- Name it: `aria-labelledby` on the `<section>` pointing at `.ask-title`
+  (`index.html:44`), which needs an `id`. That promotes it to a `region`
+  landmark and clears all three nodes at once.
+- Do this after 2.1, so the heading it points at is already settled.
+- Verify in the Ask-results state, not just on load: the violation lists two
+  nodes at rest and three once results are rendered.
+
+**Done when:** the first Tab press reveals a working skip link, a heading
 outline (axe or a screen reader's heading list) shows a single `h1` with `h2`s
-beneath it.
+beneath it, and axe's `region` violation is gone in both the default and the
+Ask-results state.
 
 ---
 
 ## Phase 3 — Contrast and colour independence
 
-Four confirmed failures plus one judgement call. The token file already carries
-a good contrast pass — this closes what it missed, mostly in places where a
-colour is composited or computed at runtime rather than written literally.
+**25 failing pairs** of the 82 the Phase 0 checker measures: the audit's four
+findings, expanded per-colour across the person palette, plus two the checker
+found on its own. The token file already carries a good contrast pass — this
+closes what it missed, which is almost entirely where a colour is composited or
+computed at runtime rather than written literally, and so was invisible to a
+reading of the stylesheets.
+
+Every sub-task below owns a set of `KNOWN_FAILURES` entries in
+`tests/test_contrast.py` and names them. Deleting those entries is the last step
+of the sub-task; the suite fails if a fixed pair is left in the list, so the
+ledger cannot drift out of date.
 
 ### Text contrast (needs 4.5:1)
 
@@ -204,6 +289,7 @@ white text at **2.18–3.06:1** on `.panel-filter`
   emotion tag instead of calling `readableTextColor()`. It happens to pass
   (6.40–12.99:1 across the palette) but it is a second, independent copy of the
   same decision. Route it through the fixed function.
+- Clears `KNOWN_FAILURES`: the four `person/filter chip text on …` entries.
 
 **3.2 — Fix the selected person row's meta text.**
 `css/sidebar.css:174` — `rgba(255,255,255,0.75)` over `--signal` composites to
@@ -211,6 +297,7 @@ white text at **2.18–3.06:1** on `.panel-filter`
 - Raise the alpha to `0.85` (≈4.6:1) or use `--primary-100` literally.
 - Verify against `--signal` only; `.person-row.is-selected:hover` shares the
   same background, so there is no second case.
+- Clears `KNOWN_FAILURES`: `sidebar/score on selected row`.
 
 ### Non-text contrast (WCAG 1.4.11, needs 3:1)
 
@@ -227,16 +314,41 @@ it is focused.
   `css/topbar.css:79` is already correct.
 - Check the same token against `.video-combobox-list` (`css/topbar.css:~97`),
   which uses `--border-soft` for a popup edge over page content.
+- **Found by Phase 0:** placeholder text is `--text-dim` on the recessed
+  `--surface-alt` fill, which is **4.48:1** — under AA by a hair. The audit
+  measured `--text-dim` on the card (5.54:1) and on the page floor (4.95:1), but
+  not on the fill placeholders actually sit on. Cheapest fixed here, since this
+  sub-task already opens both inputs: darken `--text-dim` slightly, or give the
+  placeholder its own token. Note this one is a *text* threshold (4.5:1), not the
+  3:1 the rest of this sub-task is about.
+- Clears `KNOWN_FAILURES`: `input/resting border vs card`,
+  `input/resting border vs own fill`, `input/input fill vs card`,
+  `input/dropdown border vs card`, `input/placeholder on input fill`.
 
-**3.4 — Raise the signed-track centre marker.**
-`css/emotions.css:119` draws the zero reference at `--border-strong`,
-**2.35:1**. This is a meaningful reference line for valence/arousal/dominance,
-not decoration — signed values are read relative to it.
-- Move it to `--surface-400` (5.54:1). At 1px width the extra weight is not
-  visually heavy.
+**3.4 — Give the emotion tracks perceivable geometry.**
+`css/emotions.css:119` draws the signed tracks' zero reference at
+`--border-strong`. The audit measured that against the card and got 2.35:1; its
+real backdrop is the groove fill, where it is **1.90:1**. This is a meaningful
+reference line for valence/arousal/dominance, not decoration — signed values are
+read relative to it.
+- Move it to `--surface-400` (4.48:1 on the groove). At 1px width the extra
+  weight is not visually heavy.
+- **Found by Phase 0:** the groove itself (`--surface-alt`) is **1.24:1** against
+  the card, so the track's *extent* — the thing a fill is read as a proportion
+  of — has no perceivable boundary. Decide this explicitly: either give
+  `.emo-track` a 1px edge in the `--border-input` token from 3.3, or record a
+  reasoned exemption on the grounds that the fill's own 4.72:1 against the groove
+  is enough to read a magnitude from. Do not leave it undecided — it is the same
+  token pair as `input fill vs card`, which 3.3 *is* fixing, so an unexplained
+  split between the two will read as an oversight.
 - `--border` at 1.65:1 on panel edges and 1.48:1 on the topbar hairline is
   *fine* — purely decorative separation, explicitly exempt under 1.4.11. Do not
   change these; note the decision so it isn't re-raised.
+- Clears `KNOWN_FAILURES`: `emotions/signed zero marker vs groove`. For
+  `emotions/groove vs card`, either the new edge clears it, or the exemption is
+  recorded by moving that pair to `INFO` in `contrast_check.py` — the same
+  treatment the panel dots get in 3.6 — and dropping it from the baseline. Either
+  way the entry leaves the list.
 
 **3.5 — Give person swatches a contrasting boundary.**
 Swatches sit at **1.35–2.73:1** against the `--surface-50` row fill, and they
@@ -250,6 +362,10 @@ are the only link between a sidebar name and an on-video box.
   (`css/sidebar.css:234`).
 - Check the ring does not break the `is-selected` row, where the backdrop is
   `--signal` rather than `--surface-50`.
+- Clears `KNOWN_FAILURES`: all thirteen `person/swatch …` entries. The checker
+  measures every colour against both the row fill and the card, because
+  `.active-list` rows have no fill of their own — the ring has to clear 3:1 on
+  both.
 
 **3.6 — Decide on the panel dots, and write the decision down.**
 `--accent-people` (#00bcff) is **2.18:1** on white. Every dot is adjacent to a
@@ -273,9 +389,11 @@ separability load-bearing.
 - Re-run the 3.1 unit test afterwards — any palette change must preserve the
   ≥4.5:1 chip guarantee.
 
-**Done when:** the Phase 0.1 checker reports no pair below its threshold, the
-`readableTextColor` test passes for the whole palette, and a CVD simulation
-shows six distinguishable person colours.
+**Done when:** `KNOWN_FAILURES` in `tests/test_contrast.py` is empty and the two
+tests that read it have been replaced by a direct
+`assert contrast_check.failures() == []`, the `readableTextColor` test passes for
+the whole palette, and a CVD simulation shows six distinguishable person
+colours.
 
 ---
 
@@ -396,9 +514,16 @@ clipping or horizontal scroll.
 ## Phase 6 — Verification and regression guard
 
 **6.1 — Re-run the full Phase 0 battery.**
-Same three application states, same keyboard sweep, diffed against the
-baseline. Anything that regressed is a Phase 5 conflict and is cheapest to
-find now.
+The same five application states and the same keyboard sweep, diffed against
+[a11y-baseline/](a11y-baseline/README.md). Anything that regressed is a Phase 5
+conflict and is cheapest to find now.
+- Expect `video-caption` to still be reported *incomplete* against `#player`.
+  That is the out-of-scope subtitles finding, not a regression.
+- The sweep should now show a skip link at stop 1, three new stops for the Ask
+  segment list, a named slider, a play button whose label tracks its state, and
+  person rows whose name and score do not run together.
+- Reaching the two Ask states still needs the `fetch` stub documented in the
+  baseline, unless `DUUI_QUERY_API_KEY` is configured by then.
 
 **6.2 — Test with a real screen reader.**
 Automated tooling cannot verify that the combobox's `aria-activedescendant`
@@ -407,16 +532,22 @@ Orca over: picking a video, selecting a person, asking a question, and jumping
 to a segment.
 
 **6.3 — Wire the checks into CI.**
-- The 3.1 palette contrast test and the 0.1 token checker belong in the
-  existing `tests/` suite — they are pure functions over committed values and
-  need no browser.
+- `tests/contrast_check.py` and `tests/test_contrast.py` already sit in the
+  webapp suite and need no browser, no database and no third-party package
+  beyond pytest itself. Nothing more is required than including them in whatever
+  already runs `pytest`.
+- Once Phase 3 empties `KNOWN_FAILURES`, collapse the two baseline tests into a
+  direct `assert contrast_check.failures() == []`, so a later palette change
+  cannot quietly re-open a fixed pair by re-adding itself to the list.
 - Add axe-core to whatever runs the webapp tests, asserting zero violations on
-  the three states.
+  the five states. That needs the stack up and a headless browser, so it belongs
+  in a separate job from the pure-function tests rather than gating them.
 
 **6.4 — Record the standing decisions.**
-The panel-dot exemption (3.6), the decorative-border exemption (3.4), and the
-two out-of-scope items below should be written into `css/tokens.css` and this
-document, not left in a review thread. The token file's existing comments are
+The panel-dot exemption (3.6), the decorative-border exemption (3.4), whatever
+3.4 decides about the emotion groove, and the two out-of-scope items below should
+be written into `css/tokens.css`, `tests/contrast_check.py` and this document,
+not left in a review thread. The token file's existing comments are
 the right precedent — the reasoning is already documented there, and this keeps
 the next person from re-litigating settled calls.
 
