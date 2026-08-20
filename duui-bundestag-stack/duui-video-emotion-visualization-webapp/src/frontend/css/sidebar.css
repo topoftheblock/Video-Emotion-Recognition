@@ -99,6 +99,15 @@
    .panel-filter instead, already sized for this) are untouched. */
 .panel:has(> .person-legend) .panel-title {
   padding-right: 132px;
+}
+
+/* The ellipsis is scoped to the text span, not the whole flex title:
+   overflow:hidden on .panel-title itself would clip .panel-dot's
+   box-shadow ring, which paints outside the dot's own tiny box.
+   min-width: 0 overrides the flex item's content-based floor so it can
+   actually shrink to the truncation width instead of pushing past it. */
+.panel:has(> .person-legend) .panel-title-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
