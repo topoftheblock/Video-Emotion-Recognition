@@ -1,11 +1,11 @@
 # Dev/test-only deps -- not needed to run either container, only to run
-# the test suites (duui-video-emotion-cas-to-postgres/tests/ and
-# duui-video-emotion-visualization-webapp/tests/). The app code itself
+# the test suites (cas-to-postgres-importer/tests/ and
+# webapp/tests/). The app code itself
 # lives entirely inside those two directories; this is the one thing
 # both suites need and neither image ships.
 #
-#   pip install -r duui-video-emotion-cas-to-postgres/requirements.txt \
-#               -r duui-video-emotion-visualization-webapp/requirements.txt \
+#   pip install -r cas-to-postgres-importer/requirements.txt \
+#               -r webapp/requirements.txt \
 #               -r requirements-dev.txt
 #   pytest
 pytest>=8.0

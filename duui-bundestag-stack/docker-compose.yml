@@ -1,26 +1,26 @@
 # Convenience wrapper around the four images (each of which can also be
 # built and run on its own -- see README "Running without compose").
 #
-#   docker compose up -d          # db -> viewer (no import)
+#   docker compose up -d          # pgvector-db -> viewer (no import)
 #
 # ...then open http://localhost:8010. That single command starts the
 # database and the viewer but imports NOTHING -- so a fresh start shows
 # an empty dropdown until you run an import. To import (whole dir or a
 # single file), without restarting anything:
 #
-#   docker compose run --rm importer
-#   docker compose run --rm importer /data/input/xmi/one_file.xmi
+#   docker compose run --rm cas-to-postgres-importer
+#   docker compose run --rm cas-to-postgres-importer /data/input/xmi/one_file.xmi
 #
 # Two jobs are NOT part of `up` and have to be asked for:
 #
-#   1. The importer (`importer`, profile "import") -- loads .xmi files
+#   1. The importer (`cas-to-postgres-importer`, profile "import") -- loads .xmi files
 #      into Postgres. Run it whenever you have files to load.
-#   2. Cross-video person identity (`global-identity`, profile
+#   2. Cross-video person identity (`global-identity-linker`, profile
 #      "identity") -- computed over the whole corpus at once rather than
 #      per file. Run it after importing, whenever you want the viewer's
 #      "Also appears in" panel to reflect the videos currently loaded:
 #
-#   docker compose run --rm global-identity
+#   docker compose run --rm global-identity-linker
 #
 # The ONE thing you normally need to set is where your CAS files and
 # videos already live. You do NOT move them -- point at them in place:
@@ -37,17 +37,17 @@
 # you end up debugging one while running the other).
 name: duui-bundestag-stack
 
-# Shared by `importer` (profile "import") and anything else that needs to
-# run the cas-to-postgres job, so the two can never drift apart.
-x-importer-common: &importer-common
+# Shared by `cas-to-postgres-importer` (profile "import") and anything else that needs to
+# run the cas-to-postgres-importer job, so the two can never drift apart.
+x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
   build:
-    context: ./duui-video-emotion-cas-to-postgres
-  image: duui-video-emotion-cas-to-postgres:latest
+    context: ./cas-to-postgres-importer
+  image: duui-video-emotion-visualization/cas-to-postgres-importer:latest
   environment:
     DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
     DUUI_DB_USER: ${DUUI_DB_USER:-duui}
     DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
-    DUUI_DB_HOST: db
+    DUUI_DB_HOST: pgvector-db
     # Container-side paths (what the mounts below land on). Same names
     # as the host-side settings in .env, deliberately: .env decides
     # which host folders get mounted, these fix where they land inside
@@ -91,8 +91,8 @@ x-importer-common: &importer-common
     # means "the videos are in there too" (the side-by-side case),
     # instead of silently looking for your videos in the shipped
     # sample. Only with neither set does the demo pair apply.
-    - ${DUUI_INPUT_XMI_DIR:-./duui-video-emotion-cas-to-postgres/src/resources/sample-input}:/data/input/xmi:ro,z
-    - ${DUUI_INPUT_VIDEO_DIR:-${DUUI_INPUT_XMI_DIR:-./duui-video-emotion-cas-to-postgres/src/resources/sample-input}}:/data/input/videos:ro,z
+    - ${DUUI_INPUT_XMI_DIR:-./cas-to-postgres-importer/src/resources/sample-input}:/data/input/xmi:ro,z
+    - ${DUUI_INPUT_VIDEO_DIR:-${DUUI_INPUT_XMI_DIR:-./cas-to-postgres-importer/src/resources/sample-input}}:/data/input/videos:ro,z
     # OUTPUT (read-write): the video store. The importer copies each
     # CAS's companion video here, named exactly as the `videos.filename`
     # row it just wrote -- which is how the webapp (same store, mounted
@@ -104,10 +104,10 @@ x-importer-common: &importer-common
     - ${DUUI_VIDEO_STORE:-video_media}:/data/videos
 
 services:
-  db:
+  pgvector-db:
     build:
-      context: ./db
-    image: duui-video-emotion-db:latest
+      context: ./pgvector-db
+    image: duui-video-emotion-visualization/pgvector-db:latest
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DUUI_DB_NAME:-duui_bundestag}
@@ -119,7 +119,7 @@ services:
       - db_data:/var/lib/postgresql/data
     ports:
       # Host port only -- the other containers reach Postgres as
-      # db:5432 on the compose network regardless of this. Change it if
+      # pgvector-db:5432 on the compose network regardless of this. Change it if
       # you already run Postgres locally on 5432.
       - "${DUUI_DB_HOST_PORT:-5432}:5432"
     healthcheck:
@@ -128,25 +128,25 @@ services:
       timeout: 5s
       retries: 10
 
-  # The cas-to-postgres job. Deliberately NOT part of `up` (the
+  # The cas-to-postgres-importer job. Deliberately NOT part of `up` (the
   # "import" profile keeps it out), so a fresh stack starts with an
   # empty viewer rather than auto-importing. Run it when you have files
   # to load, without touching the running stack (paths are container
   # paths -- the .xmi directory is /data/input/xmi in here, whatever it
   # is on the host):
-  #   docker compose run --rm importer                                # whole xmi dir
-  #   docker compose run --rm importer /data/input/xmi/one_file.xmi   # a single file
+  #   docker compose run --rm cas-to-postgres-importer                # whole xmi dir
+  #   docker compose run --rm cas-to-postgres-importer /data/input/xmi/one_file.xmi   # a single file
   #
   # Importing is idempotent (rows are upserted, already-placed videos
   # are left alone), so re-running is harmless. It is not a dependency of
   # `webapp`: if one CAS in a batch fails, you still want the viewer up
   # for everything that did import.
-  importer:
-    <<: *importer-common
+  cas-to-postgres-importer:
+    <<: *cas-to-postgres-importer-common
     profiles: ["import"]
     restart: "no"
     depends_on:
-      db:
+      pgvector-db:
         condition: service_healthy
 
   # Cross-video person identity: works out which people in different
@@ -169,26 +169,26 @@ services:
   #      to run it is after a batch of imports, not during one.
   #
   # The "identity" profile keeps it out of `up`; `run` starts it anyway:
-  #   docker compose run --rm global-identity
+#   docker compose run --rm global-identity-linker
   #
   # It takes no arguments, and its own thresholds are the only tuning
   # (see .env.example / README "Cross-video person identity"). Re-running
   # it is always safe: the clear-then-rebuild is one transaction, so an
   # interrupted run leaves the previous identities untouched.
-  global-identity:
+  global-identity-linker:
     build:
-      context: ./duui-video-emotion-global-identity
-    image: duui-video-emotion-global-identity:latest
+      context: ./global-identity-linker
+    image: duui-video-emotion-visualization/global-identity-linker:latest
     profiles: ["identity"]
     restart: "no"
     depends_on:
-      db:
+      pgvector-db:
         condition: service_healthy
     environment:
       DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
-      DUUI_DB_HOST: db
+      DUUI_DB_HOST: pgvector-db
       # Cosine distance, lower = stricter. See README before changing.
       DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD: ${DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD:-0.30}
       DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD: ${DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD:-0.35}
@@ -197,17 +197,17 @@ services:
 
   webapp:
     build:
-      context: ./duui-video-emotion-visualization-webapp
-    image: duui-video-emotion-visualization-webapp:latest
+      context: ./webapp
+    image: duui-video-emotion-visualization/webapp:latest
     restart: unless-stopped
     depends_on:
-      db:
+      pgvector-db:
         condition: service_healthy
     environment:
       DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
-      DUUI_DB_HOST: db
+      DUUI_DB_HOST: pgvector-db
       DUUI_VIDEO_DIR: /data/videos
       # Optional "Ask" panel (natural-language questions -> SQL). Leave
       # the key empty and the rest of the app works unchanged.

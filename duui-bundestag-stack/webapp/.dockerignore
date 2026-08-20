@@ -1,0 +1,10 @@
+# Keeps the build context small and avoids baking local state into the
+# viewer image. The image builds from this directory, so paths here are
+# relative to webapp/.
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+pyproject.toml
+*.md
+Dockerfile

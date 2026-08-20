@@ -1,0 +1,10 @@
+# Keeps the build context small and avoids baking local state into the
+# job image. The image builds from this directory, so paths here are
+# relative to global-identity-linker/ (this folder).
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+pyproject.toml
+*.md
+Dockerfile

@@ -9,13 +9,13 @@ Four containers, each buildable on its own:
 
 | Folder | Container | What it is |
 | :--- | :--- | :--- |
-| `db/` | `duui-db` | Postgres 16 + pgvector, schema baked in |
-| `duui-video-emotion-cas-to-postgres/` | `duui-video-emotion-cas-to-postgres` | **One-off job**: parses `.xmi` → Postgres, and copies the videos where the viewer can find them. Runs, works, exits |
-| `duui-video-emotion-global-identity/` | `duui-video-emotion-global-identity` | **One-off job, run explicitly**: works out which people in *different* videos are the same person, from the embeddings already in the database. Never runs on its own |
-| `duui-video-emotion-visualization-webapp/` | `duui-video-emotion-visualization-webapp` | The viewer (FastAPI + static frontend). Long-running |
+| `pgvector-db/` | `duui-video-emotion-visualization/pgvector-db` | Postgres 16 + pgvector, schema baked in |
+| `cas-to-postgres-importer/` | `duui-video-emotion-visualization/cas-to-postgres-importer` | **One-off job**: parses `.xmi` → Postgres, and copies the videos where the viewer can find them. Runs, works, exits |
+| `global-identity-linker/` | `duui-video-emotion-visualization/global-identity-linker` | **One-off job, run explicitly**: works out which people in *different* videos are the same person, from the embeddings already in the database. Never runs on its own |
+| `webapp/` | `duui-video-emotion-visualization/webapp` | The viewer (FastAPI + static frontend). Long-running |
 
 ```
-YOUR pipeline output folder      duui-video-emotion-cas-to-postgres    ...-visualization-webapp
+YOUR pipeline output folder      cas-to-postgres-importer                webapp
 (stays exactly where it is)      ┌──▶ 1. parse .xmi ──▶ Postgres ◀───────────── reads DB
   session1.xmi + session1.mp4 ───┤                                                  ▲
   session2.xmi + session2.mp4 ───┘    2. copy .mp4 ──▶ video store ────────────────┘
@@ -27,7 +27,7 @@ mounts. It reads the face/voice embeddings the importer loaded and
 writes back which people in different videos are the same person:
 
 ```
-                   duui-video-emotion-global-identity
+                        global-identity-linker
    Postgres ──▶ embeddings ──▶ cosine match ──▶ global_persons ──▶ Postgres
                    (you run it; never starts on its own)
 ```
@@ -56,7 +56,7 @@ Or without an `.env` file at all, per command:
 
 ```bash
 DUUI_INPUT_XMI_DIR=/path/to/xmi DUUI_INPUT_VIDEO_DIR=/path/to/videos \
-  docker compose run --rm importer
+  docker compose run --rm cas-to-postgres-importer
 ```
 
 **If your `.xmi` files and videos sit side by side — the common case —
@@ -164,7 +164,7 @@ To actually load data (the shipped sample, or your own once you've set
 `DUUI_INPUT_XMI_DIR`), run the import job:
 
 ```bash
-docker compose run --rm importer          # the sample, or whatever DUUI_INPUT_XMI_DIR points at
+docker compose run --rm cas-to-postgres-importer          # the sample, or whatever DUUI_INPUT_XMI_DIR points at
 ```
 
 Then open **http://localhost:8010** — with data imported, the viewer's
@@ -176,7 +176,7 @@ first (you do not move your files — see the section above):
 ```bash
 cp .env.example .env && $EDITOR .env      # set DUUI_INPUT_XMI_DIR
 docker compose up -d
-docker compose run --rm importer
+docker compose run --rm cas-to-postgres-importer
 ```
 
 Verify at any time:
@@ -185,8 +185,8 @@ Verify at any time:
 docker compose ps
 ```
 
-You should see `db` and `webapp` as `(healthy)`. The `importer` and
-`global-identity` jobs are *not* started by `up` — they're run on demand,
+You should see `pgvector-db` and `webapp` as `(healthy)`. The `cas-to-postgres-importer` and
+`global-identity-linker` jobs are *not* started by `up` — they're run on demand,
 and exit once finished.
 
 > **Why the import is NOT part of `up`:** it is a deliberate job like
@@ -201,7 +201,7 @@ at the whole corpus at once rather than at the file being imported —
 run it once your videos are in:
 
 ```bash
-docker compose run --rm global-identity
+docker compose run --rm global-identity-linker
 ```
 
 Until you do, the viewer's "Also appears in" panel stays empty and
@@ -214,7 +214,7 @@ All of these run from this directory (`cd` here first):
 
 ```bash
 docker compose ps                 # status -- db and webapp should say (healthy)
-docker compose logs -f webapp     # follow the viewer's log (or: db)
+docker compose logs -f webapp     # follow the viewer's log (or: pgvector-db)
 
 docker compose stop               # stop, keep containers
 docker compose down               # stop and remove containers -- DATA IS KEPT
@@ -228,13 +228,13 @@ Importing more data later never needs a restart — run the job again and
 reload the page:
 
 ```bash
-docker compose run --rm importer
+docker compose run --rm cas-to-postgres-importer
 # different source:
 DUUI_INPUT_XMI_DIR=/other/xmi DUUI_INPUT_VIDEO_DIR=/other/videos \
-  docker compose run --rm importer
+  docker compose run --rm cas-to-postgres-importer
 
 # ...and afterwards, to refresh who is the same person across videos:
-docker compose run --rm global-identity
+docker compose run --rm global-identity-linker
 ```
 
 If port 8010 or 5432 is already in use, set `DUUI_WEBAPP_HOST_PORT` /
@@ -247,10 +247,10 @@ If port 8010 or 5432 is already in use, set `DUUI_WEBAPP_HOST_PORT` /
 ### 1. Start the database
 
 ```bash
-docker compose up -d db
+docker compose up -d pgvector-db
 ```
 
-The schema (`db/schema.sql`) is baked into the image and applied
+The schema (`pgvector-db/schema.sql`) is baked into the image and applied
 automatically **the first time** the `db_data` volume is created. Wait
 for it to report healthy before importing — compose does this for you
 (`depends_on: service_healthy`), so step 2 will simply wait:
@@ -262,9 +262,9 @@ docker compose ps            # STATUS should say (healthy)
 ### 2. Run the import job
 
 ```bash
-docker compose run --rm importer                                   # everything in the .xmi folder
-docker compose run --rm importer /data/input/xmi/session1.xmi      # one specific file
-docker compose run --rm importer /data/input/xmi/sub /data/input/xmi/a.xmi   # any mix of dirs and files
+docker compose run --rm cas-to-postgres-importer                                   # everything in the .xmi folder
+docker compose run --rm cas-to-postgres-importer /data/input/xmi/session1.xmi      # one specific file
+docker compose run --rm cas-to-postgres-importer /data/input/xmi/sub /data/input/xmi/a.xmi   # any mix of dirs and files
 ```
 
 Paths are interpreted **inside** the container, where your `.xmi`
@@ -289,12 +289,12 @@ step 3 below.
 **Already-imported files are skipped.** A `.xmi` whose video (matched
 on `videos.filename`) is already in the database is left alone, and the
 CAS is not even loaded — re-running over a drop folder imports only
-what is new, and re-running `importer` costs
+what is new, and re-running `cas-to-postgres-importer` costs
 seconds rather than minutes. To rebuild a video's rows from a
 re-exported CAS instead:
 
 ```bash
-docker compose run --rm importer --on-existing replace
+docker compose run --rm cas-to-postgres-importer --on-existing replace
 ```
 
 `replace` deletes the existing video and everything hanging off it
@@ -382,7 +382,7 @@ What this does and doesn't touch:
 ### 3. Link people across videos (optional, explicit)
 
 ```bash
-docker compose run --rm global-identity
+docker compose run --rm global-identity-linker
 ```
 
 Takes no arguments — the corpus already in the database is its entire
@@ -432,7 +432,7 @@ docker compose logs webapp           # 4. anything actually erroring?
 - **1 fails / `webapp` missing** → the container was never started. Re-run
   step 3 (this is the most common cause by far).
 - **2 fails** → the app is running but can't reach the database. Check
-  `docker compose ps` for `db` and `docker compose logs db`.
+  `docker compose ps` for `pgvector-db` and `docker compose logs pgvector-db`.
 - **3 returns `[]`** → the database is empty; the import didn't land.
   Re-run step 2 and read its summary line.
 - **3 shows `"video_file_available": false`** → the row exists but its
@@ -523,19 +523,19 @@ this stack only consumes its output.)
 
 ## Running without compose
 
-Every image builds with **its own folder** as the context — `db/`,
-`duui-video-emotion-cas-to-postgres/`,
-`duui-video-emotion-global-identity/` and
-`duui-video-emotion-visualization-webapp/` are self-contained, with no
+Every image builds with **its own folder** as the context — `pgvector-db/`,
+`cas-to-postgres-importer/`,
+`global-identity-linker/` and
+`webapp/` are self-contained, with no
 code shared between them:
 
 ```bash
-docker build -t duui-db db/
-docker build -t duui-video-emotion-cas-to-postgres duui-video-emotion-cas-to-postgres/
-docker build -t duui-video-emotion-global-identity duui-video-emotion-global-identity/
-docker build -t duui-video-emotion-visualization-webapp duui-video-emotion-visualization-webapp/
+docker build -t duui-video-emotion-visualization/pgvector-db pgvector-db/
+docker build -t duui-video-emotion-visualization/cas-to-postgres-importer cas-to-postgres-importer/
+docker build -t duui-video-emotion-visualization/global-identity-linker global-identity-linker/
+docker build -t duui-video-emotion-visualization/webapp webapp/
 
-docker build -t duui-video-emotion-visualization-webapp:v2 duui-video-emotion-visualization-webapp/   # custom tag
+docker build -t duui-video-emotion-visualization/webapp:v2 webapp/   # custom tag
 ```
 
 Then wire them up by hand — compose otherwise does exactly this:
@@ -548,7 +548,7 @@ docker run -d --name duui-db --network duui \
   -e POSTGRES_DB=duui_bundestag -e POSTGRES_USER=duui -e POSTGRES_PASSWORD=duui \
   -v duui_db_data:/var/lib/postgresql/data \
   -p 5432:5432 \
-  duui-db:latest
+  duui-video-emotion-visualization/pgvector-db:latest
 
 # 2. import job (one-off; add paths as arguments to narrow it down)
 docker run --rm --network duui \
@@ -557,14 +557,14 @@ docker run --rm --network duui \
   -v /my/xmi:/data/input/xmi:ro \
   -v /my/videos:/data/input/videos:ro \
   -v duui_videos:/data/videos \
-  duui-video-emotion-cas-to-postgres:latest
+  duui-video-emotion-visualization/cas-to-postgres-importer:latest
 
 # 3. cross-video identity (one-off, whenever you want it refreshed).
 #    No volumes -- it only ever talks to the database.
 docker run --rm --network duui \
   -e DUUI_DB_HOST=duui-db -e DUUI_DB_NAME=duui_bundestag \
   -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
-  duui-video-emotion-global-identity:latest
+  duui-video-emotion-visualization/global-identity-linker:latest
 
 # 4. viewer
 docker run -d --name duui-webapp --network duui \
@@ -572,7 +572,7 @@ docker run -d --name duui-webapp --network duui \
   -e DUUI_DB_USER=duui -e DUUI_DB_PASSWORD=duui \
   -v duui_videos:/data/videos:ro \
   -p 8010:8000 \
-  duui-video-emotion-visualization-webapp:latest
+  duui-video-emotion-visualization/webapp:latest
 ```
 
 The importer and the viewer must share the same video volume
@@ -585,9 +585,9 @@ needs only the database. Nothing else is shared between them.
 
 Everything is an environment variable, read from `.env` or the real
 environment. Each container defines the ones it reads:
-`duui-video-emotion-cas-to-postgres/src/main/config.py`,
-`duui-video-emotion-global-identity/src/identity/config.py` and
-`duui-video-emotion-visualization-webapp/src/backend/config.py`.
+`cas-to-postgres-importer/src/main/config.py`,
+`global-identity-linker/src/identity/config.py` and
+`webapp/src/backend/config.py`.
 The few that appear in both (`DUUI_DB_*`, `DUUI_VIDEO_DIR`) are exactly
 the two contracts the containers share — the database and the video
 store — and compose passes the same values to both services.
@@ -596,7 +596,7 @@ store — and compose passes the same values to both services.
 
 | Variable | Default | What it is |
 | :--- | :--- | :--- |
-| `DUUI_INPUT_XMI_DIR` | `./duui-video-emotion-cas-to-postgres/src/resources/sample-input` | **Your** folder of `.xmi` files. Mounted read-only; never modified |
+| `DUUI_INPUT_XMI_DIR` | `./cas-to-postgres-importer/src/resources/sample-input` | **Your** folder of `.xmi` files. Mounted read-only; never modified |
 | `DUUI_INPUT_VIDEO_DIR` | `DUUI_INPUT_XMI_DIR` (which itself defaults to the sample folder) | **Your** folder of the videos those `.xmi` files reference. Leave unset when they sit next to the `.xmi` files |
 | `DUUI_VIDEO_STORE` | `video_media` | Where imported videos live. Plain name = Docker volume; host path = bind mount |
 | `DUUI_WEBAPP_HOST_PORT` | `8010` | Host port for the viewer (container always listens on 8000) |
@@ -621,7 +621,7 @@ running the images by hand):
 | `DUUI_DB_NAME` | `duui_bundestag` | |
 | `DUUI_DB_USER` | `duui` | |
 | `DUUI_DB_PASSWORD` | `duui` | Change it for anything beyond a local/internal deployment |
-| `DUUI_DB_HOST` | `localhost` | Compose sets `db` (the service name) inside containers |
+| `DUUI_DB_HOST` | `localhost` | Compose sets `pgvector-db` (the service name) inside containers |
 
 Those defaults come from `docker-compose.yml`. Running the code
 straight on the host without them set (no `.env`, no exports) falls
@@ -641,7 +641,7 @@ everything else unaffected):
 | `DUUI_QUERY_STATEMENT_TIMEOUT_MS` | `8000` |
 | `DUUI_QUERY_MAX_TOOL_ITERATIONS` | `6` |
 
-**Cross-video person identity** (read only by the `global-identity`
+**Cross-video person identity** (read only by the `global-identity-linker`
 job, which you run explicitly — there is no on/off switch, since
 running it *is* the opt-in):
 
@@ -701,10 +701,10 @@ running it *is* the opt-in):
 One thing in the database is computed rather than read from a CAS,
 because the CAS doesn't contain it: whether a person in one video is
 the same person as someone in another. That is the
-`duui-video-emotion-global-identity` container.
+`duui-video-emotion-visualization/global-identity-linker` container.
 
 ```bash
-docker compose run --rm global-identity
+docker compose run --rm global-identity-linker
 ```
 
 **What it does.** Every person's face embeddings are averaged into one
@@ -782,7 +782,7 @@ Details worth knowing:
 - **Cost.** Each job writes at most one row per second
   (`job_runs.py:MIN_WRITE_INTERVAL`), on its own autocommit connection —
   the importer's main connection only exists around the insert, and
-  global-identity's whole run is one uncommitted transaction, so
+  global-identity-linker's whole run is one uncommitted transaction, so
   neither could carry a heartbeat. The browser polls `GET /api/jobs`
   every 10s when idle, 2s while a job runs, and **not at all while the
   tab is hidden** — a backgrounded tab is where polling waste would
@@ -790,12 +790,12 @@ Details worth knowing:
 - **Status reporting never breaks a job.** Every write is best-effort;
   the first failure disables reporting for that run and prints one
   line. An import does not fail because the status table is missing.
-- **The table is created on demand.** `db/schema.sql` only runs on a
+- **The table is created on demand.** `pgvector-db/schema.sql` only runs on a
   fresh volume, so all three services issue the same
   `CREATE TABLE IF NOT EXISTS job_runs` at startup. On an existing
   database it appears the first time any of them starts — nothing to
   migrate by hand. Keep the copies in step if you change the columns;
-  `db/schema.sql` lists where they are.
+  `pgvector-db/schema.sql` lists where they are.
 
 `job_runs` is append-only history — one row per run, finished ones
 included — so `SELECT * FROM job_runs ORDER BY job_run_id DESC` also
@@ -809,22 +809,22 @@ deliberately only reads the running ones.
 - **Health**: `GET /healthz` on the viewer runs a real query against
   Postgres, so it fails if the database is unreachable rather than just
   reporting "process alive". Both containers have compose healthchecks.
-- **Logs**: `docker compose logs -f webapp` / `db`.
+- **Logs**: `docker compose logs -f webapp` / `pgvector-db`.
 - **Backups**: the `db_data` volume is the only thing not trivially
   reproducible (videos can be re-imported; CAS files live in your
   pipeline output). Nothing automates this yet:
   ```bash
-  docker compose exec db pg_dump -U duui duui_bundestag > backup.sql
+  docker compose exec pgvector-db pg_dump -U duui duui_bundestag > backup.sql
   # restore into a fresh volume:
-  docker compose exec -T db psql -U duui -d duui_bundestag < backup.sql
+  docker compose exec -T pgvector-db psql -U duui -d duui_bundestag < backup.sql
   ```
-- **Upgrading the schema on an existing database**: `db/schema.sql` only
+- **Upgrading the schema on an existing database**: `pgvector-db/schema.sql` only
   runs automatically on a *fresh* volume. To apply it to a database that
   already has data (it is written to be safe to re-run — every index is
   `IF NOT EXISTS`, and `CREATE TABLE` errors for existing tables are
   harmless and skipped):
   ```bash
-  docker compose exec -T db psql -U duui -d duui_bundestag < db/schema.sql
+  docker compose exec -T pgvector-db psql -U duui -d duui_bundestag < pgvector-db/schema.sql
   ```
   **This does not migrate a database created before the composite-key
   change** (see "One video per file" below). Re-running the file leaves
@@ -833,7 +833,7 @@ deliberately only reads the running ones.
   start a fresh volume and re-import:
   ```bash
   docker compose down -v && docker compose up -d
-  docker compose run --rm importer
+  docker compose run --rm cas-to-postgres-importer
   ```
 - **Deliberately not included**: no authentication, no TLS, no rate
   limiting on the Ask panel. That is a reasonable trade-off on a trusted
@@ -852,15 +852,15 @@ deliberately only reads the running ones.
 ## Tests
 
 Each container has its own suite next to its code
-(`duui-video-emotion-cas-to-postgres/tests/`,
-`duui-video-emotion-global-identity/tests/`,
-`duui-video-emotion-visualization-webapp/tests/`). From the stack root,
+(`cas-to-postgres-importer/tests/`,
+`global-identity-linker/tests/`,
+`webapp/tests/`). From the stack root,
 `pytest` runs all three:
 
 ```bash
-pip install -r duui-video-emotion-cas-to-postgres/requirements.txt \
-            -r duui-video-emotion-global-identity/requirements.txt \
-            -r duui-video-emotion-visualization-webapp/requirements.txt \
+pip install -r cas-to-postgres-importer/requirements.txt \
+            -r global-identity-linker/requirements.txt \
+            -r webapp/requirements.txt \
             -r requirements-dev.txt
 pytest
 ```
@@ -868,13 +868,13 @@ pytest
 Or one side on its own, needing only that side's requirements:
 
 ```bash
-cd duui-video-emotion-cas-to-postgres && pytest
+cd cas-to-postgres-importer && pytest
 ```
 ```bash
-cd duui-video-emotion-global-identity && pytest
+cd global-identity-linker && pytest
 ```
 ```bash
-cd duui-video-emotion-visualization-webapp && pytest
+cd webapp && pytest
 ```
 
 Covers the read-only SQL guard the Ask panel's generated queries pass
@@ -896,7 +896,7 @@ reachable, so the suite runs anywhere. To run them fully, start the db
 container and point the tests at it:
 
 ```bash
-docker compose up -d db
+docker compose up -d pgvector-db
 DUUI_DB_HOST=localhost DUUI_DB_USER=duui DUUI_DB_PASSWORD=duui \
   DUUI_DB_NAME=duui_bundestag pytest
 ```
@@ -921,8 +921,8 @@ Nothing does.
 .
 ├── docker-compose.yml     all four services, for convenience
 ├── .env.example           every setting, with defaults
-├── db/                    Dockerfile, schema.sql
-├── duui-video-emotion-cas-to-postgres/
+├── pgvector-db/               Dockerfile, schema.sql
+├── cas-to-postgres-importer/
 │                          Dockerfile, requirements.txt
 │   ├── src/               source root (on the path, not a package)
 │   │   ├── main/          the CAS parsers, DB layer, and __main__.py
@@ -930,14 +930,14 @@ Nothing does.
 │   │   └── resources/     typesystems/ + sample-input/ (demo .xmi
 │   │                      + video, the default input)
 │   └── tests/             pytest suite for the above
-├── duui-video-emotion-global-identity/
+├── global-identity-linker/
 │                          Dockerfile, requirements.txt
 │   ├── src/               source root (on the path, not a package)
 │   │   └── identity/      the embedding-matching logic, DB layer, and
 │   │                      __main__.py (the `python -m identity` entry).
 │   │                      No resources/ -- it never opens a CAS
 │   └── tests/             pytest suite for the above
-├── duui-video-emotion-visualization-webapp/
+├── webapp/
 │                          Dockerfile, requirements.txt
 │   ├── src/               source root (on the path, not a package)
 │   │   ├── backend/       settings, DB layer, queries/, routes/, the
