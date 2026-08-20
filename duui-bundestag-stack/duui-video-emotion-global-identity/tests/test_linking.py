@@ -27,9 +27,9 @@ from identity import linking
 # numbers its own annotations from 1, so "person 1" exists in every
 # video in the corpus (see db/schema.sql's identity note). P1 and P3
 # deliberately share V1 to keep that visible.
-V1, V2 = 9_100_001, 9_100_002
-P1, P2 = (V1, 9_100_101), (V2, 9_100_102)
-P3 = (V1, 9_100_103)
+V1, V2, V3 = 9_100_001, 9_100_002, 9_100_003
+P1, P2, P3 = (V1, 9_100_101), (V2, 9_100_102), (V1, 9_100_103)
+P4 = (V3, 9_100_104)
 
 
 # The two embedding columns are different widths (see db/schema.sql):
@@ -40,6 +40,11 @@ _DIMENSIONS = {"face_embeddings": 512, "voice_embeddings": 192}
 
 def _vector_literal(dim, base):
     return "[" + ",".join(f"{base + i * 0.001:.4f}" for i in range(dim)) + "]"
+
+
+def _opposite_vector(dim, base):
+    # Exact negation of _vector_literal -- cosine distance to it is 2.0.
+    return "[" + ",".join(f"{-(base + i * 0.001):.4f}" for i in range(dim)) + "]"
 
 
 def _seed_person(cursor, person, clip_label):
@@ -55,8 +60,9 @@ def _seed_person(cursor, person, clip_label):
     )
 
 
-def _embed(cursor, table, person, base, embedding_id=None):
+def _embed(cursor, table, person, base, embedding_id=None, invert=False):
     video_id, person_id = person
+    vec = _opposite_vector(_DIMENSIONS[table], base) if invert else _vector_literal(_DIMENSIONS[table], base)
     cursor.execute(
         f"INSERT INTO {table} (video_id, embedding_id, person_id, embedding) "
         f"VALUES (%s, %s, %s, %s)",
@@ -64,7 +70,7 @@ def _embed(cursor, table, person, base, embedding_id=None):
             video_id,
             embedding_id if embedding_id is not None else person_id,
             person_id,
-            _vector_literal(_DIMENSIONS[table], base),
+            vec,
         ),
     )
 
@@ -75,6 +81,19 @@ def _global_ids(cursor, *persons):
     for video_id, person_id in persons:
         cursor.execute(
             "SELECT global_person_id FROM persons WHERE video_id = %s AND person_id = %s",
+            (video_id, person_id),
+        )
+        row = cursor.fetchone()
+        result[(video_id, person_id)] = row[0] if row else None
+    return result
+
+
+def _match_scores(cursor, *persons):
+    """global_person_match_score per (video_id, person_id), for the given people."""
+    result = {}
+    for video_id, person_id in persons:
+        cursor.execute(
+            "SELECT global_person_match_score FROM persons WHERE video_id = %s AND person_id = %s",
             (video_id, person_id),
         )
         row = cursor.fetchone()
@@ -226,3 +245,86 @@ def test_recompute_links_matching_persons_regardless_of_insert_order(linkable):
     ids = _global_ids(linkable, P1, P2)
     assert ids[P1] is not None
     assert ids[P1] == ids[P2]
+
+
+def test_recompute_writes_global_person_match_score(db_cursor):
+    # P1 (V1) and P4 (V3) have identical face centroids (cross-video
+    # distance ~0); P2 (V2) is the opposite (distance ~2).
+    # global_person_match_score is each person's nearest *cross-video*
+    # centroid distance, written for everyone -- linked or not -- so P1
+    # and P4 get ~0 while P2, whose only cross-video neighbour is 2.0
+    # away, gets ~2 (and stays unlinked past the 0.30 threshold).
+    _seed_person(db_cursor, P1, "person_a")
+    _seed_person(db_cursor, P2, "person_b")
+    _seed_person(db_cursor, P4, "person_a_again")
+    _embed(db_cursor, "face_embeddings", P1, 1.0)
+    _embed(db_cursor, "face_embeddings", P2, 1.0, invert=True)
+    _embed(db_cursor, "face_embeddings", P4, 1.0)
+
+    linking.recompute_global_identities(db_cursor)
+
+    ids = _global_ids(db_cursor, P1, P2, P4)
+    assert ids[P1] is not None and ids[P1] == ids[P4]
+    assert ids[P2] is None
+
+    scores = _match_scores(db_cursor, P1, P2, P4)
+    assert scores[P1] == pytest.approx(0.0, abs=1e-6)
+    assert scores[P4] == pytest.approx(0.0, abs=1e-6)
+    assert scores[P2] == pytest.approx(2.0, abs=1e-6)
+
+
+def test_global_person_match_score_is_order_independent(db_cursor):
+    # The score is a pure function of the centroids, so a full recompute
+    # (which runs _write_match_scores after the link loop) must yield
+    # identical scores on a second pass after a clear -- the value does
+    # not depend on which person was linked first.
+    _seed_person(db_cursor, P1, "person_a")
+    _seed_person(db_cursor, P2, "person_b")
+    _seed_person(db_cursor, P4, "person_a_again")
+    _embed(db_cursor, "face_embeddings", P1, 1.0)
+    _embed(db_cursor, "face_embeddings", P2, 1.0, invert=True)
+    _embed(db_cursor, "face_embeddings", P4, 1.0)
+
+    linking.recompute_global_identities(db_cursor)
+    first = _match_scores(db_cursor, P1, P2, P4)
+
+    linking.clear_global_identities(db_cursor)
+    linking.recompute_global_identities(db_cursor)
+    second = _match_scores(db_cursor, P1, P2, P4)
+
+    assert first == second
+    assert second[P1] == pytest.approx(0.0, abs=1e-6)
+    assert second[P2] == pytest.approx(2.0, abs=1e-6)
+
+
+def test_clear_also_nulls_global_person_match_score(db_cursor):
+    # clear_global_identities resets the score alongside global_person_id
+    # (it is meaningless once the links it describes are gone), but must
+    # not touch audio_video_match_score -- that is the importer's value.
+    _seed_person(db_cursor, P1, "person_a")
+    _seed_person(db_cursor, P2, "person_b")
+    _embed(db_cursor, "face_embeddings", P1, 1.0)
+    _embed(db_cursor, "face_embeddings", P2, 1.0, invert=True)
+    db_cursor.execute(
+        "UPDATE persons SET audio_video_match_score = 0.83 WHERE (video_id, person_id) = %s",
+        (P1,),
+    )
+
+    linking.recompute_global_identities(db_cursor)
+    db_cursor.execute(
+        "SELECT global_person_match_score, audio_video_match_score FROM persons "
+        "WHERE (video_id, person_id) = %s",
+        (P1,),
+    )
+    before_score, before_av = db_cursor.fetchone()
+    assert before_score is not None
+
+    linking.clear_global_identities(db_cursor)
+    db_cursor.execute(
+        "SELECT global_person_match_score, audio_video_match_score FROM persons "
+        "WHERE (video_id, person_id) = %s",
+        (P1,),
+    )
+    after_score, after_av = db_cursor.fetchone()
+    assert after_score is None
+    assert after_av == 0.83
