@@ -46,11 +46,11 @@ def _parse_persons(cas, cursor, video_id, context):
         clip_label = getattr(
             person, "clip_label", getattr(person, "personId", label)
         )
-        match_score = getattr(person, "match_score", label_parts.get("score"))
+        audio_video_match_score = getattr(person, "match_score", label_parts.get("score"))
 
         cursor.execute(
             """
-            INSERT INTO persons (person_id, video_id, clip_label, match_score)
+            INSERT INTO persons (person_id, video_id, clip_label, audio_video_match_score)
             VALUES (%s, %s, %s, %s)
             ON CONFLICT (video_id, person_id) DO NOTHING
             """,
@@ -58,7 +58,7 @@ def _parse_persons(cas, cursor, video_id, context):
                 person_id,
                 video_id,
                 clip_label,
-                match_score,
+                audio_video_match_score,
             ),
         )
 
