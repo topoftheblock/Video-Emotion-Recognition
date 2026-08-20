@@ -560,6 +560,9 @@ Two things worth carrying forward:
 
 ## Phase 4 — Adaptive rendering modes
 
+**Status: complete.** Verified against the rebuilt container; results under
+"Done when" below.
+
 Depends on Phase 3: these modes need the final token values to key off.
 
 **4.1 — Declare the colour scheme.**
@@ -597,6 +600,52 @@ Nothing currently responds to it.
 
 **Done when:** the app is legible and complete with Windows High Contrast
 active, and `prefers-contrast: more` visibly raises the dim text.
+
+**How it landed.** All three modes live in a new `css/adaptive.css`, imported
+last so its overrides win. `prefers-reduced-motion` moved there out of
+`responsive.css`, which is now purely about viewport width — the three
+preference queries had no reason to be split across two files.
+
+`prefers-contrast: more` is four token overrides and no per-rule changes, which
+was the test of whether the token layer is in the right shape. Measured:
+
+| pair | default | more contrast |
+|---|---|---|
+| `--text-dim` on the card | 5.54 | **14.82** |
+| `--text-dim` on the page floor | 4.95 | **13.24** |
+| placeholder on the input fill | 5.22 | **11.99** |
+| `--border-input` on the card | 5.54 | **14.82** |
+| `--border-input` on its own fill | 4.48 | **11.99** |
+
+Forced colours came to 14 rules. Two of them are the ones worth naming:
+
+- **The two text inputs would have had no focus indicator at all.** Both
+  suppress `outline` and draw a `box-shadow` ring instead (Phase 3.3's
+  neighbours), and box shadows are dropped in forced-colours mode — a
+  regression invisible until someone tries to use the app that way.
+- **The combobox's highlighted option**, found while reviewing the rule list
+  rather than from the plan. It is keyboard state — the only thing saying which
+  row ArrowDown has landed on — and it was carried entirely by a background
+  fill, which is exactly what forced colours strips.
+
+`.person-swatch` is the one element given `forced-color-adjust: none`, because
+there its specific colour *is* the information: it ties a name in the sidebar to
+a stroked box on the video, and the video is a `<canvas>`, which forced colours
+does not touch. Substituting a system colour would break that match while
+looking perfectly fine. It takes a real `border` in the same block, since the
+ring that normally supplies its boundary is a box-shadow. `.subtitle-box` opts
+out for a different reason: it sits over video, so a system `Canvas` fill would
+paint an opaque block across the picture.
+
+**A caveat on verification.** This environment cannot toggle forced colours or
+`prefers-contrast`, so none of the above was seen rendered. What was checked is
+that every rule *parsed with its declarations intact* — read back through the
+CSSOM, where a mistyped system-colour keyword would have been dropped silently
+and shown up as an empty declaration. All 14 survived. The contrast figures come
+from `contrast_check.py` over the overridden token values. Phase 6.2's screen
+reader pass is the natural place to also put the app in front of real Windows
+High Contrast, and until then this phase is verified by construction rather than
+by observation.
 
 ---
 

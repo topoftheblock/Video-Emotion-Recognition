@@ -110,6 +110,17 @@
 
 html {
   background: var(--bg);
+  /* tokens.css resolves every ramp at its light-mode value and says so
+     -- but nothing had told the browser, which leaves the UA free to
+     render its own widgets dark on a system set to dark: the range
+     input's track and thumb, the text fields, the scrollbars. Declaring
+     the scheme is what stops a dark scrubber appearing on a light
+     transport bar.
+
+     This is the honest minimum, not dark-mode support. Actually
+     supporting dark means a second set of ramps and is a separate
+     piece of work. */
+  color-scheme: light;
 }
 
 html, body {
