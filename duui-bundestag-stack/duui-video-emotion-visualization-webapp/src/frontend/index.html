@@ -162,6 +162,23 @@
 
       <div class="panel" id="crossVideoPanel" style="display:none;">
         <h2 class="panel-title"><span class="panel-dot dot-cross"></span>Also appears in</h2>
+        <!-- Same column-header idiom as #personLegend above, naming the
+             number at the end of each row -- here that's the
+             global-identity job's cross-video match, not the import
+             pipeline's face/voice one, so the tooltip text differs even
+             though the visible label doesn't. No hide/show logic is
+             needed here the way #personLegend has: this whole panel is
+             hidden by js/panels/crossVideo.js whenever there are no
+             rows, so the legend is never left over nothing. -->
+        <div class="person-legend"
+             title="Confidence that this person and their lookalike in another video are the same person -- cosine distance (0 = identical, 2 = opposite) between their face-embedding centroids, from the global-identity job. Lower is a more confident match; this is not the import pipeline's face/voice confidence score.">
+          <span>match confidence</span>
+          <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <circle cx="8" cy="4.7" r="0.9" fill="currentColor"/>
+            <path d="M8 7.4v4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
         <ul class="person-list cross-list" id="crossVideoList"></ul>
       </div>
     </aside>

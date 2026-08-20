@@ -89,6 +89,21 @@
   flex-shrink: 0;
 }
 
+/* The legend is absolutely positioned and so doesn't reserve any space
+   in flow -- fine for "People", short enough to never reach it, but
+   "Also appears in" is long enough to run underneath it once the
+   sidebar narrows past the tablet breakpoint (.sidebar .panel can get
+   as tight as 240px). Reserve the legend's width on the title and
+   ellipsize rather than let the two overlap. Scoped to panels that
+   actually have a legend, so titles elsewhere (which pair with
+   .panel-filter instead, already sized for this) are untouched. */
+.panel:has(> .person-legend) .panel-title {
+  padding-right: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .person-list, .active-list {
   list-style: none;
   margin: 0;
@@ -216,15 +231,28 @@
   font-weight: 500;
 }
 
+/* Each "other video/person" entry is a row of its own so the match
+   distance can sit flush against the right edge of the panel --
+   `margin-left: auto` on the badge below pushes it there regardless of
+   how short the label text is, instead of trailing right after it. */
+.cross-list .cross-video {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
 /* Per-entry cross-video match distance, at the end of each "other
-   video/person" entry. Same dim, tooltip treatment as the People
-   panel's match-score badge; the number is a cosine distance, not the
-   import pipeline's confidence score. Font matches the entry line. */
+   video/person" entry. Same font and colour as the People panel's
+   match-score badge (.person-meta) so the two read as one convention;
+   the number is a cosine distance, not the import pipeline's
+   confidence score, which the tooltip spells out. */
 .cross-list .cross-video-distance {
-  margin-left: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
   font-size: inherit;
   font-variant-numeric: tabular-nums;
-  color: var(--surface-500);
+  color: var(--text-dim);
   cursor: help;
 }
 
