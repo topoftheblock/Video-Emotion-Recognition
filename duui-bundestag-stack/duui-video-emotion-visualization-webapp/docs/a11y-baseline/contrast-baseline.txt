@@ -1,0 +1,124 @@
+tokens:            /w/duui-video-emotion-visualization-webapp/src/frontend/css/tokens.css
+person palette:    /w/duui-video-emotion-visualization-webapp/src/frontend/js/state.js
+readableTextColor: threshold L > 0.45
+
+-- base ------------------------------------------------------------
+PASS   21.00  need    4.5  base        --text on card
+PASS   18.76  need    4.5  base        --text on page floor
+PASS    5.54  need    4.5  base        --text-dim on card
+PASS    4.95  need    4.5  base        --text-dim on page floor
+PASS   15.62  need    4.5  base        --text-strong on card
+PASS   13.95  need    4.5  base        --text-strong on --surface-50
+PASS    6.97  need    4.5  base        ::selection text on --signal-soft
+-- input -----------------------------------------------------------
+FAIL    4.48  need    4.5  input       placeholder on input fill
+PASS   16.98  need    4.5  input       typed text on input fill
+FAIL    1.31  need    3.0  input       resting border vs card
+FAIL    1.27  need    3.0  input       resting border vs own fill
+FAIL    1.24  need    3.0  input       input fill vs card
+PASS    5.84  need    3.0  input       focus ring on card
+FAIL    1.31  need    3.0  input       dropdown border vs card
+-- button ----------------------------------------------------------
+PASS    5.84  need    4.5  button      primary button label
+PASS    6.84  need    4.5  button      primary button hover label
+PASS    5.54  need    4.5  button      neutral button label at rest
+PASS    5.84  need    3.0  button      focus ring on card
+PASS    5.84  need    3.0  button      focus ring clear of selected row
+-- chip ------------------------------------------------------------
+PASS    6.97  need    4.5  chip        overlay tag / filter chip text
+-- sidebar ---------------------------------------------------------
+PASS    5.54  need    4.5  sidebar     panel title
+PASS   18.76  need    4.5  sidebar     person name on row fill
+PASS    6.97  need    4.5  sidebar     person name on hover row
+PASS    5.84  need    4.5  sidebar     person name on selected row
+FAIL    3.99  need    4.5  sidebar     score on selected row
+PASS   13.24  need    4.5  sidebar     cross-video detail text
+PASS    5.54  need    4.5  sidebar     empty hint
+-- emotions --------------------------------------------------------
+PASS    8.68  need    4.5  emotions    dominant emotion label
+PASS   15.62  need    4.5  emotions    row label
+PASS    5.54  need    4.5  emotions    legend header
+PASS   21.00  need    4.5  emotions    live value
+PASS    5.54  need    4.5  emotions    average value
+PASS    4.72  need    3.0  emotions    track fill vs groove
+PASS    4.48  need    3.0  emotions    average marker vs groove
+FAIL    1.90  need    3.0  emotions    signed zero marker vs groove
+FAIL    1.24  need    3.0  emotions    groove vs card
+-- stage -----------------------------------------------------------
+PASS   15.13  need    3.0  stage       subtitle text over palest video
+PASS    8.09  need    4.5  stage       subtitle emotion over palest video
+PASS   16.76  need    3.0  stage       empty state title
+PASS    9.21  need    4.5  stage       empty state detail
+PASS   12.38  need    4.5  stage       empty state command
+PASS    5.54  need    4.5  stage       transport time read-out
+PASS    5.54  need    4.5  stage       CC toggle at rest
+PASS    5.84  need    4.5  stage       CC toggle when on
+-- status ----------------------------------------------------------
+PASS    5.25  need    4.5  status      ask error text
+PASS    5.89  need    4.5  status      stale job elapsed on banner
+PASS   15.62  need    4.5  status      job detail text
+PASS   21.00  need    4.5  status      job title text
+PASS    4.72  need    3.0  status      job progress fill vs groove
+-- topbar ----------------------------------------------------------
+PASS    5.84  need    4.5  topbar      brand mark label
+PASS   18.76  need    4.5  topbar      brand title
+PASS    4.95  need    4.5  topbar      picker label
+PASS   21.00  need    4.5  topbar      dropdown option text
+PASS    6.97  need    4.5  topbar      highlighted option text
+PASS    5.54  need    4.5  topbar      missing-file note
+-- decorative ------------------------------------------------------
+INFO    5.84  need      -  decorative  dot-emotion on card
+INFO    2.18  need      -  decorative  dot-people on card
+INFO    3.18  need      -  decorative  dot-live on card
+INFO   14.82  need      -  decorative  dot-cross on card
+INFO    1.65  need      -  decorative  panel border on card
+INFO    1.48  need      -  decorative  topbar hairline
+-- person ----------------------------------------------------------
+FAIL    1.64  need    3.0  person      swatch #49d3c8 on row fill
+FAIL    1.84  need    3.0  person      swatch #49d3c8 on card
+FAIL    1.95  need    3.0  person      swatch #e0a458 on row fill
+FAIL    2.18  need    3.0  person      swatch #e0a458 on card
+FAIL    2.40  need    3.0  person      swatch #c77dff on row fill
+FAIL    2.69  need    3.0  person      swatch #c77dff on card
+FAIL    1.49  need    3.0  person      swatch #7dd3fc on row fill
+FAIL    1.67  need    3.0  person      swatch #7dd3fc on card
+FAIL    2.37  need    3.0  person      swatch #f472b6 on row fill
+FAIL    2.65  need    3.0  person      swatch #f472b6 on card
+FAIL    1.35  need    3.0  person      swatch #a3e635 on row fill
+FAIL    1.51  need    3.0  person      swatch #a3e635 on card
+FAIL    2.73  need    3.0  person      swatch #8b94a3 on row fill
+PASS    3.06  need    3.0  person      swatch #8b94a3 on card
+PASS   10.52  need    4.5  person      filter chip text on #49d3c8
+FAIL    2.18  need    4.5  person      filter chip text on #e0a458
+FAIL    2.69  need    4.5  person      filter chip text on #c77dff
+PASS   11.59  need    4.5  person      filter chip text on #7dd3fc
+FAIL    2.65  need    4.5  person      filter chip text on #f472b6
+PASS   12.81  need    4.5  person      filter chip text on #a3e635
+FAIL    3.06  need    4.5  person      filter chip text on #8b94a3
+
+82 pairs checked, 25 failing, 6 recorded without assertion
+  FAIL  input/placeholder on input fill: 4.48 < 4.5 (--text-dim on --surface-alt)
+  FAIL  input/resting border vs card: 1.31 < 3.0 (--border-soft over --surface on --surface)
+  FAIL  input/resting border vs own fill: 1.27 < 3.0 (--border-soft over --surface-alt on --surface-alt)
+  FAIL  input/input fill vs card: 1.24 < 3.0 (--surface-alt on --surface)
+  FAIL  input/dropdown border vs card: 1.31 < 3.0 (--border-soft over --surface on --surface)
+  FAIL  sidebar/score on selected row: 3.99 < 4.5 (rgba(255,255,255,0.75) over --signal on --signal)
+  FAIL  emotions/signed zero marker vs groove: 1.90 < 3.0 (--border-strong on --surface-alt)
+  FAIL  emotions/groove vs card: 1.24 < 3.0 (--surface-alt on --surface)
+  FAIL  person/swatch #49d3c8 on row fill: 1.64 < 3.0 (#49d3c8 on --surface-50)
+  FAIL  person/swatch #49d3c8 on card: 1.84 < 3.0 (#49d3c8 on --surface)
+  FAIL  person/swatch #e0a458 on row fill: 1.95 < 3.0 (#e0a458 on --surface-50)
+  FAIL  person/swatch #e0a458 on card: 2.18 < 3.0 (#e0a458 on --surface)
+  FAIL  person/swatch #c77dff on row fill: 2.40 < 3.0 (#c77dff on --surface-50)
+  FAIL  person/swatch #c77dff on card: 2.69 < 3.0 (#c77dff on --surface)
+  FAIL  person/swatch #7dd3fc on row fill: 1.49 < 3.0 (#7dd3fc on --surface-50)
+  FAIL  person/swatch #7dd3fc on card: 1.67 < 3.0 (#7dd3fc on --surface)
+  FAIL  person/swatch #f472b6 on row fill: 2.37 < 3.0 (#f472b6 on --surface-50)
+  FAIL  person/swatch #f472b6 on card: 2.65 < 3.0 (#f472b6 on --surface)
+  FAIL  person/swatch #a3e635 on row fill: 1.35 < 3.0 (#a3e635 on --surface-50)
+  FAIL  person/swatch #a3e635 on card: 1.51 < 3.0 (#a3e635 on --surface)
+  FAIL  person/swatch #8b94a3 on row fill: 2.73 < 3.0 (#8b94a3 on --surface-50)
+  FAIL  person/filter chip text on #e0a458: 2.18 < 4.5 (#ffffff on #e0a458)
+  FAIL  person/filter chip text on #c77dff: 2.69 < 4.5 (#ffffff on #c77dff)
+  FAIL  person/filter chip text on #f472b6: 2.65 < 4.5 (#ffffff on #f472b6)
+  FAIL  person/filter chip text on #8b94a3: 3.06 < 4.5 (#ffffff on #8b94a3)

@@ -19,6 +19,7 @@ import { initPlayer, onFrame, render } from "./player.js";
 import { initSubtitleToggle, renderSubtitle } from "./subtitles.js";
 import { initAskPanel } from "./panels/ask.js";
 import { initJobBanner } from "./panels/jobs.js";
+import { initLegendDisclosures } from "./legend.js";
 import { initEmotionPanels, renderEmotionPanels } from "./panels/emotions.js";
 import { initPersonList } from "./panels/people.js";
 import { state } from "./state.js";
@@ -33,6 +34,7 @@ initPlayer();
 initSubtitleToggle(render);
 initAskPanel();
 initJobBanner();
+initLegendDisclosures();
 
 // Picking a person narrows the emotion panels to them. The rows are
 // rebuilt rather than just re-filled: the whole-video averages drawn

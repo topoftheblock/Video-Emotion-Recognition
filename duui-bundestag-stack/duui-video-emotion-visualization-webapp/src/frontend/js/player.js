@@ -46,13 +46,20 @@ export function seekOnceLoaded(seconds) {
 }
 
 function updateTransport(t) {
-  el.timeCurrent.textContent = formatClock(t);
-  el.timeTotal.textContent = formatClock(el.player.duration || 0);
+  const current = formatClock(t);
+  const total = formatClock(el.player.duration || 0);
+  el.timeCurrent.textContent = current;
+  el.timeTotal.textContent = total;
   // Left alone while the user is dragging it, or the scrub would fight
-  // the pointer.
+  // the pointer. aria-valuetext is inside the same guard for the same
+  // reason: it is the announced value, so rewriting it mid-drag would
+  // fight the user just as visibly.
   if (!el.scrub.matches(":active")) {
     const pct = el.player.duration ? (t / el.player.duration) * 1000 : 0;
     el.scrub.value = pct;
+    // Without this the slider announces "0" to "1000" -- its internal
+    // resolution, which is not a position in anything the user can see.
+    el.scrub.setAttribute("aria-valuetext", `${current} of ${total}`);
   }
 }
 
@@ -82,15 +89,27 @@ const ICON_PLAY =
 const ICON_PAUSE =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5h3v14H8zm5 0h3v14h-3z"/></svg>';
 
+/* Icon and name change together, because they say the same thing. The
+ * name used to be a fixed "Play/Pause", which announces both states at
+ * once and so is never accurate about the one the button is actually
+ * in. Same shape as syncToggleButton() in js/subtitles.js.
+ *
+ * `playing` is what the button will *do*, not what it shows: while the
+ * video plays, the control pauses it. */
+function syncPlayButton(playing) {
+  el.playBtn.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+  el.playBtn.setAttribute("aria-label", playing ? "Pause" : "Play");
+}
+
 export function initPlayer() {
   el.player.addEventListener("play", () => {
-    el.playBtn.innerHTML = ICON_PAUSE;
+    syncPlayButton(true);
     cancelAnimationFrame(state.rafHandle);
     loop();
   });
 
   el.player.addEventListener("pause", () => {
-    el.playBtn.innerHTML = ICON_PLAY;
+    syncPlayButton(false);
     cancelAnimationFrame(state.rafHandle);
     render();
   });

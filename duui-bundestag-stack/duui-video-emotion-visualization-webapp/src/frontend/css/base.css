@@ -110,6 +110,17 @@
 
 html {
   background: var(--bg);
+  /* tokens.css resolves every ramp at its light-mode value and says so
+     -- but nothing had told the browser, which leaves the UA free to
+     render its own widgets dark on a system set to dark: the range
+     input's track and thumb, the text fields, the scrollbars. Declaring
+     the scheme is what stops a dark scrubber appearing on a light
+     transport bar.
+
+     This is the honest minimum, not dark-mode support. Actually
+     supporting dark means a second set of ramps and is a separate
+     piece of work. */
+  color-scheme: light;
 }
 
 html, body {
@@ -139,6 +150,81 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 { font-weight: bold; }
+
+/* Out of the layout, still in the accessibility tree.
+
+   For names the design has no room to show, where the usual shortcuts
+   are both wrong: a placeholder is not an accessible name (it is a
+   fallback of last resort, and it disappears on the first keystroke),
+   and `title` cannot be reached from a keyboard at all. A real element
+   that simply isn't painted is the only thing that works for everyone.
+
+   The 1px-clip idiom specifically -- `display: none` and
+   `visibility: hidden` would take the element out of the accessibility
+   tree along with the layout, which is the opposite of the point. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The skip link: clipped away until it is focused, then a real control
+   in the top-left corner.
+
+   Same clip idiom as .visually-hidden above rather than `display: none`,
+   for the same reason and one more -- a display:none link cannot be
+   focused, so it could never be reached to be revealed. Only the
+   geometry moves on :focus; the look below applies either way and costs
+   nothing while the element is one pixel wide.
+
+   z-index clears both things it can appear over: the sticky topbar (20)
+   and the video combobox's dropdown (30). */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 40;
+
+  /* Anything that changes the box lives in the :focus rule below, not
+     here. `* { box-sizing: border-box }` is set at the top of this file,
+     so padding and border are *inside* a declared width -- leaving them
+     on this rule would floor the hidden box at the size of its own
+     padding (34x22, not 1x1) and make the clip the only thing hiding
+     it. Kept to the paint properties, which cost nothing at one pixel. */
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+
+  background: var(--surface);
+  color: var(--signal-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+}
+
+.skip-link:focus {
+  width: auto;
+  height: auto;
+  margin: 8px;
+  padding: 10px 16px;
+  border: var(--theme-border-base) solid var(--signal);
+  overflow: visible;
+  clip-path: none;
+}
 
 ::selection { background: var(--signal-soft); color: var(--signal-strong); }
 

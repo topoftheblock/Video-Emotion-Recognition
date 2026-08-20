@@ -23,7 +23,7 @@
    primary-500, on-primary white, rounded-base. */
 .topbar-mark {
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.12em;
   color: #fff;
@@ -33,9 +33,20 @@
 }
 
 /* No direct Gateway precedent -- its nav brand is Logo.svg, an image,
-   not text. Nearest real Tailwind step to what was already here. */
+   not text. Nearest real Tailwind step to what was already here.
+
+   An <h1>, and the page's only one: headings used to start at <h2>, so
+   heading navigation dropped into the middle of a hierarchy with no
+   document-level anchor above it. It is styled as brand text rather
+   than as a heading, which is what the three resets below are for --
+   `margin` in particular, since the UA's 0.67em block margin would
+   otherwise push the whole topbar around. --font-ui is already
+   inherited from body, but the UA also sets its own family on h1, so
+   that has to be said again too. */
 .topbar-title {
-  font-size: 16px;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--text);
 }
@@ -44,7 +55,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
   color: var(--text-dim);
 }
@@ -61,18 +72,19 @@
 .video-combobox-input {
   background: var(--surface-alt);
   color: var(--text);
-  border: var(--theme-border-base) solid var(--border-soft);
+  /* See .ask-input in ask.css -- same field, same reason. */
+  border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
   padding: 7px 12px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
   width: 24ch;
   cursor: text;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.video-combobox-input::placeholder { color: var(--text-dim); }
+.video-combobox-input::placeholder { color: var(--text-placeholder); }
 
 .video-combobox-input:hover { border-color: var(--signal); }
 
@@ -96,7 +108,10 @@
   max-height: 320px;
   overflow-y: auto;
   background: var(--surface);
-  border: var(--theme-border-base) solid var(--border-soft);
+  /* A popup edge over page content: the only thing separating the list
+     from whatever it is floating above, so it carries the same 3:1
+     requirement the fields do. */
+  border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
 }
@@ -110,7 +125,7 @@
   gap: 8px;
   padding: 6px 10px;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -133,5 +148,5 @@
 .video-combo-missing {
   flex-shrink: 0;
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }

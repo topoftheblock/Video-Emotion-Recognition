@@ -36,7 +36,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -73,14 +73,50 @@
   justify-content: flex-end;
   gap: 4px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-dim);
-  /* Signals there's more to read on hover -- the title is the only way
-     to reach the fuller explanation, there's no click target. */
+}
+
+/* The header is the disclosure control. It used to be a bare div whose
+   only route to the fuller explanation was `title` -- no keyboard could
+   open it and no touch screen showed it at all, which is the wrong
+   place for the only written description of what the number means.
+
+   Keeps the legend's own typography: this is still a column header
+   first, and it should not start looking like a button sitting over the
+   list. `cursor: help` rather than `pointer` for the same reason. */
+.person-legend-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
   cursor: help;
+}
+
+.person-legend-toggle:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+/* What the toggle opens. A sibling of .person-legend rather than a
+   child: the legend is absolutely positioned into the title's row, so
+   anything inside it would be lifted out of the flow too. Here it sits
+   between the title and the list, which is where it reads. */
+.person-legend-help {
+  margin: 0 0 10px;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  /* --text-strong, not --text-dim: small text that is read through
+     rather than glanced at, the same call .emo-label and .job-detail
+     make. */
+  color: var(--text-strong);
 }
 
 .person-legend .info-icon {
@@ -98,7 +134,11 @@
    actually have a legend, so titles elsewhere (which pair with
    .panel-filter instead, already sized for this) are untouched. */
 .panel:has(> .person-legend) .panel-title {
-  padding-right: 132px;
+  /* Room for the absolutely-positioned .person-legend beside the title.
+     em rather than px for the same reason as the emotion grid: it is
+     reserving space for a piece of text, and text is no longer a fixed
+     number of pixels wide. 11em is the 132px this was at a 12px title. */
+  padding-right: 11em;
 }
 
 /* The ellipsis is scoped to the text span, not the whole flex title:
@@ -129,7 +169,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
@@ -171,7 +211,9 @@
   color: #fff;
 }
 
-.person-row.is-selected .person-meta { color: rgba(255, 255, 255, 0.75); }
+/* 0.85, not the 0.75 this used to be: over --signal that composited to
+   #bfdae5 and 3.99:1, which is a fail at 12px. */
+.person-row.is-selected .person-meta { color: rgba(255, 255, 255, 0.85); }
 
 .person-row:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
@@ -197,7 +239,7 @@
   background: var(--signal-soft);
   color: var(--signal-strong);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 500;
   letter-spacing: 0.03em;
   text-transform: none;
@@ -236,7 +278,7 @@
 .cross-list .person-name {
   grid-column: 2;
   grid-row: 1;
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
@@ -272,7 +314,7 @@
 .cross-list .person-global-id {
   display: inline;
   margin-left: 6px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 400;
   color: var(--surface-500);
 }
@@ -292,7 +334,7 @@
   flex-direction: column;
   gap: 2px;
   color: var(--surface-500);
-  font-size: 14px;
+  font-size: var(--text-sm);
   line-height: 1.45;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -300,18 +342,39 @@
 
 /* Per-person identity colours -- set inline from js/state.js and
    deliberately outside the theme, since they have to stay mutually
-   distinguishable rather than on-brand. */
+   distinguishable rather than on-brand. tests/cvd_check.py is what keeps
+   them distinguishable under colour-vision deficiency, which matters
+   here because this swatch is the only thing tying a name in this list
+   to a stroked box on the video.
+
+   Two shadows, and the inner one is load-bearing. The palette cannot
+   supply its own boundary: the same colours are drawn over arbitrary
+   footage, where they have to stay bright, which leaves them at
+   1.2-3.5:1 against these light rows -- and darkening them to fix that
+   would break the other use. The 1px ring carries the 3:1 instead,
+   without touching a hue. The 3px halo outside it is the original soft
+   edge, unchanged. */
 .person-swatch {
   width: 9px;
   height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+  box-shadow:
+    0 0 0 1px var(--border-input),
+    0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+/* --border-input against --signal is 1.05:1 -- all but the same colour.
+   White is 5.84:1 on it. */
+.person-row.is-selected .person-swatch {
+  box-shadow:
+    0 0 0 1px #fff,
+    0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
 }
 
 .person-meta {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 400;
   color: var(--text-dim);
   margin-left: auto;
@@ -320,7 +383,7 @@
 
 .empty-hint {
   color: var(--text-dim);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-style: italic;
   background: none !important;
   border-color: transparent !important;

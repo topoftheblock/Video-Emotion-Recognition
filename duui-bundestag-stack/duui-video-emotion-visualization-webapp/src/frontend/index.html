@@ -11,21 +11,32 @@
 <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
+  <!-- First focusable thing on the page. Everything before the player
+       -- the whole topbar and the entire Ask panel -- is otherwise five
+       tab stops a keyboard user has to cross every time. -->
+  <a class="skip-link" href="#stageFrame">Skip to player</a>
+
   <header class="topbar">
     <div class="topbar-brand">
       <span class="topbar-mark">DUUI</span>
-      <span class="topbar-title">Emotion Visualization</span>
+      <h1 class="topbar-title">Emotion Visualization</h1>
     </div>
-    <label class="video-picker">
-      <span>Video</span>
+    <!-- Not a <label>: it used to wrap the whole combobox, listbox
+         included, which lets "Video" be pulled into the accessible name
+         of every option in the list. The input is named by pointing at
+         the span instead, so the visible label and the announced one are
+         the same string. -->
+    <div class="video-picker">
+      <span id="videoPickerLabel">Video</span>
       <div id="videoSelect" class="video-combobox">
         <input id="videoComboInput" class="video-combobox-input" type="text"
                placeholder="Search videos…" autocomplete="off" spellcheck="false"
                role="combobox" aria-expanded="false" aria-controls="videoComboList"
-               aria-autocomplete="list" aria-label="Video">
-        <ul id="videoComboList" class="video-combobox-list" role="listbox" hidden></ul>
+               aria-autocomplete="list" aria-labelledby="videoPickerLabel">
+        <ul id="videoComboList" class="video-combobox-list" role="listbox"
+            aria-labelledby="videoPickerLabel" hidden></ul>
       </div>
-    </label>
+    </div>
   </header>
 
   <!-- Filled by js/panels/jobs.js while the importer or the
@@ -33,7 +44,11 @@
        otherwise. -->
   <div class="job-banner" id="jobBanner" role="status" aria-live="polite" style="display:none;"></div>
 
-  <section class="ask-panel">
+  <!-- Named, so it is a landmark. An unnamed <section> is not one, which
+       left the heading, the input and every result outside every
+       landmark on the page -- landmark navigation skipped the feature
+       entirely. -->
+  <section class="ask-panel" aria-labelledby="askTitle">
     <div class="ask-panel-inner">
       <div class="ask-card">
         <div class="ask-heading">
@@ -41,14 +56,18 @@
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 4.9L19 9.8l-4.9 1.9L12 17l-1.9-5.3L5 9.8l5.1-1.9L12 3z" fill="currentColor"/><path d="M19 15l.9 2.3L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.7L19 15z" fill="currentColor"/></svg>
           </span>
           <div>
-            <h2 class="ask-title">Ask about this video</h2>
+            <h2 class="ask-title" id="askTitle">Ask about this video</h2>
             <p class="ask-subtitle">Natural-language questions over transcript, emotions, and on-screen presence.</p>
           </div>
         </div>
         <form id="askForm" class="ask-form">
+          <!-- .ask-title above is the visible heading for this panel, so a
+               second visible label would be noise -- but the input still
+               needs a name of its own, and the placeholder is not one. -->
+          <label class="visually-hidden" for="askInput">Ask a question about this video</label>
           <input id="askInput" class="ask-input" type="text" autocomplete="off"
                  placeholder="e.g. &quot;where do video emotion and text emotion diverge?&quot;" />
-          <button id="askSubmit" class="ask-submit" type="submit">
+          <button id="askSubmit" class="ask-submit" type="submit" aria-disabled="false">
             <span class="btn-label">Ask</span>
           </button>
           <button id="askReset" class="ask-reset" type="button" title="Clear results and show all overlays">Reset view</button>
@@ -61,7 +80,9 @@
 
   <main class="layout">
     <section class="stage">
-      <div class="stage-frame" id="stageFrame">
+      <!-- tabindex="-1" so the skip link actually moves focus here and
+           not merely the scroll position. Not reachable by Tab. -->
+      <div class="stage-frame" id="stageFrame" tabindex="-1">
         <video id="player" playsinline></video>
         <canvas id="overlay"></canvas>
         <!-- Hidden until the first render fills it, and whenever the
@@ -88,13 +109,17 @@
       <div class="transport">
         <!-- Initial (paused) icon; js/player.js swaps it on play/pause
              and holds the matching pair of paths. -->
-        <button id="playBtn" class="transport-btn" aria-label="Play/Pause">
+        <button id="playBtn" class="transport-btn" type="button" aria-label="Play">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.5 5v14l10.5-7z"/></svg>
         </button>
         <button id="subtitleToggle" class="transport-toggle is-on" type="button"
                 aria-pressed="true" title="Hide subtitles">CC</button>
         <span class="time-readout"><span id="timeCurrent">0:00</span> <span class="time-sep">/</span> <span id="timeTotal">0:00</span></span>
-        <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0" step="1">
+        <!-- The value is a position out of 1000; js/player.js keeps
+             aria-valuetext holding the clock instead, which is what a
+             screen reader announces when it is present. -->
+        <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0" step="1"
+               aria-label="Seek">
       </div>
 
       <!-- One panel per modality, and they live with the player rather
@@ -144,19 +169,31 @@
         <!-- Column header for the score in each row's .person-meta --
              hidden by js/panels/people.js whenever the list is the
              "No identified persons" empty state, so it never sits
-             above nothing. The title sits on this wrapping div rather
-             than on the text or the icon individually, so hovering
-             either one shows it -- one tooltip, two hover targets,
-             instead of two titles that could drift apart. -->
-        <div class="person-legend" id="personLegend" style="display:none;"
-             title="Confidence that this person's face identity and voice identity recordings were fused into one identity correctly -- no relation to their emotion readings.">
-          <span>match confidence</span>
-          <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">
-            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
-            <circle cx="8" cy="4.7" r="0.9" fill="currentColor"/>
-            <path d="M8 7.4v4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
+             above nothing.
+
+             A button, not a bare div with a title: what the number
+             means was reachable only by hovering, which leaves it out
+             of reach of a keyboard and off a touch screen entirely.
+             The title stays for the mouse; the disclosure below is the
+             copy everyone else can get to. -->
+        <div class="person-legend" id="personLegend" style="display:none;">
+          <button type="button" class="person-legend-toggle"
+                  aria-expanded="false" aria-controls="personLegendHelp"
+                  aria-label="What match confidence means"
+                  title="Confidence that this person's face identity and voice identity recordings were fused into one identity correctly -- no relation to their emotion readings.">
+            <span>match confidence</span>
+            <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="8" cy="4.7" r="0.9" fill="currentColor"/>
+              <path d="M8 7.4v4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
+        <p class="person-legend-help" id="personLegendHelp" hidden>
+          Confidence that this person's face identity and voice identity
+          recordings were fused into one identity correctly — no relation to
+          their emotion readings.
+        </p>
         <ul class="person-list" id="personList"></ul>
       </div>
 
@@ -170,15 +207,26 @@
              needed here the way #personLegend has: this whole panel is
              hidden by js/panels/crossVideo.js whenever there are no
              rows, so the legend is never left over nothing. -->
-        <div class="person-legend"
-             title="Confidence that this person and their lookalike in another video are the same person -- cosine distance (0 = identical, 2 = opposite) between their face-embedding centroids, from the global-identity job. Lower is a more confident match; this is not the import pipeline's face/voice confidence score.">
-          <span>match confidence</span>
-          <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">
-            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
-            <circle cx="8" cy="4.7" r="0.9" fill="currentColor"/>
-            <path d="M8 7.4v4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
+        <div class="person-legend">
+          <button type="button" class="person-legend-toggle"
+                  aria-expanded="false" aria-controls="crossVideoLegendHelp"
+                  aria-label="What match confidence means"
+                  title="Confidence that this person and their lookalike in another video are the same person -- cosine distance (0 = identical, 2 = opposite) between their face-embedding centroids, from the global-identity job. Lower is a more confident match; this is not the import pipeline's face/voice confidence score.">
+            <span>match confidence</span>
+            <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="8" cy="4.7" r="0.9" fill="currentColor"/>
+              <path d="M8 7.4v4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
+        <p class="person-legend-help" id="crossVideoLegendHelp" hidden>
+          Confidence that this person and their lookalike in another video are
+          the same person — cosine distance (0 = identical, 2 = opposite)
+          between their face-embedding centroids, from the global-identity job.
+          Lower is a more confident match; this is not the import pipeline's
+          face/voice confidence score.
+        </p>
         <ul class="person-list cross-list" id="crossVideoList"></ul>
       </div>
     </aside>

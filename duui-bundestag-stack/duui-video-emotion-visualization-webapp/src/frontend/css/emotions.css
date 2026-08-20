@@ -24,7 +24,7 @@
    proportionality, not a Gateway precedent. */
 .emo-dominant {
   font-family: var(--font-mono);
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--emotion);
   overflow: hidden;
@@ -34,7 +34,7 @@
 
 .emo-count {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   flex-shrink: 0;
 }
@@ -54,16 +54,24 @@
    vocabularies in PANELS above and formatSigned()'s output. */
 .emo-row, .emo-legend {
   display: grid;
-  grid-template-columns: 74px 1fr 38px 38px;
+  /* em, not px: every one of these columns is sized by the text it
+     holds, so they have to grow with it. In px they held at the default
+     root size and clipped the moment a reader raised it -- at 200% the
+     labels and both value columns overflowed their cells.
+
+     Ubuntu Mono advances 0.5em per character, so the widths are just
+     character counts halved: 5.3em fits the longest label with room,
+     and 2.75em fits "-1.00" (five characters, 2.5em) plus its gap. */
+  grid-template-columns: 5.3em 1fr 2.75em 2.75em;
   align-items: center;
   gap: 7px;
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 /* Matches Skeleton's .badge/.chip (text-xs, 12px) -- this is a column
    header, the same role as .panel-title and .person-legend. */
 .emo-legend {
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -101,6 +109,18 @@
   margin: 4px 0;
 }
 
+/* The groove is 1.24:1 against the card, and deliberately left there.
+
+   1.4.11 reaches graphics "required to understand the content", and the
+   track is not: every row prints its live value and its average as text
+   in the two columns to its right (.emo-now and .emo-avg), so the bar
+   is a second reading of a number that is already written down. The
+   fill against the groove is 4.72:1, which is what makes the magnitude
+   legible for anyone reading the bar at all.
+
+   Not the same call as the text inputs in 3.3, which do get a 3:1 edge:
+   there, the boundary is the only thing announcing that a control
+   exists. Here, nothing is lost if the groove's outer edge is soft. */
 .emo-track {
   position: relative;
   height: 6px;
@@ -111,12 +131,17 @@
 
 /* Signed values grow from the centre, so the centre gets a hairline to
    grow away from. */
+/* --border-input, not --border-strong. This is the line a signed value
+   is read as growing away from, so it is meaningful rather than
+   decorative -- and against the groove it sits on, --border-strong was
+   1.90:1. (The audit measured it against the card and got 2.35; the
+   card is not what is behind it.) */
 .emo-track-signed::before {
   content: "";
   position: absolute;
   top: 0; bottom: 0; left: 50%;
   width: 1px;
-  background: var(--border-strong);
+  background: var(--border-input);
 }
 
 .emo-fill {
@@ -140,7 +165,7 @@
 
 .emo-now, .emo-avg {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-sm);
   text-align: right;
   white-space: nowrap;
 }

@@ -50,14 +50,14 @@
 /* Matches .h4 (Skeleton's card-title class, e.g. PipelineCard's own
    name heading) at its mobile-first step, text-lg. */
 .ask-title {
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--text);
   margin: 0 0 2px;
 }
 
 .ask-subtitle {
-  font-size: 12.5px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   margin: 0;
 }
@@ -71,17 +71,29 @@
    primary ring on focus. */
 .ask-input {
   flex: 1;
+  /* A flex item's floor is its intrinsic width, and an <input> carries
+     a default `size` of 20 characters -- so this refuses to shrink below
+     roughly twenty characters' worth of its own font. At the default
+     size that fits anywhere; at a 200% root it is over 400px, which is
+     wider than the phone it is sitting on, and it alone pushed the whole
+     page into horizontal scroll. `min-width: 0` is what lets a flex item
+     be narrower than its content, the same fix .scrub already carries in
+     responsive.css. */
+  min-width: 0;
   background: var(--surface-alt);
   color: var(--text);
-  border: var(--theme-border-base) solid var(--border-soft);
+  /* --border-input, not --border-soft: at 1.31:1 the old edge and the
+     1.24:1 fill left nothing marking this as a field until it was
+     focused. See the token's comment in tokens.css. */
+  border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
   padding: 11px 14px;
   font-family: var(--font-ui);
-  font-size: 16px;
+  font-size: var(--text-base);
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.ask-input::placeholder { color: var(--text-dim); }
+.ask-input::placeholder { color: var(--text-placeholder); }
 
 .ask-input:focus {
   outline: none;
@@ -91,7 +103,7 @@
 
 .ask-submit, .ask-reset {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 600;
   border-radius: var(--radius-sm);
   padding: 11px 22px;
@@ -108,16 +120,20 @@
   position: relative;
 }
 
-.ask-submit:hover:not(:disabled) { background: var(--signal-hover); }
+.ask-submit:hover:not([aria-disabled="true"]) { background: var(--signal-hover); }
 .ask-submit:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
-.ask-submit:disabled {
+/* Keyed off aria-disabled rather than :disabled, because the button is
+   never really disabled while a question is out -- see the comment on
+   setPending() in js/panels/ask.js for why it stays focusable. The look
+   is identical either way; only the selector changed. */
+.ask-submit[aria-disabled="true"] {
   color: transparent;
   cursor: default;
   opacity: 0.8;
 }
 
-.ask-submit:disabled::after {
+.ask-submit[aria-disabled="true"]::after {
   content: "";
   position: absolute;
   top: 50%; left: 50%;
@@ -150,7 +166,7 @@
 
 .ask-status {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-dim);
   min-height: 16px;
 }
@@ -169,7 +185,7 @@
 /* Matches PipelineCard's own description paragraph -- no size override
    there, which inherits Tailwind's text-base default. */
 .ask-explanation {
-  font-size: 16px;
+  font-size: var(--text-base);
   color: var(--text-dim);
   line-height: 1.5;
 }
@@ -181,7 +197,7 @@
    in full, not skimmed. */
 .ask-sql {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-sm);
   color: var(--text-strong);
   background: var(--surface-50);
   border: var(--theme-border-base) solid var(--border);
@@ -200,7 +216,7 @@
 /* The Gateway's .tag: rounded-full chip, variant-soft-primary. */
 .ask-overlay-tag {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -221,34 +237,50 @@
   overflow-y: auto;
 }
 
-.ask-segment-list li {
+/* Each row is a <button>, not the <li>. These seek the player, and a
+   click handler on a list item is reachable by pointer only -- the
+   sidebar's .person-row is the same control in the same situation and
+   was already built this way, so this is that idiom rather than a
+   second one.
+
+   Everything the row looks like moved onto the button with it: an
+   affordance drawn on the <li> would sit one element away from the
+   thing that actually takes focus, and the ring would outline the
+   wrong box. The <li> keeps nothing but its place in the list. */
+.ask-segment-list button {
+  width: 100%;
   background: var(--surface-50);
   border: var(--theme-border-base) solid transparent;
   border-radius: var(--radius-sm);
   padding: 9px 12px;
   cursor: pointer;
-  font-size: 12px;
+  font-family: inherit;
+  font-size: var(--text-xs);
+  color: inherit;
+  text-align: left;
   display: flex;
   flex-direction: column;
   gap: 3px;
   transition: background-color var(--transition), border-color var(--transition);
 }
 
-.ask-segment-list li:hover {
+.ask-segment-list button:hover {
   border-color: var(--signal);
   background: var(--signal-soft);
 }
+
+.ask-segment-list button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
 .ask-segment-time {
   font-family: var(--font-mono);
   font-weight: 500;
   color: var(--signal-strong);
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 .ask-segment-meta {
   color: var(--text-dim);
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 /* A result table's width is whatever the columns the model picked
@@ -272,7 +304,7 @@
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 .ask-table th, .ask-table td {
