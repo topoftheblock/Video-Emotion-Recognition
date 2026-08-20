@@ -262,6 +262,9 @@ observed orders match exactly on this page, which has no positive `tabindex`.
 
 ## Phase 2 — Document structure and navigation
 
+**Status: complete.** Verified against the rebuilt container; results under
+"Done when" below.
+
 Small, but it changes how every screen-reader user enters the page, so it
 belongs before the cosmetic work.
 
@@ -306,6 +309,44 @@ the page. Landmark navigation skips the entire feature.
 outline (axe or a screen reader's heading list) shows a single `h1` with `h2`s
 beneath it, and axe's `region` violation is gone in both the default and the
 Ask-results state.
+
+**Measured after the work, against the rebuilt container:**
+
+| | before | after |
+|---|---|---|
+| axe violations, all five states | 2 (`page-has-heading-one`, `region`) | **0** |
+| `region` nodes, Ask-results state | 6 | **0** |
+| Heading outline | starts at `h2` | **one `h1`, then `h2`s** |
+| First tab stop | the video combobox | **the skip link** |
+| Tab stops, default state | 12 | 13 |
+
+axe now reports **zero violations in every captured state** — default, person
+filter, Ask segments, Ask table, combobox open. The heading outline is one `h1`
+("Emotion Visualization") followed by eight `h2`s.
+
+Promoting `.topbar-title` to `<h1>` needed three resets, not none: the UA's
+`0.67em` block margin would have pushed the topbar around, and its font family
+and size both had to be restated. Checked after the change — the topbar is the
+same 65px tall and the title still renders at 16px/600 in Oxanium.
+
+The skip link is the first child of `<body>`, measures 1×1 while clipped, and
+expands to a 124×40 control at (8,8) that hit-tests **above** the sticky topbar,
+so `z-index: 40` clears both the bar (20) and the combobox dropdown (30).
+Following it moves focus to `#stageFrame`, not just the scroll position.
+
+Two notes on method, both environmental rather than defects:
+
+- The browser pane was backgrounded for this round (`document.hasFocus()` is
+  `false`, `visibilityState` is `"hidden"`), so `:focus` cannot match and real
+  `Tab` presses do not reach the page. The skip link's focused geometry was
+  therefore verified by applying the `:focus` rule's declarations directly and
+  measuring those; the only unverified link is the one-line `:focus` trigger.
+  The tab order above is the computed focusable order, which Phase 0 established
+  matches the observed one on this page.
+- State E (combobox open) reports `color-contrast` as *incomplete* on
+  `.btn-label` and `#askReset`. That is the open dropdown overlapping them —
+  axe will not judge contrast for an element it cannot see the background of. It
+  is an artefact of the state, not a finding, and Phase 6.1 should expect it.
 
 ---
 
@@ -578,6 +619,9 @@ The same five application states and the same keyboard sweep, diffed against
 conflict and is cheapest to find now.
 - Expect `video-caption` to still be reported *incomplete* against `#player`.
   That is the out-of-scope subtitles finding, not a regression.
+- Expect `color-contrast` *incomplete* on `.btn-label` and `#askReset` in the
+  combobox-open state: the dropdown overlaps them, and axe will not judge
+  contrast through an overlap. Also not a regression.
 - The sweep should now show a skip link at stop 1, three new stops for the Ask
   segment list, a named slider, a play button whose label tracks its state, and
   person rows whose name and score do not run together.

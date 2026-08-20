@@ -33,8 +33,19 @@
 }
 
 /* No direct Gateway precedent -- its nav brand is Logo.svg, an image,
-   not text. Nearest real Tailwind step to what was already here. */
+   not text. Nearest real Tailwind step to what was already here.
+
+   An <h1>, and the page's only one: headings used to start at <h2>, so
+   heading navigation dropped into the middle of a hierarchy with no
+   document-level anchor above it. It is styled as brand text rather
+   than as a heading, which is what the three resets below are for --
+   `margin` in particular, since the UA's 0.67em block margin would
+   otherwise push the whole topbar around. --font-ui is already
+   inherited from body, but the UA also sets its own family on h1, so
+   that has to be said again too. */
 .topbar-title {
+  margin: 0;
+  font-family: var(--font-ui);
   font-size: 16px;
   font-weight: 600;
   color: var(--text);

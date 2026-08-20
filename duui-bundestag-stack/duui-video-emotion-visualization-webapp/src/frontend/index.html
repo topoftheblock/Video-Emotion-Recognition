@@ -11,10 +11,15 @@
 <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
+  <!-- First focusable thing on the page. Everything before the player
+       -- the whole topbar and the entire Ask panel -- is otherwise five
+       tab stops a keyboard user has to cross every time. -->
+  <a class="skip-link" href="#stageFrame">Skip to player</a>
+
   <header class="topbar">
     <div class="topbar-brand">
       <span class="topbar-mark">DUUI</span>
-      <span class="topbar-title">Emotion Visualization</span>
+      <h1 class="topbar-title">Emotion Visualization</h1>
     </div>
     <!-- Not a <label>: it used to wrap the whole combobox, listbox
          included, which lets "Video" be pulled into the accessible name
@@ -39,7 +44,11 @@
        otherwise. -->
   <div class="job-banner" id="jobBanner" role="status" aria-live="polite" style="display:none;"></div>
 
-  <section class="ask-panel">
+  <!-- Named, so it is a landmark. An unnamed <section> is not one, which
+       left the heading, the input and every result outside every
+       landmark on the page -- landmark navigation skipped the feature
+       entirely. -->
+  <section class="ask-panel" aria-labelledby="askTitle">
     <div class="ask-panel-inner">
       <div class="ask-card">
         <div class="ask-heading">
@@ -47,7 +56,7 @@
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 4.9L19 9.8l-4.9 1.9L12 17l-1.9-5.3L5 9.8l5.1-1.9L12 3z" fill="currentColor"/><path d="M19 15l.9 2.3L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.7L19 15z" fill="currentColor"/></svg>
           </span>
           <div>
-            <h2 class="ask-title">Ask about this video</h2>
+            <h2 class="ask-title" id="askTitle">Ask about this video</h2>
             <p class="ask-subtitle">Natural-language questions over transcript, emotions, and on-screen presence.</p>
           </div>
         </div>
@@ -71,7 +80,9 @@
 
   <main class="layout">
     <section class="stage">
-      <div class="stage-frame" id="stageFrame">
+      <!-- tabindex="-1" so the skip link actually moves focus here and
+           not merely the scroll position. Not reachable by Tab. -->
+      <div class="stage-frame" id="stageFrame" tabindex="-1">
         <video id="player" playsinline></video>
         <canvas id="overlay"></canvas>
         <!-- Hidden until the first render fills it, and whenever the
