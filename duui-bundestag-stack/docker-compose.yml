@@ -107,7 +107,7 @@ services:
   db:
     build:
       context: ./db
-    image: duui-db:latest
+    image: duui-video-emotion-db:latest
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DUUI_DB_NAME:-duui_bundestag}
