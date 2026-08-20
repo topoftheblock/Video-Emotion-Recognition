@@ -1,4 +1,15 @@
-/* ---------------- Responsive ---------------- */
+/* ---------------- Responsive ----------------
+
+   Two breakpoints, and a floor of 320px -- the narrowest viewport the
+   web still broadly supports (iPhone SE/5, the Galaxy Fold's cover
+   screen), and what "must not break" means in practice. Nothing below
+   that is designed for.
+
+     <= 860px  the two-column grid collapses; the sidebar stops being
+               a side bar but panels still pair up on a line
+     <= 560px  phone shape: one panel per line, and the controls that
+               do not fit on a single row break onto a second one
+--------------------------------------------------------------------*/
 
 @media (max-width: 860px) {
   /* One column: the stage -- player, transport, then the three emotion
@@ -16,6 +27,99 @@
   .topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
   .video-combobox-input { max-width: 60vw; }
 }
+
+@media (max-width: 560px) {
+  /* Gutters. 12px rather than the tablet 16: at 320px every pixel
+     given back to the panels shows up in the emotion tracks, which are
+     the narrowest thing on the page. */
+  .layout { padding: 12px 12px 32px; gap: 16px; }
+  .ask-panel-inner { padding: 12px 12px 0; }
+  .job-banner { padding: 10px 12px 0; }
+
+  /* One panel per line. The 240px basis above lets two share a line on
+     a tablet; at phone width two would each be ~140px, which is
+     narrower than a single .emo-row's own minimum. */
+  .sidebar .panel { flex: 1 1 100%; }
+
+  /* The transport is the one row that genuinely cannot fit: the range
+     input alone has a 129px intrinsic minimum, and play + CC + the
+     time read-out claim ~160px before it. Below ~410px viewport that
+     sum overflowed the grid column and dragged the video frame, the
+     overlay canvas and all three emotion panels off-screen with it --
+     the single cause of the page's horizontal scroll.
+
+     So the scrubber takes a line of its own. `order: 3` is belt and
+     braces (it is already last in source), and `flex: 1 0 100%` is
+     what forces the wrap rather than merely allowing it. `min-width: 0`
+     defeats the flex item's content-based floor, which is that same
+     129px. */
+  .transport { flex-wrap: wrap; gap: 10px 12px; padding: 12px 14px; }
+  .scrub { flex: 1 0 100%; min-width: 0; order: 3; }
+  .time-readout { margin-left: auto; }
+
+  /* Comfortable enough to hit with a thumb. Not the full 44px the
+     touch guidelines ask for -- these are dense read-out rows, and 44
+     would change what the panels are; 36-40 is the compromise. */
+  .transport-toggle { height: 36px; padding: 0 13px; }
+  .person-row, .active-list li:not(.empty-hint) { padding: 10px; }
+
+  /* The legend is absolutely positioned into the title's row, which
+     works only while the title has somewhere to sit beside it. At
+     320px the reserved 132px leaves ~120px for "Also appears in" --
+     it fits, but by five pixels. Drop it onto its own line instead,
+     where neither has to shrink. It sits between the title and the
+     list in source order, so no reordering is needed. */
+  .panel:has(> .person-legend) .panel-title { padding-right: 0; }
+
+  /* The emotion rows keep both value columns at full width (they hold
+     "-1.00", which does not shrink) and take the space out of the
+     label column and the gaps instead, so the track -- the only part
+     of the row that is read at a glance rather than by number -- does
+     not end up thinner than the numbers beside it.
+
+     64px is the floor, not a round number: the longest labels in the
+     three model vocabularies ("Happiness", "dominance", "disgusted",
+     "surprised") are 9 characters, and Ubuntu Mono's 0.5em advance
+     puts that at 63px on the nose at 14px. 62 ellipsises all four. */
+  .emo-row, .emo-legend { grid-template-columns: 64px 1fr 38px 38px; gap: 6px; }
+
+  /* A 16:9 frame is only ~166px tall at 320px wide, which is less than
+     the empty state's own title + explanation + command need -- and
+     .stage-frame is `overflow: hidden`, so the command someone is
+     supposed to copy is exactly what gets cut off.
+
+     Letting the frame outgrow 16:9 is safe here and only here: the
+     overlay canvas maps normalised detection coordinates onto the
+     frame's own box (drawBox() in js/overlay.js), which is the video's
+     content box only while the two share an aspect ratio. When the
+     empty state is up there is no video and no detections to misplace,
+     which is why this hangs off .is-empty -- set by showEmptyState()
+     in js/videoLoader.js -- rather than off the frame itself. */
+  .stage-frame.is-empty {
+    aspect-ratio: auto;
+    min-height: 280px;
+  }
+
+  .empty-state-detail { font-size: 14px; }
+
+  /* Captions are sized off the viewport, but the frame they sit in is
+     the thing that got small: at 320px the shipped floors put a
+     three-line caption at ~89px inside a 166px-tall video, over half
+     the picture. Lower floors and tighter padding bring that back to
+     roughly a third. */
+  .subtitle-box { padding: 5px 10px; gap: 1px; }
+  .subtitle-text { font-size: clamp(11px, 3.4vw, 14px); line-height: 1.25; }
+  .subtitle-emotion { font-size: clamp(10px, 2.8vw, 12px); }
+}
+
+@media (max-width: 330px) {
+  .person-legend {
+    position: static;
+    justify-content: flex-start;
+    margin: -6px 0 10px;
+  }
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }

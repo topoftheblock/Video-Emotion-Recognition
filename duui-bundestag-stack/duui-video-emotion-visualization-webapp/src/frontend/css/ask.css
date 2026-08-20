@@ -98,7 +98,7 @@
   cursor: pointer;
   border: var(--theme-border-base) solid transparent;
   transition: background-color var(--transition), color var(--transition),
-    border-color var(--transition);
+  border-color var(--transition);
 }
 
 /* .button-primary */
@@ -249,6 +249,22 @@
 .ask-segment-meta {
   color: var(--text-dim);
   font-size: 14px;
+}
+
+/* A result table's width is whatever the columns the model picked
+   happen to need -- four ordinary ones already come to ~395px, which
+   is wider than a phone and, being a table, will not wrap. Scrolling
+   it inside its own box is the only way it cannot push the page
+   sideways. `min-width: 0` is what actually lets the box be narrower
+   than the table inside it: .ask-results is a flex column, so this
+   wrapper's default floor is its own content's width.
+
+   Not scoped to a breakpoint -- a wide enough result overflows a
+   desktop card too, and overflow-x: auto costs nothing when the table
+   already fits. */
+.ask-table-wrap {
+  min-width: 0;
+  overflow-x: auto;
 }
 
 /* Matches Skeleton's .table tbody td exactly (text-sm, 14px). */

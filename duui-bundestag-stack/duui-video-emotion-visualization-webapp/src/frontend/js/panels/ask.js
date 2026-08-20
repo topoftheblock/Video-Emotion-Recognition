@@ -36,9 +36,9 @@ function renderAskResults(result) {
   }
   if (result.overlays && result.overlays.length) {
     parts.push(
-      html`<div class="ask-overlays">
-        ${result.overlays.map((o) => html`<span class="ask-overlay-tag">${o}</span>`)}
-      </div>`
+        html`<div class="ask-overlays">
+          ${result.overlays.map((o) => html`<span class="ask-overlay-tag">${o}</span>`)}
+        </div>`
     );
   }
   if (result.sql) {
@@ -47,34 +47,34 @@ function renderAskResults(result) {
 
   if (result.segments && result.segments.length) {
     parts.push(
-      html`<ul class="ask-segment-list">
-        ${result.segments.map(
-          (seg, i) => html`<li data-index="${i}">
+        html`<ul class="ask-segment-list">
+          ${result.segments.map(
+              (seg, i) => html`<li data-index="${i}">
             <span class="ask-segment-time"
-              >video #${seg.video_id} · ${formatTime(seg.start_time)}–${formatTime(seg.end_time)}</span
+            >video #${seg.video_id} · ${formatTime(seg.start_time)}–${formatTime(seg.end_time)}</span
             >
-            <span class="ask-segment-meta">${formatMeta(seg.meta || {})}</span>
-          </li>`
-        )}
-      </ul>`
+                <span class="ask-segment-meta">${formatMeta(seg.meta || {})}</span>
+              </li>`
+          )}
+        </ul>`
     );
   } else if (result.rows && result.rows.length) {
     const cols = result.columns;
     parts.push(
-      html`<table class="ask-table">
-        <thead>
+        html`<div class="ask-table-wrap"><table class="ask-table">
+          <thead>
           <tr>
             ${cols.map((c) => html`<th>${c}</th>`)}
           </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
           ${result.rows.map(
-            (row) => html`<tr>
-              ${cols.map((c) => html`<td>${row[c] ?? ""}</td>`)}
-            </tr>`
+              (row) => html`<tr>
+                ${cols.map((c) => html`<td>${row[c] ?? ""}</td>`)}
+              </tr>`
           )}
-        </tbody>
-      </table>`
+          </tbody>
+        </table></div>`
     );
   } else {
     parts.push(html`<div class="ask-explanation">No rows matched this question.</div>`);
@@ -82,7 +82,7 @@ function renderAskResults(result) {
 
   if (result.truncated) {
     parts.push(
-      html`<div class="ask-status">Showing the first ${result.rows.length} rows.</div>`
+        html`<div class="ask-status">Showing the first ${result.rows.length} rows.</div>`
     );
   }
 

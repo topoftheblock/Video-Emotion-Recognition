@@ -56,11 +56,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 32px;
+  gap: clamp(6px, 1.6vw, 10px);
+  padding: clamp(14px, 4vw, 32px);
   text-align: center;
   background: linear-gradient(160deg, var(--surface-700), var(--surface-900));
   color: #fff;
+  /* Last resort. .stage-frame.is-empty (below) gives this cover room
+     to lay out at phone widths, so this should not trigger there --
+     but the frame is `overflow: hidden`, and silently clipping the
+     command someone is meant to copy is the one failure mode worth
+     spending a scrollbar to avoid. */
+  overflow-y: auto;
 }
 
 .empty-state-title {
@@ -81,7 +87,9 @@
 }
 
 /* Inline code, matched to Skeleton's .badge/.chip default (text-xs,
-   12px). */
+   12px). `overflow-wrap: anywhere` because these are shell commands --
+   one unbroken `--input /data/input/xmi` run is longer than a phone is
+   wide, and normal word-wrapping will not break inside it. */
 .empty-state-command {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -90,6 +98,8 @@
   border: var(--theme-border-base) solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-sm);
   padding: 9px 14px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   user-select: all;
 }
 
@@ -202,7 +212,7 @@
   letter-spacing: 0.06em;
   cursor: pointer;
   transition: background-color var(--transition), color var(--transition),
-    border-color var(--transition);
+  border-color var(--transition);
 }
 
 .transport-toggle:hover {
