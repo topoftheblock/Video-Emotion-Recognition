@@ -13,7 +13,7 @@
  */
 
 import { el, html } from "../dom.js";
-import { personColorFor, personName, state } from "../state.js";
+import { compareNames, personColorFor, personName, state } from "../state.js";
 
 /**
  * Whether a cluster member is this video's person.
@@ -39,6 +39,9 @@ export function renderCrossVideoPanel(data) {
     if (!cluster) continue;
     const others = cluster.members.filter((m) => !isSamePerson(m, person, videoId));
     if (!others.length) continue;
+    // Alphabetical by video filename, matching the People panel's
+    // person-name sort applied to `rows` below.
+    others.sort((a, b) => compareNames(a.video_filename, b.video_filename));
     rows.push({ person, others, cluster });
   }
 
@@ -47,6 +50,7 @@ export function renderCrossVideoPanel(data) {
     el.crossVideoList.innerHTML = "";
     return;
   }
+  rows.sort((a, b) => compareNames(personName(a.person), personName(b.person)));
 
   el.crossVideoPanel.style.display = "";
   el.crossVideoList.innerHTML = rows

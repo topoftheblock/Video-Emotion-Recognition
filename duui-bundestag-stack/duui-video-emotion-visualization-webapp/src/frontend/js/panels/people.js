@@ -9,7 +9,7 @@
  */
 
 import { el, html } from "../dom.js";
-import { personColorFor, personName, state } from "../state.js";
+import { compareNames, personColorFor, personName, state } from "../state.js";
 
 /**
  * Wire the person list once. `onChange` runs after a click has
@@ -42,7 +42,9 @@ export function renderPersonList(persons) {
     el.personList.innerHTML = '<li class="empty-hint">No identified persons.</li>';
     return;
   }
-  el.personList.innerHTML = persons
+  // Alphabetical by display name, not import order.
+  const sorted = [...persons].sort((a, b) => compareNames(personName(a), personName(b)));
+  el.personList.innerHTML = sorted
     .map((p) => {
       const score = p.audio_video_match_score != null ? `${Math.round(p.audio_video_match_score * 100)}%` : "";
       // Repeats the legend's title on the number itself, so the
@@ -77,7 +79,9 @@ export function renderActiveList(labels) {
     el.activeList.innerHTML = '<li class="empty-hint">No one detected at this frame.</li>';
     return;
   }
-  el.activeList.innerHTML = labels
+  // Alphabetical by display name, same as the other two person lists.
+  const sorted = [...labels].sort((a, b) => compareNames(a.name, b.name));
+  el.activeList.innerHTML = sorted
     .map(
       (l) => html`<li>
         <span class="person-swatch" style="background:${l.color}"></span>

@@ -85,3 +85,13 @@ export function readableTextColor(hex) {
 export function personName(person) {
   return person.clip_label || `person ${person.person_id}`;
 }
+
+/**
+ * Alphabetical comparator for the person lists in the sidebar (People,
+ * "also appears in", "on screen now"). `numeric: true` makes it a
+ * natural sort -- "person 2" before "person 10" -- rather than the
+ * lexicographic order plain string comparison would give.
+ */
+export function compareNames(a, b) {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+}
