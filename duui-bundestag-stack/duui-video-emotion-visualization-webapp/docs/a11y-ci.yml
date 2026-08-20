@@ -1,11 +1,16 @@
 # Accessibility regression checks — ready to activate, not active here.
 #
-# Phase 6.3 of docs/accessibility-plan.md. This file does nothing where it
-# sits. To turn it on, move it to the *repository root* (which is the
-# parent of duui-bundestag-stack, not this directory):
+# Phase 6.3 of accessibility-plan.md, next to this file. It does nothing
+# where it sits. To turn it on, move it into `.github/workflows/` at the
+# *repository root* -- which is the parent of `duui-bundestag-stack`, not
+# this directory and not the stack. Run these from the repository root:
 #
-#     mkdir -p ../../.github/workflows
-#     git mv docs/a11y-ci.yml ../../.github/workflows/accessibility.yml
+#     mkdir -p .github/workflows
+#     git mv duui-bundestag-stack/duui-video-emotion-visualization-webapp/docs/a11y-ci.yml \
+#            .github/workflows/accessibility.yml
+#
+# The `paths:` filters and `working-directory:` below are already written
+# relative to the repository root, so they need no adjustment.
 #
 # It is left inert deliberately. This repository has no CI at all, and its
 # root holds a dozen unrelated subprojects — adding a workflow there

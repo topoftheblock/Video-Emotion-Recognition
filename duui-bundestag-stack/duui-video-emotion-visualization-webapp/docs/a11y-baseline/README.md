@@ -11,6 +11,10 @@ and diffs against these.
 
 ## Reproducing
 
+Every command below runs from the **stack root** (`duui-bundestag-stack/`),
+which is two levels above this file — the paths in them are relative to it, not
+to this directory.
+
 **Contrast** — pure functions over committed values; no browser, no database.
 
 ```bash

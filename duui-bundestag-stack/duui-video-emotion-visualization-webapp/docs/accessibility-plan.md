@@ -1,6 +1,10 @@
 # Frontend accessibility remediation plan
 
-Scope: `duui-video-emotion-visualization-webapp/src/frontend`.
+Scope: `src/frontend`.
+
+This document lives in the viewer's own `docs/`. Stylesheet and script paths
+below (`css/…`, `js/…`) are relative to that scope; test and tooling paths
+(`tests/…`, `docs/…`) are relative to the viewer project root one level up.
 
 Ordering principle: **defects before refactors.** Phases 1–4 close findings that
 block or degrade real use, each in a small, independently shippable diff.
