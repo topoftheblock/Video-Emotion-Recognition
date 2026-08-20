@@ -74,6 +74,9 @@ evaluated.
 
 ## Phase 1 — Keyboard access and accessible names
 
+**Status: complete.** Verified against the rebuilt container; results under
+"Done when" below.
+
 Highest severity, smallest diff, no dependencies on any other phase. One
 finding here makes a headline feature mouse-only.
 
@@ -146,16 +149,35 @@ Confirmed live in the baseline: with the list open, `#videoSelect` reads
 `role="combobox"` — still reads `"false"`, and none of the ten options carries
 an `id` or `aria-selected`.
 
-**1.6 — Keep the Ask submit button named while it spins.**
-`css/ask.css:113-116` sets `color: transparent` on `:disabled` and spins a
-pseudo-element. The visible text is the accessible name, so during the request
-the button has no name at all.
-- Swap the technique: keep `.btn-label` in the flow but hide it with the
-  `.visually-hidden` utility from 1.2, or set an explicit `aria-label="Ask"` on
-  the button so it survives the text going transparent.
-- Add `aria-busy="true"` on the form or button while the request is in flight.
-  `#askStatus` already has `role="status"` and announces "Thinking…", so this is
-  reinforcement, not the primary signal.
+**1.6 — Mark the Ask submit button busy while it spins.**
+
+> **Correction.** The audit claimed this button loses its accessible name while
+> disabled, because `css/ask.css:113-116` sets `color: transparent` and the
+> visible text is the name. **That was wrong.** A name computed from contents
+> depends on whether the element is *rendered*, not on what colour it is painted
+> — `display: none` or `visibility: hidden` would remove it, `color: transparent`
+> does not. Measured with axe's own accname implementation, the button announces
+> "Ask" both enabled and disabled. The sub-task is kept, narrowed to the part
+> that was real.
+
+- Set `aria-busy="true"` on the button for the duration of the request and
+  remove it in the `finally`. `#askStatus` is `role="status"` and announces
+  "Thinking…", which is the actual notification; `aria-busy` makes the state
+  discoverable by someone who navigates back to the control afterwards, rather
+  than only at the instant the live region fires.
+- Do **not** add a redundant `aria-label="Ask"`. It would duplicate a name the
+  button already has, and would silently win over the visible text if that text
+  ever changed — a worse failure than the one it was meant to fix.
+- **Found while measuring, and fixed here too.** `disabled` took the button out
+  of the tab order the instant it was set, so a keyboard user who had just
+  pressed Enter or Space on it lost focus to the document body and had to tab in
+  from the top of the page to reach the answer they had asked for. The button is
+  `aria-disabled` now and keeps its place; a `pending` flag in the submit handler
+  does the actual refusing, since the attribute enforces nothing by itself. The
+  guard also covers Enter from inside the input, which submits the form without
+  going near the button. `css/ask.css` keys the spinner off
+  `[aria-disabled="true"]` instead of `:disabled`, so nothing about the look
+  changed.
 
 **1.7 — Make the match-confidence explanations reachable.**
 `index.html:151` and `:173` put substantial explanatory text in `title` on a
@@ -198,6 +220,43 @@ which concatenates to `person_1100%`. The keyboard sweep's stop 8 announces as
 results, every stop announces a name and a state distinct from the adjacent one,
 and axe reports no name/role/value violations in any of the five captured
 states — `aria-allowed-attr` and `label` both gone.
+
+**Measured after the work, against the rebuilt container:**
+
+| | before | after |
+|---|---|---|
+| axe `aria-allowed-attr` (critical) | 1 node | **gone** |
+| axe `label` (critical) | 1 node | **gone** |
+| axe `aria-toggle-field-name` (incomplete) | 1 node | **gone** |
+| Focusable elements in a 2-segment Ask result | 0 | **2** |
+| Tab stops, default state | 10 | 12 |
+| Stops with no accessible name | 1 (`#scrub`) | **0** |
+| Focus after activating Ask | lost to `<body>` | **stays on the button** |
+
+Every stop's name, read through axe's accname implementation: "Video", "Ask a
+question about this video", "Ask", "Reset view", "Play", "CC", "Seek"
+(`valuetext="0:00 of 3:27"`), "What match confidence means", then
+"person_1 match confidence 100%" and its two siblings, then the second legend.
+Activating a segment row by its button seeks the player (12.5 → 31.2), and the
+play button's name follows the media state (Play → Pause → Play).
+
+The Ask button, checked live: focus stays on it through the request and after
+it; it remains one of the 12 tab stops while in flight; and two further
+activation attempts mid-request produced one network call, not three.
+
+Combobox, checked live: `aria-expanded` now moves on the input and the wrapper
+carries none; all ten options have ids; `aria-activedescendant` tracks the
+highlight and clears on Escape; ArrowUp from the first option wraps to the last.
+
+The only axe violations left in any state are `page-has-heading-one` and
+`region` — both Phase 2 — and `video-caption`, which is out of scope. Note
+`region` gained a node: the new visually-hidden `<label>` from 1.2 sits outside
+a landmark like the rest of the Ask panel, and 2.3 clears it with the others.
+
+One caveat on method: the real-`Tab` verification of the order could not be
+repeated this round because the browser pane was not compositing, so the table
+above is the computed focusable order. Phase 0 established that the computed and
+observed orders match exactly on this page, which has no positive `tabindex`.
 
 ---
 

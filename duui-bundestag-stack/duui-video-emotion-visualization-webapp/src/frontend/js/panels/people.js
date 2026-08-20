@@ -37,6 +37,15 @@ export function renderPersonList(persons) {
   // (and, worse, floating over nothing) once that column has no rows
   // under it.
   el.personLegend.style.display = persons.length ? "" : "none";
+  // The disclosure it opens goes with it, collapsed -- otherwise an
+  // explanation left open survives into the next video, floating above
+  // a list that may have nothing under it.
+  if (!persons.length) {
+    el.personLegendHelp.hidden = true;
+    el.personLegend
+      .querySelector(".person-legend-toggle")
+      .setAttribute("aria-expanded", "false");
+  }
 
   if (!persons.length) {
     el.personList.innerHTML = '<li class="empty-hint">No identified persons.</li>';
@@ -55,6 +64,11 @@ export function renderPersonList(persons) {
         p.audio_video_match_score != null
           ? `Face/voice match confidence: ${score} -- how sure the import pipeline was that this person's face and voice recordings are the same person.`
           : "";
+      // Without this the button's accessible name -- computed from its
+      // contents -- comes out as "person_1100%", which a screen reader
+      // reads as "person eleven hundred percent". The number also needs
+      // saying what it is: "100%" alone names no quantity.
+      const scoreLabel = score ? `match confidence ${score}` : "";
       const selected = state.selectedPersonId === p.person_id;
       return html`<li>
         <button
@@ -67,7 +81,9 @@ export function renderPersonList(persons) {
             : "Show only this person's emotions"}"
         >
           <span class="person-swatch" style="background:${personColorFor(p.person_id)}"></span>
-          ${personName(p)}<span class="person-meta" title="${scoreTitle}">${score}</span>
+          ${personName(p)}
+          <span class="person-meta" aria-label="${scoreLabel}"
+                title="${scoreTitle}">${score}</span>
         </button>
       </li>`;
     })
@@ -85,7 +101,8 @@ export function renderActiveList(labels) {
     .map(
       (l) => html`<li>
         <span class="person-swatch" style="background:${l.color}"></span>
-        ${l.name}<span class="person-meta">${l.emotion || ""}</span>
+        ${l.name}
+        <span class="person-meta">${l.emotion || ""}</span>
       </li>`
     )
     .join("");

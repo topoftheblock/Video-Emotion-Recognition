@@ -136,16 +136,23 @@ function applySelection(videoId, dispatch) {
   if (dispatch) el.videoSelect.dispatchEvent(new Event("change"));
 }
 
+/* aria-expanded belongs to whatever carries role="combobox" -- that is
+ * the input, not the #videoSelect wrapper these two used to write to. A
+ * plain <div> may not carry the attribute at all, so the old pair
+ * managed to be invalid markup *and* leave the input reading
+ * "collapsed" for the life of the page. */
 function openCombo() {
   renderVideoOptions();
-  el.videoSelect.setAttribute("aria-expanded", "true");
+  el.videoComboInput.setAttribute("aria-expanded", "true");
   el.videoComboList.hidden = false;
 }
 
 function closeCombo() {
   el.videoComboList.hidden = true;
   el.videoComboList.innerHTML = "";
-  el.videoSelect.setAttribute("aria-expanded", "false");
+  el.videoComboInput.setAttribute("aria-expanded", "false");
+  // The options are gone, so a reference to one of them would dangle.
+  el.videoComboInput.removeAttribute("aria-activedescendant");
   comboHighlight = -1;
 }
 
@@ -160,14 +167,24 @@ export function renderVideoOptions() {
       .filter((v) => v.filename.toLowerCase().includes(query))
       .sort((a, b) => a.filename.localeCompare(b.filename));
 
+  // The id is what aria-activedescendant points at: an option that
+  // cannot be referenced cannot be announced, which is why arrowing
+  // through this list used to be silent.
   el.videoComboList.innerHTML = matches
       .map(
-          (v) => html`<li class="video-combo-item" role="option" data-video-id="${v.video_id}">
+          (v) => html`<li class="video-combo-item" role="option"
+              id="videoComboOpt-${v.video_id}" aria-selected="false"
+              data-video-id="${v.video_id}">
             <span class="video-combo-name">${v.filename}</span>
             ${v.video_file_available ? "" : html`<span class="video-combo-missing">— file missing</span>`}
           </li>`
       )
       .join("");
+
+  // The rows just changed, so any previous index is meaningless -- it
+  // would point at whatever now happens to sit at that position.
+  comboHighlight = -1;
+  el.videoComboInput.removeAttribute("aria-activedescendant");
 }
 
 function onComboKeydown(e) {
@@ -175,12 +192,11 @@ function onComboKeydown(e) {
   if (e.key === "ArrowDown") {
     e.preventDefault();
     if (el.videoComboList.hidden) return openCombo();
-    comboHighlight = Math.min(comboHighlight + 1, items.length - 1);
-    updateComboHighlight(items);
+    moveComboHighlight(items, 1);
   } else if (e.key === "ArrowUp") {
     e.preventDefault();
-    comboHighlight = Math.max(comboHighlight - 1, 0);
-    updateComboHighlight(items);
+    if (el.videoComboList.hidden) return openCombo();
+    moveComboHighlight(items, -1);
   } else if (e.key === "Enter") {
     if (!el.videoComboList.hidden && items[comboHighlight]) {
       e.preventDefault();
@@ -191,9 +207,42 @@ function onComboKeydown(e) {
   }
 }
 
+/**
+ * Step the highlight, wrapping at both ends.
+ *
+ * The two keys used to be asymmetric: ArrowDown clamped at the last
+ * item, ArrowUp clamped at the *first* and so could never get back to
+ * "nothing highlighted" -- which left neither key able to undo the
+ * other. Wrapping makes them symmetric and keeps exactly one option
+ * highlighted once navigation has started, so aria-activedescendant
+ * always points at something that exists.
+ *
+ * From nothing, ArrowDown lands on the first option and ArrowUp on the
+ * last, which is what a listbox is expected to do.
+ */
+function moveComboHighlight(items, step) {
+  if (!items.length) return;
+  const from = comboHighlight < 0 ? (step > 0 ? -1 : 0) : comboHighlight;
+  comboHighlight = (from + step + items.length) % items.length;
+  updateComboHighlight(items);
+}
+
 function updateComboHighlight(items) {
-  items.forEach((it, i) => it.classList.toggle("is-active", i === comboHighlight));
-  if (items[comboHighlight]) items[comboHighlight].scrollIntoView({ block: "nearest" });
+  items.forEach((it, i) => {
+    const active = i === comboHighlight;
+    it.classList.toggle("is-active", active);
+    // The visual highlight and the announced one are the same state, so
+    // they are set together rather than left to drift apart.
+    it.setAttribute("aria-selected", active ? "true" : "false");
+  });
+
+  const active = items[comboHighlight];
+  if (active) {
+    el.videoComboInput.setAttribute("aria-activedescendant", active.id);
+    active.scrollIntoView({ block: "nearest" });
+  } else {
+    el.videoComboInput.removeAttribute("aria-activedescendant");
+  }
 }
 
 export async function loadVideo(videoId) {

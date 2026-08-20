@@ -108,16 +108,20 @@
   position: relative;
 }
 
-.ask-submit:hover:not(:disabled) { background: var(--signal-hover); }
+.ask-submit:hover:not([aria-disabled="true"]) { background: var(--signal-hover); }
 .ask-submit:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
-.ask-submit:disabled {
+/* Keyed off aria-disabled rather than :disabled, because the button is
+   never really disabled while a question is out -- see the comment on
+   setPending() in js/panels/ask.js for why it stays focusable. The look
+   is identical either way; only the selector changed. */
+.ask-submit[aria-disabled="true"] {
   color: transparent;
   cursor: default;
   opacity: 0.8;
 }
 
-.ask-submit:disabled::after {
+.ask-submit[aria-disabled="true"]::after {
   content: "";
   position: absolute;
   top: 50%; left: 50%;
@@ -221,23 +225,39 @@
   overflow-y: auto;
 }
 
-.ask-segment-list li {
+/* Each row is a <button>, not the <li>. These seek the player, and a
+   click handler on a list item is reachable by pointer only -- the
+   sidebar's .person-row is the same control in the same situation and
+   was already built this way, so this is that idiom rather than a
+   second one.
+
+   Everything the row looks like moved onto the button with it: an
+   affordance drawn on the <li> would sit one element away from the
+   thing that actually takes focus, and the ring would outline the
+   wrong box. The <li> keeps nothing but its place in the list. */
+.ask-segment-list button {
+  width: 100%;
   background: var(--surface-50);
   border: var(--theme-border-base) solid transparent;
   border-radius: var(--radius-sm);
   padding: 9px 12px;
   cursor: pointer;
+  font-family: inherit;
   font-size: 12px;
+  color: inherit;
+  text-align: left;
   display: flex;
   flex-direction: column;
   gap: 3px;
   transition: background-color var(--transition), border-color var(--transition);
 }
 
-.ask-segment-list li:hover {
+.ask-segment-list button:hover {
   border-color: var(--signal);
   background: var(--signal-soft);
 }
+
+.ask-segment-list button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
 .ask-segment-time {
   font-family: var(--font-mono);

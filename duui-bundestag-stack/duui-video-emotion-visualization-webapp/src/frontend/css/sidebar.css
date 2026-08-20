@@ -78,9 +78,45 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-dim);
-  /* Signals there's more to read on hover -- the title is the only way
-     to reach the fuller explanation, there's no click target. */
+}
+
+/* The header is the disclosure control. It used to be a bare div whose
+   only route to the fuller explanation was `title` -- no keyboard could
+   open it and no touch screen showed it at all, which is the wrong
+   place for the only written description of what the number means.
+
+   Keeps the legend's own typography: this is still a column header
+   first, and it should not start looking like a button sitting over the
+   list. `cursor: help` rather than `pointer` for the same reason. */
+.person-legend-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
   cursor: help;
+}
+
+.person-legend-toggle:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+/* What the toggle opens. A sibling of .person-legend rather than a
+   child: the legend is absolutely positioned into the title's row, so
+   anything inside it would be lifted out of the flow too. Here it sits
+   between the title and the list, which is where it reads. */
+.person-legend-help {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  /* --text-strong, not --text-dim: small text that is read through
+     rather than glanced at, the same call .emo-label and .job-detail
+     make. */
+  color: var(--text-strong);
 }
 
 .person-legend .info-icon {

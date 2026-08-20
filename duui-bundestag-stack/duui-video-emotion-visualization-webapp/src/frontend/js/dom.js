@@ -32,6 +32,7 @@ export const el = {
   videoEmotionPanel: document.getElementById("videoEmotionPanel"),
   videoEmotionBody: document.getElementById("videoEmotionBody"),
   personLegend: document.getElementById("personLegend"),
+  personLegendHelp: document.getElementById("personLegendHelp"),
   personList: document.getElementById("personList"),
   activeList: document.getElementById("activeList"),
   crossVideoPanel: document.getElementById("crossVideoPanel"),
