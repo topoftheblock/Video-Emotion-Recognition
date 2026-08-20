@@ -107,6 +107,10 @@ def clear_global_identities(cursor):
     Drop every existing global identity, so the recompute below starts
     from a clean slate. Returns (persons_unlinked, identities_deleted).
 
+    `global_person_match_score` (computed by this job) is wiped alongside
+    `global_person_id`; `audio_video_match_score` is the importer's value
+    and is left untouched.
+
     Both statements are issued explicitly rather than leaning on
     `persons.global_person_id`'s ON DELETE SET NULL: the FK would cover
     the un-linking, but relying on it makes the wipe look like it only
@@ -114,10 +118,12 @@ def clear_global_identities(cursor):
     reported here are what tells the operator how much the previous run
     had actually linked.
     """
+    cursor.execute("SELECT count(*) FROM persons WHERE global_person_id IS NOT NULL")
+    persons_unlinked = cursor.fetchone()[0]
+
     cursor.execute(
-        "UPDATE persons SET global_person_id = NULL WHERE global_person_id IS NOT NULL"
+        "UPDATE persons SET global_person_id = NULL, global_person_match_score = NULL"
     )
-    persons_unlinked = cursor.rowcount
 
     cursor.execute("DELETE FROM global_persons")
     identities_deleted = cursor.rowcount
@@ -225,6 +231,55 @@ def link_person(cursor, person):
     return global_id
 
 
+def _write_match_scores(cursor):
+    """
+    Persist each person's nearest cross-video embedding-centroid distance
+    as `persons.global_person_match_score`.
+
+    For every person with at least one face or voice centroid, this is the
+    minimum cosine distance (`<=>`) to any person in a *different* video;
+    face and voice are both tried and the smaller wins (NULL-safe). It is a
+    pure function of the centroids -- independent of the order persons were
+    linked in -- so it is identical on every recompute. Persons with no
+    embeddings in any modality are left NULL.
+    """
+    cursor.execute(
+        """
+        UPDATE persons p
+        SET global_person_match_score = sub.best
+        FROM (
+            SELECT
+                k.video_id, k.person_id,
+                CASE
+                    WHEN f.min_d IS NULL THEN v.min_d
+                    WHEN v.min_d IS NULL THEN f.min_d
+                    ELSE LEAST(f.min_d, v.min_d)
+                END AS best
+            FROM (
+                SELECT video_id, person_id FROM pg_temp.face_centroids
+                UNION
+                SELECT video_id, person_id FROM pg_temp.voice_centroids
+            ) k
+            LEFT JOIN pg_temp.face_centroids kf
+                ON kf.video_id = k.video_id AND kf.person_id = k.person_id
+            LEFT JOIN pg_temp.voice_centroids kv
+                ON kv.video_id = k.video_id AND kv.person_id = k.person_id
+            LEFT JOIN LATERAL (
+                SELECT MIN(kf.centroid <=> oc.centroid) AS min_d
+                FROM pg_temp.face_centroids oc
+                WHERE oc.video_id <> kf.video_id
+            ) f ON true
+            LEFT JOIN LATERAL (
+                SELECT MIN(kv.centroid <=> oc2.centroid) AS min_d
+                FROM pg_temp.voice_centroids oc2
+                WHERE oc2.video_id <> kv.video_id
+            ) v ON true
+        ) sub
+        WHERE p.video_id = sub.video_id AND p.person_id = sub.person_id
+        """
+    )
+
+
 def recompute_global_identities(cursor, progress=None):
     """
     Wipe every global identity and rebuild them across the whole
@@ -254,6 +309,10 @@ def recompute_global_identities(cursor, progress=None):
             linked_ids.add(global_id)
         if progress is not None:
             progress(index, len(persons))
+
+    # Each person's nearest cross-video centroid distance, persisted as
+    # global_person_match_score (order-independent -- see _write_match_scores).
+    _write_match_scores(cursor)
 
     # Counted from `persons` rather than from the loop's own tally: a
     # match links both sides, so the candidate rows updated along the
