@@ -58,7 +58,7 @@ export function renderBoundingBoxes(data, t) {
     if (!box) continue;
     const color = personColorFor(box.person_id);
     const emotionLabel = showVideoEmotion ? findEmotionLabelForFrame(data, box) : null;
-    drawBox(box, color, emotionLabel);
+    drawBox(box, color, emotionLabel, labelFontPx());
     if (box === faceBox) {
       const person = data.persons.find((p) => p.person_id === box.person_id);
       activeLabels.push({
@@ -84,7 +84,26 @@ function findEmotionLabelForFrame(data, box) {
   return match ? match.dominant_label : null;
 }
 
-function drawBox(box, color, emotionLabel) {
+/**
+ * Pixel size for the emotion tag drawn on the video.
+ *
+ * Canvas text is absolutely sized -- it cannot inherit the rem scale
+ * every stylesheet now uses, so it has to be recomputed from the root
+ * font size instead. Without this the one piece of type in the app that
+ * sits *on* the data would be the only piece that ignores the reader's
+ * font-size setting.
+ *
+ * 0.75 is --text-xs, which is what this label was drawn at. Read once
+ * per frame in renderBoundingBoxes() rather than once per box, since
+ * getComputedStyle can force a style flush and there is no reason to
+ * pay for it twice in the same pass.
+ */
+function labelFontPx() {
+  const root = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return (root || 16) * 0.75;
+}
+
+function drawBox(box, color, emotionLabel, fontPx) {
   const w = el.overlay.width;
   const h = el.overlay.height;
   const x = box.x * w;
@@ -97,20 +116,32 @@ function drawBox(box, color, emotionLabel) {
   ctx.strokeRect(x, y, bw, bh);
 
   if (emotionLabel) {
-    ctx.font = "600 12px 'IBM Plex Mono', monospace";
+    // Ubuntu Mono, which is the family this app actually ships (see the
+    // @font-face block in css/base.css). This asked for IBM Plex Mono,
+    // which is not bundled and never has been -- so every label drawn
+    // here has been rendering in the generic monospace fallback. 700 is
+    // what a request for 600 resolved to anyway, said outright.
+    ctx.font = `700 ${fontPx}px "Ubuntu Mono", monospace`;
     const label = emotionLabel.toUpperCase();
-    const padding = 5;
+
+    // Every offset below is a ratio of the font size rather than a
+    // constant, or the box would stay put while the text inside it grew.
+    // The ratios are the original constants over the 12px they assumed:
+    // 5/12 padding, 16/12 tag height, 12/12 baseline.
+    const padding = fontPx * 0.42;
+    const tagHeight = fontPx * 1.34;
+    const gap = 2;
     const textWidth = ctx.measureText(label).width;
     // Above the box, unless that would clip off the top of the frame.
-    const tagY = y - 18 >= 0 ? y - 18 : y + bh + 2;
+    const tagY = y - (tagHeight + gap) >= 0 ? y - (tagHeight + gap) : y + bh + gap;
 
     ctx.fillStyle = color;
-    ctx.fillRect(x, tagY, textWidth + padding * 2, 16);
+    ctx.fillRect(x, tagY, textWidth + padding * 2, tagHeight);
     // Was a hardcoded near-black: a second, independent copy of the
     // same decision readableTextColor() makes for the filter chip, which
     // happened to pass but had nothing keeping it passing if the palette
     // moved. One source now.
     ctx.fillStyle = readableTextColor(color);
-    ctx.fillText(label, x + padding, tagY + 12);
+    ctx.fillText(label, x + padding, tagY + fontPx);
   }
 }

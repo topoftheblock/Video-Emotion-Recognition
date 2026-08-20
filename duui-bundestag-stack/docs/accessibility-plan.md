@@ -651,6 +651,9 @@ by observation.
 
 ## Phase 5 — Typography scale (px → rem)
 
+**Status: complete.** Verified against the rebuilt container; results under
+"Done when" below.
+
 The one large mechanical change: 48 `font-size` declarations across 8 files.
 Deliberately last among the code phases — it touches nearly every stylesheet,
 so running it while Phases 1–4 are in flight guarantees conflicts.
@@ -718,6 +721,66 @@ text is absolutely sized, so it cannot scale at all.
 **Done when:** the app is fully usable with the browser's default font size set
 to its largest setting, at 320px, 560px, 860px and desktop widths, with no
 clipping or horizontal scroll.
+
+**Measured: twelve combinations, all clean.** 320 / 560 / 860 / 1280px, each at
+a 16px, 24px and 32px root — zero horizontal overflow and zero clipped elements
+in every one. axe stays at zero violations.
+
+45 declarations converted (the plan's count of 48 included three comment lines);
+no `px` font-size remains anywhere. The two off-scale values were normalised
+rather than tokenised: `.ask-subtitle` 12.5px down to `--text-xs`, and
+`.transport-toggle` 13px up to `--text-sm`, which is what `.time-readout`
+already uses two elements away in the same mono bar.
+
+The five `clamp()`s were not all alike. The two subtitle sizes became tokens
+(`--text-subtitle`, `--text-subtitle-emotion`) so the narrow breakpoint
+re-points them on `:root` instead of restating both rules — the same shape as
+Phase 4's `prefers-contrast` block.
+
+**5.4 was the real work, and it went well beyond updating comments.** Converting
+the type to `rem` exposed four places that were sized in fixed pixels *derived
+from* the font, and so silently stopped matching it:
+
+| | was | now |
+|---|---|---|
+| `.emo-row` columns (default) | `74px 1fr 38px 38px` | `5.3em 1fr 2.75em 2.75em` |
+| `.emo-row` columns (≤560px) | `64px 1fr 38px 38px` | `4.5em 1fr 2.75em 2.75em` |
+| `.panel-title` legend reservation | `132px` | `11em` |
+| `.ask-input` | (no floor) | `min-width: 0` |
+
+The first three are `em` because each reserves room for text — the 4.5em label
+floor is now stated as what it always actually was, nine characters at Ubuntu
+Mono's 0.5em advance, rather than as the 63px that happened to equal at a 16px
+root.
+
+The fourth was the largest single cause of horizontal scroll and was not a
+typography issue at all: an `<input>` carries a default `size` of 20 characters,
+which becomes its floor as a flex item. At a 200% root that is over 400px on a
+320px screen. Two more of the same kind followed — `.stage` and `.sidebar` are
+grid items whose default floor is their own min-content, so the *page* widened
+rather than letting the transport row wrap or the panels reflow. Three
+`min-width: 0` declarations took 320px-at-200% from **112px of overflow to 0**.
+
+These were latent before this phase: the layout only ever met its content at one
+font size, so nothing had pushed on them.
+
+**One thing tried and removed.** An `@media (max-width: 19em)` block was added to
+stack the emotion row's label onto its own line, on the theory that the row
+could not fit at 200% on a 320px screen. Once the three `min-width` fixes
+landed, it was not needed — and `em` in a *media query* is relative to the
+browser's default font size, not to anything the page sets on `:root`, so an
+author-set root size cannot trigger it and the block could not be seen
+rendering. Shipping an unverified reflow that nothing needed was the wrong
+trade, so it came out; `css/responsive.css` keeps a note explaining both the
+reasoning and the `em`-in-media-queries rule, since that is the sort of thing
+worth not rediscovering.
+
+**5.5** also fixed a bug the audit only half-caught: the canvas label asked for
+IBM Plex Mono, which this app has never bundled, so every on-video emotion tag
+has been rendering in the generic monospace fallback. It is Ubuntu Mono now, at
+a size read from the root each frame (12px at a 16px root, 24px at 32px), with
+the tag's padding, height and baseline derived as ratios of that rather than
+left as the constants they were at 12px.
 
 ---
 

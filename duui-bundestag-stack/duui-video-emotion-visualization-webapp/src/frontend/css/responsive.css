@@ -77,11 +77,14 @@
      of the row that is read at a glance rather than by number -- does
      not end up thinner than the numbers beside it.
 
-     64px is the floor, not a round number: the longest labels in the
+     4.5em is the floor, not a round number: the longest labels in the
      three model vocabularies ("Happiness", "dominance", "disgusted",
-     "surprised") are 9 characters, and Ubuntu Mono's 0.5em advance
-     puts that at 63px on the nose at 14px. 62 ellipsises all four. */
-  .emo-row, .emo-legend { grid-template-columns: 64px 1fr 38px 38px; gap: 6px; }
+     "surprised") are 9 characters, and Ubuntu Mono advances 0.5em per
+     character -- so nine of them is exactly 4.5em, whatever the reader
+     has set their font size to. Stated as a ratio rather than as the
+     63px it happens to be at a 16px root, because that number stopped
+     being fixed when the type scale moved to rem. */
+  .emo-row, .emo-legend { grid-template-columns: 4.5em 1fr 2.75em 2.75em; gap: 6px; }
 
   /* A 16:9 frame is only ~166px tall at 320px wide, which is less than
      the empty state's own title + explanation + command need -- and
@@ -100,7 +103,7 @@
     min-height: 280px;
   }
 
-  .empty-state-detail { font-size: 14px; }
+  .empty-state-detail { font-size: var(--text-sm); }
 
   /* Captions are sized off the viewport, but the frame they sit in is
      the thing that got small: at 320px the shipped floors put a
@@ -108,8 +111,14 @@
      the picture. Lower floors and tighter padding bring that back to
      roughly a third. */
   .subtitle-box { padding: 5px 10px; gap: 1px; }
-  .subtitle-text { font-size: clamp(11px, 3.4vw, 14px); line-height: 1.25; }
-  .subtitle-emotion { font-size: clamp(10px, 2.8vw, 12px); }
+  /* Re-pointed on :root rather than restated on the two rules, so the
+     caption sizes stay in one place (see tokens.css). Lower floors and
+     a tighter ramp than the default pair. */
+  :root {
+    --text-subtitle: clamp(0.6875rem, 3.4vw, var(--text-sm));
+    --text-subtitle-emotion: clamp(var(--text-2xs), 2.8vw, var(--text-xs));
+  }
+  .subtitle-text { line-height: 1.25; }
 }
 
 @media (max-width: 330px) {
@@ -120,3 +129,15 @@
   }
 }
 
+/* Note for anyone hitting this later: the emotion row was, briefly,
+   given a `@media (max-width: 19em)` block that stacked its label onto
+   its own line. It turned out not to be needed -- the horizontal scroll
+   it was meant to fix came from three grid/flex items refusing to shrink
+   below their own content (.stage, .sidebar, .ask-input), not from the
+   row -- and it was removed rather than shipped unverified.
+
+   Worth knowing if it ever is needed: `em` in a *media query* is
+   relative to the browser's default font size, not to anything the page
+   sets on :root. That makes it the right unit for "the text is large
+   relative to the screen", and it also means an author-set root
+   font-size cannot be used to test it. */

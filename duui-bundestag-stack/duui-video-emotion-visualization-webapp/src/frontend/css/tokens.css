@@ -228,6 +228,37 @@
      Chrome on Linux -- so they matched nothing here and only decided
      which fallback won on other machines. With a self-hosted face the
      fallback is a network-failure path, not the normal one. */
+  /* ---- Type scale ----
+
+     rem, not px, and that is the whole point: a `px` font-size ignores
+     the browser's own font-size setting -- the control a low-vision
+     reader actually reaches for, and the one that does not reflow the
+     layout the way full-page zoom does. Page zoom scales px fine; this
+     setting does not touch it. WCAG 1.4.4.
+
+     Centralised rather than written at each call site, where `14px`
+     appeared eighteen times and `12px` fourteen with nothing tying them
+     together. The comment on each step is the px value at a default
+     16px root, which is what the design was drawn at -- not a promise
+     about what it renders as.
+
+     Nothing may set font-size on :root or html; every value below is
+     relative to it. */
+  --text-2xs: 0.625rem;    /* 10 */
+  --text-xs: 0.75rem;      /* 12 */
+  --text-sm: 0.875rem;     /* 14 */
+  --text-base: 1rem;       /* 16 */
+  --text-lg: 1.125rem;     /* 18 */
+  --text-xl: 1.3125rem;    /* 21 */
+
+  /* The caption track sizes itself off the viewport rather than off the
+     scale -- it sits over the picture, so it has to stay proportionate
+     to the frame as well as to the reader's preference. Tokens, not
+     literals, so responsive.css can re-point them at its narrow
+     breakpoint instead of restating the rules. */
+  --text-subtitle: clamp(0.875rem, 1.5vw, 1.125rem);
+  --text-subtitle-emotion: clamp(0.75rem, 1.3vw, 1rem);
+
   --font-ui: "Oxanium", system-ui, sans-serif;
   --font-mono: "Ubuntu Mono", monospace;
 

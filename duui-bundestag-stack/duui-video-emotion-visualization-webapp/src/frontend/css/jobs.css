@@ -73,7 +73,7 @@
    from detail, so the headline alone doesn't need to carry that full
    size -- one step down, 18px, matching .ask-title's heading weight. */
 .job-text strong {
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--text);
 }
@@ -95,7 +95,7 @@
   align-items: baseline;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: var(--text-sm);
   color: var(--text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
