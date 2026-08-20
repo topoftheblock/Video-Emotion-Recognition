@@ -30,7 +30,8 @@ def exists(video_id):
 
 def get_persons(video_id):
     return query(
-        "SELECT person_id, global_person_id, clip_label, match_score "
+        "SELECT person_id, global_person_id, clip_label, "
+        "audio_video_match_score, global_person_match_score "
         "FROM persons WHERE video_id = %s",
         (video_id,),
     )

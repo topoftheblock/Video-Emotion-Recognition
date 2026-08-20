@@ -20,7 +20,8 @@ def list_global_clusters():
     rows = query(
         """
         SELECT gp.global_person_id, gp.real_name,
-               p.person_id, p.video_id, p.clip_label, p.match_score,
+               p.person_id, p.video_id, p.clip_label,
+               p.audio_video_match_score, p.global_person_match_score,
                v.filename AS video_filename
         FROM global_persons gp
         JOIN persons p ON p.global_person_id = gp.global_person_id
@@ -45,7 +46,8 @@ def list_global_clusters():
                 "video_id": row["video_id"],
                 "video_filename": row["video_filename"],
                 "clip_label": row["clip_label"],
-                "match_score": row["match_score"],
+                "audio_video_match_score": row["audio_video_match_score"],
+                "global_person_match_score": row["global_person_match_score"],
             }
         )
     return list(clusters.values())
