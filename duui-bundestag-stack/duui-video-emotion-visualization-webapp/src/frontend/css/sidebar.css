@@ -207,7 +207,9 @@
   color: #fff;
 }
 
-.person-row.is-selected .person-meta { color: rgba(255, 255, 255, 0.75); }
+/* 0.85, not the 0.75 this used to be: over --signal that composited to
+   #bfdae5 and 3.99:1, which is a fail at 12px. */
+.person-row.is-selected .person-meta { color: rgba(255, 255, 255, 0.85); }
 
 .person-row:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
@@ -336,13 +338,34 @@
 
 /* Per-person identity colours -- set inline from js/state.js and
    deliberately outside the theme, since they have to stay mutually
-   distinguishable rather than on-brand. */
+   distinguishable rather than on-brand. tests/cvd_check.py is what keeps
+   them distinguishable under colour-vision deficiency, which matters
+   here because this swatch is the only thing tying a name in this list
+   to a stroked box on the video.
+
+   Two shadows, and the inner one is load-bearing. The palette cannot
+   supply its own boundary: the same colours are drawn over arbitrary
+   footage, where they have to stay bright, which leaves them at
+   1.2-3.5:1 against these light rows -- and darkening them to fix that
+   would break the other use. The 1px ring carries the 3:1 instead,
+   without touching a hue. The 3px halo outside it is the original soft
+   edge, unchanged. */
 .person-swatch {
   width: 9px;
   height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+  box-shadow:
+    0 0 0 1px var(--border-input),
+    0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+/* --border-input against --signal is 1.05:1 -- all but the same colour.
+   White is 5.84:1 on it. */
+.person-row.is-selected .person-swatch {
+  box-shadow:
+    0 0 0 1px #fff,
+    0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
 }
 
 .person-meta {

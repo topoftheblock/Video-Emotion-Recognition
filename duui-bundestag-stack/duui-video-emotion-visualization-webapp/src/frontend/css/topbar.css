@@ -72,7 +72,8 @@
 .video-combobox-input {
   background: var(--surface-alt);
   color: var(--text);
-  border: var(--theme-border-base) solid var(--border-soft);
+  /* See .ask-input in ask.css -- same field, same reason. */
+  border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
   padding: 7px 12px;
   font-family: var(--font-ui);
@@ -83,7 +84,7 @@
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.video-combobox-input::placeholder { color: var(--text-dim); }
+.video-combobox-input::placeholder { color: var(--text-placeholder); }
 
 .video-combobox-input:hover { border-color: var(--signal); }
 
@@ -107,7 +108,10 @@
   max-height: 320px;
   overflow-y: auto;
   background: var(--surface);
-  border: var(--theme-border-base) solid var(--border-soft);
+  /* A popup edge over page content: the only thing separating the list
+     from whatever it is floating above, so it carries the same 3:1
+     requirement the fields do. */
+  border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
 }

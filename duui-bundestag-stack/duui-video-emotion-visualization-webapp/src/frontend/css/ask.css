@@ -73,7 +73,10 @@
   flex: 1;
   background: var(--surface-alt);
   color: var(--text);
-  border: var(--theme-border-base) solid var(--border-soft);
+  /* --border-input, not --border-soft: at 1.31:1 the old edge and the
+     1.24:1 fill left nothing marking this as a field until it was
+     focused. See the token's comment in tokens.css. */
+  border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
   padding: 11px 14px;
   font-family: var(--font-ui);
@@ -81,7 +84,7 @@
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.ask-input::placeholder { color: var(--text-dim); }
+.ask-input::placeholder { color: var(--text-placeholder); }
 
 .ask-input:focus {
   outline: none;

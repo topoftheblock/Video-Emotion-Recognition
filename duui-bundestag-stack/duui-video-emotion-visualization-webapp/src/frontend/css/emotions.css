@@ -101,6 +101,18 @@
   margin: 4px 0;
 }
 
+/* The groove is 1.24:1 against the card, and deliberately left there.
+
+   1.4.11 reaches graphics "required to understand the content", and the
+   track is not: every row prints its live value and its average as text
+   in the two columns to its right (.emo-now and .emo-avg), so the bar
+   is a second reading of a number that is already written down. The
+   fill against the groove is 4.72:1, which is what makes the magnitude
+   legible for anyone reading the bar at all.
+
+   Not the same call as the text inputs in 3.3, which do get a 3:1 edge:
+   there, the boundary is the only thing announcing that a control
+   exists. Here, nothing is lost if the groove's outer edge is soft. */
 .emo-track {
   position: relative;
   height: 6px;
@@ -111,12 +123,17 @@
 
 /* Signed values grow from the centre, so the centre gets a hairline to
    grow away from. */
+/* --border-input, not --border-strong. This is the line a signed value
+   is read as growing away from, so it is meaningful rather than
+   decorative -- and against the groove it sits on, --border-strong was
+   1.90:1. (The audit measured it against the card and got 2.35; the
+   card is not what is behind it.) */
 .emo-track-signed::before {
   content: "";
   position: absolute;
   top: 0; bottom: 0; left: 50%;
   width: 1px;
-  background: var(--border-strong);
+  background: var(--border-input);
 }
 
 .emo-fill {

@@ -273,13 +273,16 @@ def _static_pairs():
         # ---- text inputs (Ask + video combobox) ----
         # The fill is recessed, so the placeholder's backdrop is
         # --surface-alt and not the card behind it.
-        P("input", "placeholder on input fill", Layer("--text-dim"), Layer("--surface-alt"), TEXT),
+        P("input", "placeholder on input fill", Layer("--text-placeholder"), Layer("--surface-alt"), TEXT),
         P("input", "typed text on input fill", Layer("--text"), Layer("--surface-alt"), TEXT),
-        P("input", "resting border vs card", Layer("--surface", "--border-soft"), Layer("--surface"), UI),
-        P("input", "resting border vs own fill", Layer("--surface-alt", "--border-soft"), Layer("--surface-alt"), UI),
-        P("input", "input fill vs card", Layer("--surface-alt"), Layer("--surface"), UI),
+        P("input", "resting border vs card", Layer("--border-input"), Layer("--surface"), UI),
+        P("input", "resting border vs own fill", Layer("--border-input"), Layer("--surface-alt"), UI),
+        # The fill stopped having to carry the boundary the moment the
+        # border above started to. Kept as INFO because it is the reason
+        # that border exists, not because it is still a requirement.
+        P("input", "input fill vs card", Layer("--surface-alt"), Layer("--surface"), INFO),
         P("input", "focus ring on card", Layer("--signal"), Layer("--surface"), UI),
-        P("input", "dropdown border vs card", Layer("--surface", "--border-soft"), Layer("--surface"), UI),
+        P("input", "dropdown border vs card", Layer("--border-input"), Layer("--surface"), UI),
 
         # ---- buttons and chips ----
         P("button", "primary button label", Layer("#ffffff"), Layer("--gradient-brand"), TEXT),
@@ -298,8 +301,11 @@ def _static_pairs():
         P("sidebar", "person name on row fill", Layer("--text"), Layer("--surface-50"), TEXT),
         P("sidebar", "person name on hover row", Layer("--signal-strong"), Layer("--signal-soft"), TEXT),
         P("sidebar", "person name on selected row", Layer("#ffffff"), Layer("--signal"), TEXT),
-        # The audit's 3.99:1 finding (css/sidebar.css:174).
-        P("sidebar", "score on selected row", Layer("--signal", "rgba(255,255,255,0.75)"), Layer("--signal"), TEXT),
+        # Was the audit's 3.99:1 finding; 0.85 since Phase 3.2. The alpha
+        # is duplicated from css/sidebar.css rather than read from it --
+        # the one literal in this file that can drift from the stylesheet
+        # it describes, so the two have to move together.
+        P("sidebar", "score on selected row", Layer("--signal", "rgba(255,255,255,0.85)"), Layer("--signal"), TEXT),
         P("sidebar", "cross-video detail text", Layer("--surface-500"), Layer("--surface-50"), TEXT),
         P("sidebar", "empty hint", Layer("--text-dim"), Layer("--surface"), TEXT),
 
@@ -314,8 +320,14 @@ def _static_pairs():
         # The signed tracks' zero reference -- a value is read relative to
         # it, so it is not decoration. Its backdrop is the groove fill,
         # not the card (css/emotions.css:119).
-        P("emotions", "signed zero marker vs groove", Layer("--border-strong"), Layer("--surface-alt"), UI),
-        P("emotions", "groove vs card", Layer("--surface-alt"), Layer("--surface"), UI),
+        P("emotions", "signed zero marker vs groove", Layer("--border-input"), Layer("--surface-alt"), UI),
+        # Exempt, and deliberately so -- see the comment on .emo-track in
+        # css/emotions.css. Every row prints its live value and average as
+        # text beside the bar, so the track is a second reading of a
+        # number already written down rather than a graphic required to
+        # understand anything. Recorded rather than deleted so the
+        # decision stays visible.
+        P("emotions", "groove vs card", Layer("--surface-alt"), Layer("--surface"), INFO),
 
         # ---- the video stage ----
         # Subtitles sit on rgba(0,0,0,0.85) over whatever the video is
@@ -364,18 +376,33 @@ def _static_pairs():
 
 def _person_pairs(palette, pick_text):
     """
-    The two places a person's colour carries meaning, per person.
+    Where a person's colour carries meaning, and what actually has to
+    clear a threshold for it to do so.
 
-    The swatch is checked against the row fill it sits on; the filter
-    chip against whatever readableTextColor() picks for it. The overlay
-    stroke over video is not checked here -- its backdrop is arbitrary
-    footage, so there is no ratio to compute, only the palette's own
-    separability (Phase 3.7).
+    Not the colours themselves. The same six are stroked over arbitrary
+    video, where they have to stay bright, which leaves them at 1.4-2.7:1
+    against the light rows in the sidebar -- and darkening them to fix
+    that would break the other use. Since Phase 3.5 the swatch's boundary
+    is a ring instead, so the ring is what is asserted here; the raw
+    colour-on-surface figures stay as INFO, because they are the reason
+    the ring exists and would otherwise look like an omission.
+
+    The overlay stroke over footage is not checked at all: its backdrop
+    is whatever the video is showing, so there is no ratio to compute --
+    only the palette's separability under colour-vision deficiency, which
+    is tests/cvd_check.py's job.
     """
-    pairs = []
+    pairs = [
+        Pair("person", "swatch ring on row fill", Layer("--border-input"), Layer("--surface-50"), UI),
+        Pair("person", "swatch ring on card", Layer("--border-input"), Layer("--surface"), UI),
+        Pair("person", "swatch ring on hovered row", Layer("--border-input"), Layer("--signal-soft"), UI),
+        # White, because --border-input against --signal is 1.05:1.
+        Pair("person", "swatch ring on selected row", Layer("#ffffff"), Layer("--signal"), UI),
+    ]
     for colour in palette:
-        pairs.append(Pair("person", f"swatch {colour} on row fill", Layer(colour), Layer("--surface-50"), UI))
-        pairs.append(Pair("person", f"swatch {colour} on card", Layer(colour), Layer("--surface"), UI))
+        pairs.append(
+            Pair("person", f"swatch {colour} on row fill (ringed)", Layer(colour), Layer("--surface-50"), INFO)
+        )
     for colour in palette:
         rgb = _parse_rgba(colour)[0]
         pairs.append(

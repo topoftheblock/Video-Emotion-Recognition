@@ -352,6 +352,9 @@ Two notes on method, both environmental rather than defects:
 
 ## Phase 3 — Contrast and colour independence
 
+**Status: complete.** Verified against the rebuilt container; results under
+"Done when" below.
+
 **25 failing pairs** of the 82 the Phase 0 checker measures: the audit's four
 findings, expanded per-colour across the person palette, plus two the checker
 found on its own. The token file already carries a good contrast pass — this
@@ -489,11 +492,69 @@ separability load-bearing.
 - Re-run the 3.1 unit test afterwards — any palette change must preserve the
   ≥4.5:1 chip guarantee.
 
+**What the simulation actually found, and what was done.** Five convergent
+pairs, not the two this sub-task predicted: `#a3e635`/`#e0a458` and
+`#f472b6`/`#8b94a3` as expected, plus `#49d3c8`/`#7dd3fc` under tritanopia
+(dE2000 **4.31**), `#49d3c8`/`#f472b6` under deuteranopia (**5.26**), and
+`#f472b6`/`#8b94a3` under protanopia too. Five of the seven entries were
+involved, so replacing "one" was not on the table.
+
+The palette is now **Okabe-Ito**, the standard colour-vision-safe qualitative
+set, whose six hold a worst case of **11.13**. This is a visible design change:
+the app moves from pastels to Okabe-Ito's more saturated tones.
+
+The unknown-person grey needed separate thought. Every established palette
+tested — Okabe-Ito, Tol bright, Tol light, Tol muted — passed among its own
+colours and failed *only* against the old `#8b94a3`, which sat in the middle of
+the lightness band where deficiency-collapsed hues land (2.58 from Okabe-Ito's
+mauve). Deficiency leaves lightness essentially intact, so the fallback is now
+separated on that axis instead: `#c8c8d0`, clearing every entry by **13.68**.
+`tests/cvd_check.py` and `tests/test_palette.py` are the guard.
+
 **Done when:** `KNOWN_FAILURES` in `tests/test_contrast.py` is empty and the two
 tests that read it have been replaced by a direct
 `assert contrast_check.failures() == []`, the `readableTextColor` test passes for
 the whole palette, and a CVD simulation shows six distinguishable person
 colours.
+
+**Measured after the work, against the rebuilt container:**
+
+| | before | after |
+|---|---|---|
+| Failing contrast pairs | 25 of 82 | **0 of 79** |
+| `KNOWN_FAILURES` entries | 25 | **0** — baseline deleted |
+| Filter chip, worst person colour | 2.18:1 | **5.00:1** |
+| Convergent palette pairs under CVD | 5 | **0** |
+| Worst palette separation | dE2000 4.31 | **11.13** |
+| axe violations, all states | 0 | **0** |
+
+Six pairs are now recorded as `INFO` rather than asserted, each argued at its
+call site: the four panel dots and the two `--border` hairlines (decorative,
+labelled), the emotion groove (3.4), and the input fill (its boundary moved to
+the border). Seven more record the raw swatch-on-surface ratios, which the ring
+in 3.5 exists to compensate for.
+
+**3.4's open question was decided as an exemption, not an edge.** The groove
+keeps its 1.24:1 against the card. The reasoning, written into
+`css/emotions.css`: every row prints its live value *and* its average as text in
+the two columns beside the bar, so the track is a second reading of a number
+already on screen rather than a graphic required to understand anything. That is
+a different situation from the text inputs in 3.3, where the boundary is the
+only thing announcing a control exists — which is the explanation the plan asked
+for so the split would not read as an oversight.
+
+Two things worth carrying forward:
+
+- The checker duplicates one literal it cannot read — the `0.85` alpha in
+  `.person-row.is-selected .person-meta`. Changing the stylesheet without the
+  registry silently re-opens the pair; the comment there says so.
+- axe's `color-contrast` now reports a long list of *incomplete* nodes in the
+  populated states (`bgOverlap` and `pseudoContent`). These are structural and
+  predate this phase — `.panel::before` draws the accent bar, and
+  `.panel-filter` and `.person-legend` are absolutely positioned — so axe
+  declines to resolve those backgrounds at all. `contrast_check.py` covers every
+  one of those pairs directly and they pass. It is the Phase 0 lesson again:
+  a clean axe run is not the measurement.
 
 ---
 
@@ -619,9 +680,11 @@ The same five application states and the same keyboard sweep, diffed against
 conflict and is cheapest to find now.
 - Expect `video-caption` to still be reported *incomplete* against `#player`.
   That is the out-of-scope subtitles finding, not a regression.
-- Expect `color-contrast` *incomplete* on `.btn-label` and `#askReset` in the
-  combobox-open state: the dropdown overlaps them, and axe will not judge
-  contrast through an overlap. Also not a regression.
+- Expect `color-contrast` *incomplete* on many nodes once the panels are
+  populated — `bgOverlap` where the dropdown or an absolutely-positioned chip
+  covers something, `pseudoContent` wherever `.panel::before` draws the accent
+  bar. axe will not judge contrast through either. Not a regression;
+  `contrast_check.py` is what actually covers those pairs.
 - The sweep should now show a skip link at stop 1, three new stops for the Ask
   segment list, a named slider, a play button whose label tracks its state, and
   person rows whose name and score do not run together.

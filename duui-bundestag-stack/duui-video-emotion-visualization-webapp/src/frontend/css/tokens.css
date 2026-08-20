@@ -98,6 +98,17 @@
   --surface-alt: var(--surface-100);
   --border: var(--surface-200);
   --border-strong: var(--surface-300);
+  /* The edge of a text input, and of anything else whose boundary is
+     the only thing announcing that a control is there.
+
+     Distinct from --border, which separates regions that are already
+     separated by spacing and fill and is therefore decorative under
+     WCAG 1.4.11. This one is not decorative: --border-soft (1.31:1 on
+     the card) and the recessed fill (1.24:1) both failed to mark a
+     field as a field until it was focused, which is a 3:1 requirement,
+     not a matter of taste. surface-400 clears it at 5.54:1; surface-300
+     would only reach 2.35 and is not enough. */
+  --border-input: var(--surface-400);
   /* The Gateway's .bordered-soft -- surface-400 at 20%. Used where a
      border should register as an edge without drawing a line. */
   --border-soft: rgba(102, 104, 114, 0.2);
@@ -118,6 +129,18 @@
   --text: #000000;
   --text-dim: var(--surface-400);
   --text-strong: var(--surface-600);
+
+  /* Placeholders only, and the one value in this file that is not off
+     the theme ramps.
+
+     --text-dim reads 5.54:1 on the card and 4.95:1 on the page floor,
+     but placeholders sit on the recessed --surface-alt fill, where the
+     same colour lands at 4.48:1 -- close enough to look fine and still
+     be an AA failure. There is no step between surface-400 and
+     surface-500 (#242735, which would read as filled-in text rather
+     than as a prompt), so this is surface-400 nudged just past the
+     threshold: 5.2:1 on the fill. */
+  --text-placeholder: #5c5e68;
 
   /* Interactive. Was indigo->violet; now flat primary. --gradient-brand
      is deliberately a solid colour and not a gradient: every fill in
@@ -158,6 +181,15 @@
   --accent-people: var(--secondary-500);
   --accent-live: var(--error-500);
   --accent-cross: var(--surface-500);
+
+  /* Decided, so it is not re-raised: these four are *decorative* under
+     WCAG 1.4.11 and deliberately left below 3:1 (--accent-people is the
+     lowest, 2.18:1 on the card). Every dot sits immediately beside a
+     text label naming the same panel, so the colour is never the sole
+     channel and the 3:1 rule does not reach it. tests/contrast_check.py
+     records them as INFO for the same reason.
+
+     This stops being true the moment a dot appears without its label. */
 
   /* Status. Error only: the app has nothing that reports success as a
      colour any more (the topbar's "Live sync" chip was the sole user of

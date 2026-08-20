@@ -9,7 +9,7 @@
  */
 
 import { el } from "./dom.js";
-import { overlayEnabled, personColorFor } from "./state.js";
+import { overlayEnabled, personColorFor, readableTextColor } from "./state.js";
 import { renderActiveList } from "./panels/people.js";
 
 const ctx = el.overlay.getContext("2d");
@@ -106,7 +106,11 @@ function drawBox(box, color, emotionLabel) {
 
     ctx.fillStyle = color;
     ctx.fillRect(x, tagY, textWidth + padding * 2, 16);
-    ctx.fillStyle = "#0a0c0f";
+    // Was a hardcoded near-black: a second, independent copy of the
+    // same decision readableTextColor() makes for the filter chip, which
+    // happened to pass but had nothing keeping it passing if the palette
+    // moved. One source now.
+    ctx.fillStyle = readableTextColor(color);
     ctx.fillText(label, x + padding, tagY + 12);
   }
 }
