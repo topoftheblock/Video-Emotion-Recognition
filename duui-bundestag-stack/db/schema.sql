@@ -62,7 +62,8 @@ CREATE TABLE persons (
     person_id BIGINT NOT NULL,
     global_person_id BIGINT REFERENCES global_persons(global_person_id) ON DELETE SET NULL,
     clip_label TEXT,
-    match_score DOUBLE PRECISION,
+    audio_video_match_score DOUBLE PRECISION,
+    global_person_match_score DOUBLE PRECISION,
     PRIMARY KEY (video_id, person_id)
 );
 
