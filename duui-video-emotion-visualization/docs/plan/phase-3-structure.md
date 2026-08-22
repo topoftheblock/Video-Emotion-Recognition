@@ -130,11 +130,78 @@ shadowed.
 | --- | --- | --- | --- |
 | `importer/config.py` | 341 | **Two unrelated things.** Lines 1–124 are deployment settings read from `DUUI_*`; lines 125–341 are UIMA type names, injected fallback XML and ignored-type sets — domain constants that never vary per deployment. | **Split.** `config.py` (settings) + `uima_types.py` (vocabulary). The clearest split in the project. |
 | `importer/media.py` | 363 | Two concerns: raw-XML sofa manipulation (`find_media_sofas`, `select_video_sofa`, `strip_media_sofas`, `SofaPayload`) and video file placement (`place_video_file`, `ensure_video_available`). | **Split**, second priority. |
-| `importer/pipeline.py` | 373 | Orchestration (`run`, `run_many`, `parse_and_insert`) plus input-path resolution (`default_input_paths`, `resolve_xmi_paths`, `describe_missing_inputs`). | **Optional split**; path resolution → `inputs.py`. Lower value. |
+| `importer/pipeline.py` | 373 | Orchestration (`run`, `run_many`, `parse_and_insert`) plus input-path resolution (`default_input_paths`, `resolve_xmi_paths`, `describe_missing_inputs`). | **Split** → `inputs.py` (confirmed). |
 | `query_agent/schema_context.py` | 355 | **Not a module — a data blob.** One string constant spanning lines 23–355. "355 lines" overstates its complexity. | **Do not split.** But see §3.5. |
 | `identity/linking.py` | 333 | Cohesive: every function serves cross-video matching. | **Leave.** |
-| `js/panels/emotions.js` | 359 | 14 functions; rendering plus statistics (`meanScores`, `meanDimension`, `dominantOf`, `orderLabels`). | **Optional split** of the math helpers. |
+| `js/panels/emotions.js` | 359 | 14 functions; rendering plus statistics (`meanScores`, `meanDimension`, `dominantOf`, `orderLabels`). | **Split** the math helpers out (confirmed). |
 | `css/sidebar.css` | 391 | **Under-sectioned, not over-long** — two section banners in 391 lines. | **Add sections first**, split only if still unwieldy. |
+
+## 3.4b Grouping files into packages
+
+Decided 2026-08-22, from the import graphs rather than from filenames.
+
+### `importer/cas/` — the strongest case in the project
+
+**All 11 parsers import the same four modules and nothing else structural:**
+`cas_views`, `config`, `typesystem`, `identity_resolution`. That identical
+pattern, repeated 11 times, is a real boundary: those modules are the toolkit for
+*reading a CAS*, and everything else in the package is orchestration, storage, or
+file I/O.
+
+```
+importer/
+  __main__.py  config.py  db.py  job_runs.py
+  pipeline.py  inputs.py  video_files.py
+  cas/       views.py  typesystem.py  types.py  sofas.py  person_resolution.py
+  parsers/   (11 modules)
+```
+
+Without it the planned splits leave **12 flat modules** beside `parsers/`; with
+it, seven and two packages. It also removes the `cas_views.py` stutter —
+`cas/views.py` — and gives `uima_types.py` a home as `cas/types.py`.
+
+Members: `views.py` (was `cas_views.py`), `typesystem.py`, `types.py` (the UIMA
+vocabulary split out of `config.py`), `sofas.py` (the raw-XML half of
+`media.py`), `person_resolution.py`.
+
+### `js/helpers/` and `js/playback/`
+
+From the frontend import graph:
+
+- **`helpers/`** — `api.js`, `dom.js`, `format.js`. The only three modules with
+  **zero internal imports**; generic primitives holding no application state.
+  That property is the evidence.
+- **`playback/`** — `player.js`, `subtitles.js`, `overlay.js`. All three import
+  `dom` + `state` and nothing else structural, and all three render synchronized
+  to playback time. `videoLoader.js` looks similar but is not: it orchestrates
+  loading and reaches into three panels, so it stays top level.
+
+```
+js/
+  main.js  state.js  videoLoader.js  legend.js
+  helpers/   api.js  dom.js  format.js
+  playback/  player.js  subtitles.js  overlay.js
+  panels/    (5 modules)
+```
+
+Cost, and it is real if small: with no build step every import path is literal,
+so `"./api.js"` becomes `"../helpers/api.js"` in every consumer.
+
+`legend.js` stays top level. It is a 27-line sidebar disclosure that is arguably
+a panel; forcing it into one of the groups would be tidier than it is true.
+
+### Not grouped, deliberately
+
+- **CSS.** `main.css` imports the 11 stylesheets in **cascade order** and says so:
+  tokens first because 10 of the other 11 read its custom properties, `responsive`
+  and `adaptive` last because their overrides must win. The organizing principle
+  is *sequence*, not category, and folders would imply an independence that does
+  not exist. The flat ordered list in `main.css` is the honest structure.
+- **`webapp/src/backend/`.** Already three top-level modules plus `routes/`,
+  `queries/`, `query_agent/`. Correct as it stands.
+- **`identity/`.** Five flat modules. Too small; folders would be overhead.
+- **`webapp/tests/`.** A `tests/support/` grouping is wanted, but it belongs to
+  Phase 6, which already specifies it.
 
 ## 3.5 A third description of the schema
 
@@ -185,11 +252,12 @@ rewrites.
 | --- | --- | --- |
 | 1 | Group A purge **excluding** `docker-compose.yml:38` — `app.py` title and docstring, `a11y-ci.yml` paths | None |
 | 2 | `git mv src/main src/importer`; update every import, the `Dockerfile` `ENTRYPOINT`, and the log prefixes | Low, wide |
-| 3 | `git mv identity_resolution.py person_resolution.py` | Low |
-| 4 | Split `config.py` → `config.py` + `uima_types.py` | Low |
-| 5 | Split `media.py` → sofa handling + file placement | Medium |
-| 6 | Optional: `pipeline.py` → `inputs.py`; `emotions.js` math helpers | Low |
+| 3 | Create `importer/cas/`; move `cas_views.py` → `cas/views.py`, `typesystem.py` → `cas/typesystem.py`, `identity_resolution.py` → `cas/person_resolution.py` (§3.4b) | Low, wide |
+| 4 | Split `config.py` → `config.py` + `cas/types.py` | Low |
+| 5 | Split `media.py` → `cas/sofas.py` + `video_files.py` | Medium |
+| 6 | `pipeline.py` → `inputs.py`; `emotions.js` math helpers (**both confirmed** 2026-08-22) | Low |
 | 7 | `sidebar.css` section banners | None |
+| 7b | Create `js/helpers/` and `js/playback/`; update every import path (§3.4b) | Low, wide |
 | 8 | Rename the Compose project **and** the database (§3.1), including `.env` and `.env.example` | None once §3.7.1 is accepted |
 | 9 | **Rebuild and re-import** — §3.7.1 | The real test |
 | 10 | Verify: row counts, all four sub-projects, suite green | — |
@@ -247,24 +315,17 @@ Note this step is **slow**: 1.5 GB of XMI with embedded video, parsed serially.
 ## 3.8 Exit criteria
 
 - [x] §3.2–§3.6 approved (2026-08-22)
-- [ ] New database name chosen — §3.9
+- [x] Database name: `duui_video_emotion`
 - [ ] No Group A occurrence remains; all 16 Group C occurrences intact
 - [ ] Package is `importer`; image builds and runs
 - [ ] Log prefixes are `[importer]`, `[identity]`, `[webapp]`
 - [ ] Splits done; every module has one subject
+- [ ] `importer/cas/` exists and holds the five CAS-reading modules
+- [ ] `js/helpers/` and `js/playback/` exist; every import path updated
 - [ ] Corpus rebuilt per §3.7.1; 10 videos; totals match Phase 0
 - [ ] Suite at 150/150
 
-## 3.9 Open question
+## 3.9 The database name
 
-**What should the database be called?** Renaming was decided; the name was not.
-It has to be settled before step 8, and it is cheap to change now and annoying
-later.
-
-Recommendation: **`duui_video_emotion`**. Short, matches the project without
-restating it, and stays clear of `duui_video_emotion_visualization`, which is
-accurate but long to type at every `psql` invocation. Postgres allows up to 63
-characters, so either fits.
-
-Whatever is chosen appears in `.env`, `.env.example`, `docker-compose.yml` (×5),
-`schema_context.py`, and this plan.
+**`duui_video_emotion`** (decided 2026-08-22). Appears in `.env`,
+`.env.example`, `docker-compose.yml` (×5) and `schema_context.py`.
