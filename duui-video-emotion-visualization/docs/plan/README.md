@@ -435,8 +435,14 @@ instructions come before architecture.
   `a11y-ci.yml`).
 - Kill the `.env.example` ↔ README configuration duplication: one of them owns
   it, the other links.
-- **Rewrite `pgvector-db/data_schema_with_types.md` from `schema.sql`**, which is
-  the authoritative one. Consider a test that fails when the two diverge.
+- **Decide what happens to `pgvector-db/data_schema_with_types.md`.** It is not a
+  stale copy of the schema — it is the *design* document mapping UIMA CAS types
+  to tables, and it declares itself as such. It is broadly accurate and states
+  most of its own divergences. Two things are wrong with it regardless of that
+  decision: it is written in mixed German and English (Phase 1 settled on US
+  English), and it specifies `FusedEmotion` / `EmotionFusionReference` types that
+  have no tables and no importer support. Consider a test that fails when the
+  design and `schema.sql` diverge.
 - **Update `webapp/docs/a11y-ci.yml`** — fix the dead `duui-bundestag-stack/…`
   path, and correct its header, which currently justifies leaving it off with a
   claim that is false: the repository *does* have CI, and a `paths:`-scoped
