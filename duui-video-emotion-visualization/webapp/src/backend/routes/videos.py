@@ -15,7 +15,7 @@ def list_videos():
     VIDEO_DIR right now -- this is how the webapp "knows" which videos
     it can play: the importer places the file there under the same
     `filename` (see
-    cas-to-postgres-importer/src/main/media.py), but a DB row
+    cas-to-postgres-importer/src/importer/media.py), but a DB row
     can still predate that step (import ran before the video was
     placed) or outlive it (the file was deleted/never arrived), so this
     is checked live rather than assumed.

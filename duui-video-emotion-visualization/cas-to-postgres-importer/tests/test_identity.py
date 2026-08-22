@@ -17,8 +17,8 @@ commits.
 
 import pytest
 
-from main.parsers import model as model_parser
-from main.parsers import video as video_parser
+from importer.parsers import model as model_parser
+from importer.parsers import video as video_parser
 
 
 @pytest.fixture

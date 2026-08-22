@@ -277,7 +277,7 @@ def load_merged_typesystem():
     still_missing = _find_undefined_referenced_types(type_descriptions)
     for type_name in sorted(still_missing):
         print(
-            f"[duui_parser] warning: {type_name!r} is referenced by a feature "
+            f"[importer] warning: {type_name!r} is referenced by a feature "
             "but not defined in any provided typesystem file -- auto-stubbing "
             "it as a featureless type so loading can proceed."
         )

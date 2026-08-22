@@ -9,7 +9,7 @@ doesn't have one -- isn't recoverable from `information_schema` alone.
 Structure comes from pgvector-db/schema.sql. The semantics below come from
 three sources, cross-checked against each other:
   1. docs/data_schema_with_types.md (the intended design)
-  2. cas-to-postgres-importer/src/main/parsers/*.py (what
+  2. cas-to-postgres-importer/src/importer/parsers/*.py (what
      actually gets INSERTed, which in a few places diverges from (1) --
      noted explicitly below)
   3. A live query against a populated duui_bundestag database, to see

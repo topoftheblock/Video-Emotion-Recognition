@@ -224,7 +224,7 @@ def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
         if existing_video_id is not None:
             if on_existing == "skip":
                 print(
-                    f"[duui_parser] '{video_filename}' is already imported "
+                    f"[importer] '{video_filename}' is already imported "
                     f"(video_id {existing_video_id}) -- skipping. Use "
                     f"--on-existing replace to re-import it."
                 )
@@ -232,7 +232,7 @@ def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
             delete_video(existing_video_id)
             replaced = True
             print(
-                f"[duui_parser] replacing '{video_filename}' "
+                f"[importer] replacing '{video_filename}' "
                 f"(video_id {existing_video_id}): previous rows deleted"
             )
 
@@ -242,7 +242,7 @@ def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
     video_payload = select_video_sofa(sofas)
     stripped = strip_media_sofas(sofas, video=video_payload)
     if stripped:
-        print(f"[duui_parser] media sofas held back from the CAS: {', '.join(stripped)}")
+        print(f"[importer] media sofas held back from the CAS: {', '.join(stripped)}")
 
     # No sub-progress to report here: this is one cassis call, and on a
     # multi-hour export it is usually the longest phase of the import.
@@ -315,7 +315,7 @@ def run_many(paths=None, on_existing=None):
     Each file gets its own transaction, and a failure is reported and
     skipped rather than aborting the batch -- with a folder of exports,
     one malformed file shouldn't cost you every import after it. The
-    exit code is left to the caller (see src/main/__main__.py) so a partial failure
+    exit code is left to the caller (see src/importer/__main__.py) so a partial failure
     is still visible to a CI job or shell script.
 
     `on_existing` ("skip"/"replace", default DUUI_ON_EXISTING) decides
@@ -356,7 +356,7 @@ def run_many(paths=None, on_existing=None):
                 outcomes[outcome] += 1
                 succeeded.append((xmi_file, None))
             except Exception as exc:  # noqa: BLE001 -- batch must survive one bad file
-                print(f"[duui_parser] ERROR importing {xmi_file}: {exc}")
+                print(f"[importer] ERROR importing {xmi_file}: {exc}")
                 failed.append((xmi_file, exc))
 
         outcomes["failed"] = len(failed)

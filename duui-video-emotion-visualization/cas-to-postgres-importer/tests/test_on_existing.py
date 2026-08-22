@@ -13,9 +13,9 @@ import base64
 import pytest
 from lxml import etree
 
-from main import media
-from main.__main__ import _split_args
-from main.config import ON_EXISTING_CHOICES
+from importer import media
+from importer.__main__ import _split_args
+from importer.config import ON_EXISTING_CHOICES
 
 
 def _document(*, multimedia=None, document_title=None):

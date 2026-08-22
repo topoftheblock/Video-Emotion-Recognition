@@ -85,16 +85,16 @@ def place_video_file(video_filename, source_dir):
         # or source_dir (DUUI_INPUT_VIDEO_DIR) and VIDEO_MEDIA_DIR are
         # the same directory (the default, native-setup case), where
         # copying onto itself would only be wasted I/O.
-        print(f"[duui_parser] video file already present at {dest}, leaving as-is")
+        print(f"[importer] video file already present at {dest}, leaving as-is")
         return dest
 
     source = Path(source_dir) / video_filename
     if not source.exists():
-        print(f"[duui_parser] warning: no source video file at {source}")
+        print(f"[importer] warning: no source video file at {source}")
         return None
 
     shutil.copy2(source, dest)
-    print(f"[duui_parser] placed video file: {source} -> {dest}")
+    print(f"[importer] placed video file: {source} -> {dest}")
     return dest
 
 
@@ -234,14 +234,14 @@ def select_video_sofa(sofas):
         # writing that out as a video would produce an unplayable
         # file, so say why it was skipped rather than doing it.
         print(
-            f"[duui_parser] warning: DUUI_VIDEO_VIEW='{VIDEO_VIEW}' is a "
+            f"[importer] warning: DUUI_VIDEO_VIEW='{VIDEO_VIEW}' is a "
             f"'{configured.mime}' sofa, not a video -- ignoring it"
         )
     elif VIDEO_VIEW != _DEFAULT_VIDEO_VIEW:
         # Only worth flagging when explicitly configured: the default
         # view is simply absent from plenty of CAS files.
         print(
-            f"[duui_parser] warning: DUUI_VIDEO_VIEW='{VIDEO_VIEW}' is not a "
+            f"[importer] warning: DUUI_VIDEO_VIEW='{VIDEO_VIEW}' is not a "
             f"view in this CAS"
         )
 
@@ -310,7 +310,7 @@ def extract_video_payload(payload, video_filename):
     try:
         data = payload.data()
     except Exception as exc:  # noqa: BLE001 -- playback, not the import
-        print(f"[duui_parser] warning: could not decode the video sofa: {exc}")
+        print(f"[importer] warning: could not decode the video sofa: {exc}")
         return None
     if not data:
         return None
@@ -321,11 +321,11 @@ def extract_video_payload(payload, video_filename):
     try:
         dest.write_bytes(data)
     except OSError as exc:
-        print(f"[duui_parser] warning: could not write extracted video to {dest}: {exc}")
+        print(f"[importer] warning: could not write extracted video to {dest}: {exc}")
         return None
 
     print(
-        f"[duui_parser] extracted video from CAS sofa '{payload.sofa_id}' "
+        f"[importer] extracted video from CAS sofa '{payload.sofa_id}' "
         f"({payload.mime or 'video/*'}, {len(data)} bytes) -> {dest}"
     )
     return dest
@@ -355,7 +355,7 @@ def ensure_video_available(video_filename, source_dir, payload=None):
 
     if video_filename and video_filename != "unknown":
         print(
-            f"[duui_parser] warning: no video for '{video_filename}' in "
+            f"[importer] warning: no video for '{video_filename}' in "
             f"{source_dir} and none embedded in the CAS -- the DB rows were "
             f"still imported, but the webapp won't be able to play it until a "
             f"file with that exact name is placed in {Path(VIDEO_MEDIA_DIR)}"

@@ -1,4 +1,4 @@
-"""Tests for src/main/media.py -- pure filesystem and XML logic, no DB
+"""Tests for src/importer/media.py -- pure filesystem and XML logic, no DB
 needed. Covers the behavior the Docker "importer places the video"
 flow depends on: idempotent copy, extraction of a video embedded in
 the CAS when no companion file exists, and graceful (non-raising)
@@ -14,7 +14,7 @@ import base64
 
 from lxml import etree
 
-from main import media
+from importer import media
 
 XMI_ID = "{http://www.omg.org/XMI}id"
 

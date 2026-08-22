@@ -77,7 +77,7 @@ ON_EXISTING_CHOICES = ("skip", "replace")
 ON_EXISTING = os.environ.get("DUUI_ON_EXISTING", "skip")
 
 # Bundled, non-code assets (the UIMA typesystem descriptors, the demo
-# CAS) live under the source root's `resources/`, not in the `main`
+# CAS) live under the source root's `resources/`, not in the `importer`
 # package. Resolved from this file rather than the working directory so
 # `python -m main` works from anywhere; DUUI_TS_* still override.
 RESOURCES_DIR = Path(__file__).resolve().parents[1] / "resources"
@@ -99,7 +99,7 @@ TYPESYSTEM_FILES = {
 
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
-# (copies into it, see src/main/media.py) and the webapp (reads from it,
+# (copies into it, see src/importer/media.py) and the webapp (reads from it,
 # see the viewer's src/backend/config.py copy of this setting) agree a
 # video for `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. This
 # is the output side, deliberately separate from the input dirs above so the

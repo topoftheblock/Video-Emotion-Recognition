@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
 # `src` is the source root (not a package), so putting it on the path
-# is what makes `import main` resolve the same way it does inside the
+# is what makes `import importer` resolve the same way it does inside the
 # container (where it is copied to /app/src and exported as
 # PYTHONPATH). Lets `cd cas-to-postgres-importer && pytest`
 # work on its own; the stack root's pyproject.toml runs this suite

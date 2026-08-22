@@ -6,8 +6,8 @@ import os
 
 import pytest
 
-from main import config
-from main.pipeline import describe_missing_inputs, resolve_xmi_paths
+from importer import config
+from importer.pipeline import describe_missing_inputs, resolve_xmi_paths
 
 
 def _config_with_env(monkeypatch, **env):
