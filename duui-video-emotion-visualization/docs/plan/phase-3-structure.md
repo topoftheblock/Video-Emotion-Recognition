@@ -275,9 +275,22 @@ rewrites.
 | 6 | `pipeline.py` → `inputs.py`; `emotions.js` math helpers (**both confirmed** 2026-08-22) | Low |
 | 7 | `sidebar.css` section banners | None |
 | 7b | Create `js/lib/` and `js/playback/`; update every import path (§3.4b) | Low, wide |
-| 8 | Rename the Compose project **and** the database (§3.1), including `.env` and `.env.example` | None once §3.7.1 is accepted |
-| 9 | **Rebuild and re-import** — §3.7.1 | The real test |
-| 10 | Verify: row counts, all four sub-projects, suite green | — |
+| 8 | **Tear down first** — `docker compose down -v`, while the old project name is still in the file | Destroys the corpus, by design |
+| 9 | Rename the Compose project **and** the database (§3.1), including `.env` and `.env.example` | None, once nothing is left to orphan |
+| 10 | **Rebuild and re-import** — §3.7.1 | The real test |
+| 11 | Verify: row counts, all four sub-projects, suite green | — |
+
+> **The teardown must come before the rename, not after.** Verified 2026-08-22:
+> under the new project name, `docker compose` finds no containers and would
+> aim `-v` at volumes named `duui-video-emotion-visualization_*` that do not
+> exist. It would delete nothing, leave both `duui-bundestag-stack-*` containers
+> running as orphans, and strand `duui-bundestag-stack_db_data` and
+> `_video_media` on disk permanently.
+>
+> This plan originally had the rename at step 8 and the teardown at step 9 —
+> the exact hazard §3.1(a) warns about, in the ordering of the steps written to
+> avoid it. A warning in prose does not protect against a sequence that
+> contradicts it.
 
 ### 3.7.1 The rebuild — recreation instead of migration
 
@@ -287,6 +300,9 @@ its source CAS files.
 ```bash
 docker compose down -v
 ```
+
+**Run that while `docker-compose.yml` still says `name: duui-bundestag-stack`.**
+It is what removes the old containers and both old volumes. Only then rename.
 
 ```bash
 docker compose up --build -d
