@@ -47,7 +47,7 @@ def select_across_views(cas, type_name):
             if type_name not in _warned_missing_types:
                 _warned_missing_types.add(type_name)
                 print(
-                    f"[duui_parser] warning: type not found in typesystem, "
+                    f"[importer] warning: type not found in typesystem, "
                     f"skipping: {type_name}"
                 )
             return

@@ -187,7 +187,7 @@ feeding phases 3, 5 and 7.
 
 ---
 
-### `[ ]` Phase 3 — Structure: naming, splitting, merging
+### `[x]` Phase 3 — Structure: naming, splitting, merging
 
 **Why here:** all path-changing churn in one place, before anything is written
 about those paths. Split into *decide* then *execute* — the decisions are
@@ -512,6 +512,11 @@ out — phases marked done, decision records archived.
   is why the old remote `code-cleanup` branch is deleted rather than kept. `code-cleanup` reaches `main` only at the end of the whole pass. One
   commit per logical step; never mix a rename with a rewrite in the same commit,
   as that makes the diff unreviewable.
+- **Every commit message starts `Phase <N>: `**, followed by a lowercase
+  summary — `Phase 3: rename the importer package`. Without it the log gives no
+  way to tell which phase a change belongs to, and the phases are the only
+  structure this work has. It applies to every commit in a phase branch, not
+  only the ones that touch the plan.
 - **No AI attribution, anywhere.** Commits carry no `Co-Authored-By: Claude`
   trailer, no "generated with" line, and no "written or assisted by AI" note —
   not in commit messages, not in code comments, not in documentation. The commit
@@ -787,7 +792,7 @@ and verified in Phase 8.
 | 0 — Baseline | `[x]` | `code-cleanup` | Done 2026-08-22. **Green baseline = 150/150 on an empty DB.** 4 findings logged. Detail: [phase-0-baseline.md](phase-0-baseline.md). |
 | 1 — Style guide + doc map | `[x]` | `code-cleanup/phase-1` | Done 2026-08-22. Style guide, glossary, doc map and `docs/` skeleton in place. Detail: [phase-1-style-guide.md](phase-1-style-guide.md). |
 | 2 — Fact ledger | `[x]` | `code-cleanup/phase-2` | Done 2026-08-22. D1–D12 registered, contracts verified, legacy docs quarantined. Line-by-line reading deferred to Phase 5. |
-| 3 — Structure | `[ ]` | | |
+| 3 — Structure | `[x]` | `code-cleanup/phase-3` | Done 2026-08-22. Renames, splits and groupings landed; corpus rebuilt and every row count matches Phase 0. |
 | 4 — Dependencies | `[ ]` | | |
 | 5 — In-file docs | `[ ]` | | |
 | 6 — Test audit | `[ ]` | | |
@@ -806,7 +811,7 @@ and verified in Phase 8.
 | 0 — Baseline and safety net | [phase-0-baseline.md](phase-0-baseline.md) | `[x]` done |
 | 1 — Style guide + doc map | [phase-1-style-guide.md](phase-1-style-guide.md) | `[x]` done |
 | 2 — Fact ledger | [phase-2-ledger.md](phase-2-ledger.md) · [phase-2-modules.md](phase-2-modules.md) | `[x]` done |
-| 3 — Structure | *not yet written* | `[ ]` |
+| 3 — Structure | [phase-3-structure.md](phase-3-structure.md) | `[x]` done |
 | 4 — Dependencies + tooling | *not yet written* | `[ ]` |
 | 5 — In-file documentation | *not yet written* | `[ ]` |
 | 6 — Test audit | *not yet written* | `[ ]` |

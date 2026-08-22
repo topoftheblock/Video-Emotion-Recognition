@@ -122,9 +122,21 @@ reason and state it in the form that can be checked — per-document counters,
 ranges differing per file, collisions therefore possible — rather than asserting
 a collision the data does not show.
 
-**Note for Phase 6:** the test corpus not exercising id collision is a coverage
-gap. A test with two videos sharing a `person_id` would pin the composite key's
-behavior; nothing currently does.
+**Settled 2026-08-22, during Phase 3 — with proof.** Collisions are not merely
+possible, they are abundant: **4,762 `emotion_id` values occur in more than one
+video** in this corpus. `emotion_id` 16621 is in videos 3 and 6.
+
+The `persons` table is simply too small a sample to show it — 23 rows. The
+mechanism is identical, since both columns are the CAS's `xmi:id`.
+
+Two corrections to this entry follow:
+
+- The composite key's justification is fully verifiable, and the numbers above
+  are what Phase 5 should cite.
+- **There is no coverage gap.** `cas-to-postgres-importer/tests/test_identity.py`
+  already has `test_two_videos_can_hold_the_same_xmi_id`, whose comment names
+  16621 and the two videos. That comment is accurate — checked against the
+  database. Nothing for Phase 6 to add.
 
 ### D8 — `--on-existing replace` does not preserve `video_id`
 **Phase 5 (document), Phase 7 (operations).** Verified by observation during

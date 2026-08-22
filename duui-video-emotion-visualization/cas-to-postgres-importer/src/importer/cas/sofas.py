@@ -1,53 +1,20 @@
-"""
-Places the video file that belongs to a just-imported CAS into
-VIDEO_MEDIA_DIR, so the webapp -- which only ever looks in
-VIDEO_MEDIA_DIR for `videos.filename` -- automatically has it without
-a separate manual copy step.
+"""The raw XMI side of media: finding, reading and removing sofas.
 
-This is what makes the one-off importer container fully self
--contained: given a CAS in DUUI_INPUT_XMI_DIR, running the importer
-once leaves both the DB rows *and* the matching video file in place
-for the webapp container to pick up, with `videos.filename` as the
-join key between them. See the "Docker architecture" section in
-README.md for the full picture.
+Works on the lxml tree *before* cassis parses it, which is the point — a CAS
+carrying an embedded video is too large to load with the video still in it, so
+the media sofas are read and stripped at the XML level first.
 
-The video is obtained from whichever of two sources has it, in order:
-
-  1. A real file named `videos.filename` in DUUI_INPUT_VIDEO_DIR.
-  2. The CAS itself. DUUI pipelines carry the video base64-encoded in
-     a sofa (`mimeType: video/*`) -- the same payload the DUUI
-     components pass around, see e.g. the extract-audio component's
-     `video_base64` field -- so a CAS exported with its sofa intact
-     needs no companion video file at all. Which view that is comes
-     from DUUI_VIDEO_VIEW (default `_InitialView`).
-
-(1) is preferred purely because copying a file is cheaper than
-base64-decoding tens of megabytes; the result is identical either way.
-
-Those payloads are read straight off the XML, before the CAS is handed
-to cassis, and blanked in the copy cassis does get. That is not an
-optimisation -- it is what makes these files importable at all. cassis
-turns every feature structure into Python objects, and a sofa holding a
-169 MB base64 video costs upwards of 20 GB that way (measured: killed
-at a 20 GB cgroup limit while the same file parses in 0.63 GB with lxml
-alone). Blanking the media sofas takes the document cassis sees from
-181 MB to 11 MB and the load from "impossible" to under a second, with
-no effect on the annotations, which live in the views' member lists
-rather than in the sofa. See README "Large CAS files".
-
-The file on disk is never modified: the blanking happens in an
-in-memory tree, and the input directory is mounted read-only anyway.
+The filesystem half — putting a video where the webapp can serve it — is in
+`video_files.py`.
 """
 
 import base64
-import shutil
 from dataclasses import dataclass, field
 from io import BytesIO
-from pathlib import Path
 
 from lxml import etree
 
-from .config import VIDEO_MEDIA_DIR, VIDEO_VIEW
+from ..config import VIDEO_VIEW
 
 # What DUUI_VIDEO_VIEW falls back to when unset -- knowing whether the
 # view name was chosen by the user or inherited decides whether "no
@@ -58,44 +25,6 @@ _DEFAULT_VIDEO_VIEW = "_InitialView"
 # element carried elsewhere in the document, so resolving it needs a
 # lookup by that id.
 _XMI_ID = "{http://www.omg.org/XMI}id"
-
-
-def place_video_file(video_filename, source_dir):
-    """
-    Copy `<source_dir>/<video_filename>` to `<VIDEO_MEDIA_DIR>/<video_filename>`
-    if it isn't already there. Returns the destination Path on success,
-    or None if there was nothing to do (no filename) or no source file
-    was found to copy.
-
-    Deliberately never raises: a missing video file means the webapp
-    just won't be able to play that video yet (visible to the user as
-    a normal "video unavailable" state, see the /api/videos
-    `video_file_available` field) -- it shouldn't roll back or block
-    an otherwise-successful DB import.
-    """
-    if not video_filename or video_filename == "unknown":
-        return None
-
-    dest_dir = Path(VIDEO_MEDIA_DIR)
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    dest = dest_dir / video_filename
-
-    if dest.exists():
-        # Already placed -- either a previous run of this same import,
-        # or source_dir (DUUI_INPUT_VIDEO_DIR) and VIDEO_MEDIA_DIR are
-        # the same directory (the default, native-setup case), where
-        # copying onto itself would only be wasted I/O.
-        print(f"[duui_parser] video file already present at {dest}, leaving as-is")
-        return dest
-
-    source = Path(source_dir) / video_filename
-    if not source.exists():
-        print(f"[duui_parser] warning: no source video file at {source}")
-        return None
-
-    shutil.copy2(source, dest)
-    print(f"[duui_parser] placed video file: {source} -> {dest}")
-    return dest
 
 
 @dataclass
@@ -234,14 +163,14 @@ def select_video_sofa(sofas):
         # writing that out as a video would produce an unplayable
         # file, so say why it was skipped rather than doing it.
         print(
-            f"[duui_parser] warning: DUUI_VIDEO_VIEW='{VIDEO_VIEW}' is a "
+            f"[importer] warning: DUUI_VIDEO_VIEW='{VIDEO_VIEW}' is a "
             f"'{configured.mime}' sofa, not a video -- ignoring it"
         )
     elif VIDEO_VIEW != _DEFAULT_VIDEO_VIEW:
         # Only worth flagging when explicitly configured: the default
         # view is simply absent from plenty of CAS files.
         print(
-            f"[duui_parser] warning: DUUI_VIDEO_VIEW='{VIDEO_VIEW}' is not a "
+            f"[importer] warning: DUUI_VIDEO_VIEW='{VIDEO_VIEW}' is not a "
             f"view in this CAS"
         )
 
@@ -288,76 +217,3 @@ def cas_source(tree):
     tree.write(buffer, encoding="UTF-8", xml_declaration=True)
     buffer.seek(0)
     return buffer
-
-
-def extract_video_payload(payload, video_filename):
-    """
-    Write `payload`'s bytes to `<VIDEO_MEDIA_DIR>/<video_filename>`.
-    Returns the destination Path, or None if there was nothing to
-    write.
-
-    Used when no companion video file exists on disk -- a CAS exported
-    with its sofa intact already contains the bytes, so there is no
-    reason to make the user supply the same video twice.
-
-    Deliberately never raises, for the same reason `place_video_file`
-    doesn't: a video that can't be recovered costs playback, not the
-    import.
-    """
-    if not video_filename or video_filename == "unknown" or payload is None:
-        return None
-
-    try:
-        data = payload.data()
-    except Exception as exc:  # noqa: BLE001 -- playback, not the import
-        print(f"[duui_parser] warning: could not decode the video sofa: {exc}")
-        return None
-    if not data:
-        return None
-
-    dest_dir = Path(VIDEO_MEDIA_DIR)
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    dest = dest_dir / video_filename
-    try:
-        dest.write_bytes(data)
-    except OSError as exc:
-        print(f"[duui_parser] warning: could not write extracted video to {dest}: {exc}")
-        return None
-
-    print(
-        f"[duui_parser] extracted video from CAS sofa '{payload.sofa_id}' "
-        f"({payload.mime or 'video/*'}, {len(data)} bytes) -> {dest}"
-    )
-    return dest
-
-
-def ensure_video_available(video_filename, source_dir, payload=None):
-    """
-    Make `videos.filename` playable by the webapp: copy the companion
-    video file if there is one, otherwise fall back to the copy that
-    was embedded in the CAS. Returns the destination Path, or None if
-    neither source had the video -- in which case the DB rows are still
-    fine, only playback isn't.
-
-    `payload` is the sofa captured before the CAS was loaded (see
-    find_media_sofas/select_video_sofa). It is still only decoded if
-    the first source came up empty, so a re-import of a video already
-    in the store does no base64 work at all.
-    """
-    dest = place_video_file(video_filename, source_dir)
-    if dest is not None:
-        return dest
-
-    if payload is not None:
-        dest = extract_video_payload(payload, video_filename)
-        if dest is not None:
-            return dest
-
-    if video_filename and video_filename != "unknown":
-        print(
-            f"[duui_parser] warning: no video for '{video_filename}' in "
-            f"{source_dir} and none embedded in the CAS -- the DB rows were "
-            f"still imported, but the webapp won't be able to play it until a "
-            f"file with that exact name is placed in {Path(VIDEO_MEDIA_DIR)}"
-        )
-    return None

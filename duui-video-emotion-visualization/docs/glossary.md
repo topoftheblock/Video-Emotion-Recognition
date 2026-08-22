@@ -209,7 +209,7 @@ Fixed and not to be changed. Refer to each by its exact directory name:
 | Directory | Package | What it is |
 | --- | --- | --- |
 | `webapp` | `backend` | The webapp: FastAPI backend plus static frontend |
-| `cas-to-postgres-importer` | `main` | The importer: CAS files into the database |
+| `cas-to-postgres-importer` | `importer` | The importer: CAS files into the database |
 | `global-identity-linker` | `identity` | The identity linker: assigns global persons |
 | `pgvector-db` | — | Postgres 16 + pgvector, with the schema baked in |
 

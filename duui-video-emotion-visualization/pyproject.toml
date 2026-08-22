@@ -1,7 +1,7 @@
 [tool.pytest.ini_options]
 # Runs all three suites in one go from the stack root. Each container's
 # code lives entirely in its own directory under a `src/` source root, so
-# all of those go on the path: that's what makes `import main`
+# all of those go on the path: that's what makes `import importer`
 # (importer), `import backend` (viewer) and `import identity` (the
 # cross-video identity job) resolve exactly as they do in the respective
 # images. The three packages are named differently on purpose -- all

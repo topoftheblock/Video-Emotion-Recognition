@@ -100,5 +100,5 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as exc:  # noqa: BLE001 -- report, don't traceback-dump
-        print(f"[duui_global_identity] ERROR: {exc}")
+        print(f"[identity] ERROR: {exc}")
         sys.exit(1)

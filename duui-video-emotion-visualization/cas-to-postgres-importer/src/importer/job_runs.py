@@ -248,7 +248,7 @@ class JobRun:
     def _give_up(self, exc):
         self._disabled = True
         self._stop_beating.set()
-        print(f"[duui_parser] job status reporting disabled ({exc})")
+        print(f"[importer] job status reporting disabled ({exc})")
         if self._conn is not None:
             try:
                 self._conn.close()

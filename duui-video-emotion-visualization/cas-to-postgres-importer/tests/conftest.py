@@ -17,7 +17,7 @@ see README "Tests" for how CI does this.
 import psycopg2
 import pytest
 
-from main.config import DB_CONFIG
+from importer.config import DB_CONFIG
 
 
 def _can_connect():

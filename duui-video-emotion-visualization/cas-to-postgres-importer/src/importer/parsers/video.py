@@ -4,7 +4,7 @@ DocumentMetaData if no MultimediaElement annotation is present.
 Sets context["global_video_id"] and context["video_filename"] for
 downstream steps -- the latter is what pipeline.py uses after commit
 to place the companion video file where the webapp expects it (see
-src/main/media.py), so it stays in lockstep with whatever filename
+src/importer/cas/sofas.py), so it stays in lockstep with whatever filename
 actually ended up in the `videos` row, rather than being re-derived.
 
 **The video is keyed by filename**, and `video_id` is whatever the
@@ -17,8 +17,8 @@ video, and it is already the join key to the video store the webapp
 plays from. See pgvector-db/schema.sql's identity note.
 """
 
-from ..cas_views import select_across_views, select_exact_type
-from ..config import TYPES
+from ..cas.views import select_across_views, select_exact_type
+from ..cas.types import TYPES
 
 _VIDEO_UPSERT = """
     INSERT INTO videos (filename, duration, processed_at, fps, width, height)

@@ -5,7 +5,7 @@ Every setting the webapp reads lives here, so nothing else in this
 container hardcodes a path or a credential inline.
 
 Deliberately separate from the importer's own config (see
-cas-to-postgres-importer/src/main/config.py): the two
+cas-to-postgres-importer/src/importer/config.py): the two
 containers are independent images with independent code, and share
 nothing but the database and the video store. The settings they *both*
 read -- DB_CONFIG and VIDEO_MEDIA_DIR -- are defined in each of them
@@ -30,7 +30,7 @@ except ImportError:
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
 # (copies into it, see
-# cas-to-postgres-importer/src/main/media.py) and the webapp
+# cas-to-postgres-importer/src/importer/cas/sofas.py) and the webapp
 # (reads from it, see backend/routes/videos.py) agree a video for
 # `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. The viewer only
 # ever reads from it; it never sees the importer's input directory at

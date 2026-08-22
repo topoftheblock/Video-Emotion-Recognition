@@ -46,7 +46,7 @@ def test_canvas_text_uses_a_font_the_app_actually_ships():
     has never shipped -- so every on-video label rendered in the default
     monospace and nobody could see it from the page.
     """
-    overlay = (FRONTEND / "js" / "overlay.js").read_text(encoding="utf-8")
+    overlay = (FRONTEND / "js" / "playback" / "overlay.js").read_text(encoding="utf-8")
     bundled = set(re.findall(r'font-family:\s*"([^"]+)"',
                              (FRONTEND / "css" / "base.css").read_text(encoding="utf-8")))
     assert bundled, "no @font-face families found in base.css"
@@ -68,7 +68,7 @@ def test_canvas_label_size_is_derived_from_the_root_font_size():
     A literal pixel size here would make the one piece of type sitting
     *on* the data the only piece that ignores the reader's setting.
     """
-    overlay = (FRONTEND / "js" / "overlay.js").read_text(encoding="utf-8")
+    overlay = (FRONTEND / "js" / "playback" / "overlay.js").read_text(encoding="utf-8")
     assert "documentElement" in overlay and "fontSize" in overlay, (
         "overlay.js should read the root font size rather than hardcoding one"
     )
@@ -85,7 +85,7 @@ def test_the_on_video_label_colour_comes_from_the_shared_decision():
     second, independent copy of the same decision, which happened to pass
     but had nothing keeping it passing when the palette changed.
     """
-    overlay = (FRONTEND / "js" / "overlay.js").read_text(encoding="utf-8")
+    overlay = (FRONTEND / "js" / "playback" / "overlay.js").read_text(encoding="utf-8")
     assert "readableTextColor" in overlay, (
         "overlay.js should route its label colour through readableTextColor()"
     )

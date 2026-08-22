@@ -1,5 +1,5 @@
 """
-Web viewer backend for the DUUI Bundestag pipeline.
+Backend for the DUUI Video Emotion Visualization webapp.
 
 Serves two things:
   1. The video file itself, from VIDEO_DIR (range-request aware, so
@@ -54,13 +54,13 @@ class NoCacheStaticFiles(StaticFiles):
 
 def create_app() -> FastAPI:
     # Same DUUI_VIDEO_DIR the importer writes into
-    # (cas-to-postgres-importer/src/main/media.py) -- this is
+    # (cas-to-postgres-importer/src/importer/cas/sofas.py) -- this is
     # the single place both sides agree a video for
     # `videos.filename = X` lives at `<VIDEO_DIR>/X`. See config.py's
     # VIDEO_MEDIA_DIR comment and README "Docker architecture".
     VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 
-    app = FastAPI(title="DUUI Bundestag Video Viewer")
+    app = FastAPI(title="DUUI Video Emotion Visualization")
 
     @app.get("/healthz")
     def healthz():

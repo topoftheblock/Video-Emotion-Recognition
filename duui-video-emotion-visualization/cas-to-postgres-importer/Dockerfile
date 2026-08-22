@@ -13,7 +13,7 @@ WORKDIR /app
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# The whole source root: the `main` package (CAS parsers,
+# The whole source root: the `importer` package (CAS parsers,
 # post-processing, entry module, database layer) plus `resources/` --
 # which carries the three UIMA typesystem descriptors the parser needs
 # to read a CAS. Those are baked in rather than mounted: they belong to
@@ -24,7 +24,7 @@ COPY src ./src
 
 ENV PYTHONUNBUFFERED=1
 # `src` is the source root, not a package -- putting it on the path is
-# what makes `import main` resolve, here and in the test suite.
+# what makes `import importer` resolve, here and in the test suite.
 ENV PYTHONPATH=/app/src
 
 # Input and output defaults, both overridable at run time. These are
@@ -35,4 +35,4 @@ ENV DUUI_VIDEO_DIR=/data/videos
 
 # Args are paths (files and/or directories); no args = import everything
 # in DUUI_INPUT_XMI_DIR.
-ENTRYPOINT ["python", "-m", "main"]
+ENTRYPOINT ["python", "-m", "importer"]

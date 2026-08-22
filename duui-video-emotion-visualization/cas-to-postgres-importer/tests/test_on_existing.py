@@ -13,9 +13,9 @@ import base64
 import pytest
 from lxml import etree
 
-from main import media
-from main.__main__ import _split_args
-from main.config import ON_EXISTING_CHOICES
+from importer.cas import sofas
+from importer.__main__ import _split_args
+from importer.config import ON_EXISTING_CHOICES
 
 
 def _document(*, multimedia=None, document_title=None):
@@ -44,7 +44,7 @@ def _document(*, multimedia=None, document_title=None):
 def test_filename_comes_from_multimedia_element_first():
     tree = _document(multimedia="teil_000.mp4", document_title="something else.mp4")
 
-    assert media.read_video_filename(tree) == "teil_000.mp4"
+    assert sofas.read_video_filename(tree) == "teil_000.mp4"
 
 
 def test_filename_falls_back_to_document_metadata():
@@ -52,21 +52,21 @@ def test_filename_falls_back_to_document_metadata():
     # MultimediaElement at all.
     tree = _document(document_title="teil_000.mp4")
 
-    assert media.read_video_filename(tree) == "teil_000.mp4"
+    assert sofas.read_video_filename(tree) == "teil_000.mp4"
 
 
 def test_no_identifying_annotation_reads_as_unknown():
     # None, not a guess: run() then leaves the decision to the video
     # parser reading the loaded CAS.
-    assert media.read_video_filename(_document()) is None
+    assert sofas.read_video_filename(_document()) is None
 
 
 def test_reading_the_filename_does_not_disturb_the_media_sofa():
     tree = _document(document_title="teil_000.mp4")
 
-    media.read_video_filename(tree)
+    sofas.read_video_filename(tree)
 
-    payload = media.select_video_sofa(media.find_media_sofas(tree))
+    payload = sofas.select_video_sofa(sofas.find_media_sofas(tree))
     assert payload.data() == b"video bytes"
 
 

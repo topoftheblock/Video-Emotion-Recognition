@@ -21,9 +21,9 @@ Person linkage isn't available on this type in the source CAS (no
 reference back to a speaker/segment), so person_id is left NULL here.
 """
 
-from ..cas_views import select_across_views
-from ..config import TYPES
-from ..typesystem import as_list, get_xmi_id
+from ..cas.views import select_across_views
+from ..cas.types import TYPES
+from ..cas.typesystem import as_list, get_xmi_id
 
 
 def _dominant_label_from_comments(comments):

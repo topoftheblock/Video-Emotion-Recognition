@@ -5,6 +5,8 @@
    them still do.
 ------------------------------------------------------------------*/
 
+/* --- Panel shell ------------------------------------------------------------ */
+
 .panel {
   position: relative;
   background: var(--surface);
@@ -58,6 +60,8 @@
 .dot-people { background: var(--accent-people); color: var(--accent-people); }
 .dot-live { background: var(--accent-live); color: var(--accent-live); }
 .dot-cross { background: var(--accent-cross); color: var(--accent-cross); }
+
+/* --- Match-confidence legend ------------------------------------------------ */
 
 /* Names the .person-meta column before any row does, the same idiom
    .emo-legend uses for the emotion panels' now/avg columns -- so what
@@ -153,6 +157,8 @@
   white-space: nowrap;
 }
 
+/* --- Person lists and rows -------------------------------------------------- */
+
 .person-list, .active-list {
   list-style: none;
   margin: 0;
@@ -217,6 +223,8 @@
 
 .person-row:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
+/* --- Selected-person filter chip -------------------------------------------- */
+
 /* Names the person the emotion panels are filtered to; empty (and so
    collapsed) whenever nothing is selected. The Gateway's .tag: a
    rounded-full chip in variant-soft-primary.
@@ -252,7 +260,8 @@
   visibility: hidden;
 }
 
-/* ---- "Also appears in" rows ----
+/* --- "Also appears in" rows ------------------------------------------------- */
+/*
    The other two person lists fit on one line, so they are flex rows
    with the meta pushed right. These carry a comma-joined list of other
    videos instead, which is far too long for that -- so they are a
@@ -339,6 +348,8 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* --- Shared row parts ------------------------------------------------------- */
 
 /* Per-person identity colours -- set inline from js/state.js and
    deliberately outside the theme, since they have to stay mutually

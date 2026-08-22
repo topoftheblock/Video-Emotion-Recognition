@@ -60,7 +60,7 @@ def ensure_table():
             conn.close()
         return True
     except Exception as exc:  # noqa: BLE001 -- never block startup
-        print(f"[duui_webapp] could not ensure the job_runs table exists: {exc}")
+        print(f"[webapp] could not ensure the job_runs table exists: {exc}")
         return False
 
 

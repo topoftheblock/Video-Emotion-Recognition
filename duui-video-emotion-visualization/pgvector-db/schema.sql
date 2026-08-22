@@ -282,7 +282,7 @@ CREATE INDEX IF NOT EXISTS base_emotions_person_idx
 -- already-populated deployment never sees it. The same DDL is
 -- therefore repeated as CREATE TABLE IF NOT EXISTS in each service
 -- that touches the table -- keep the four copies in step:
---   cas-to-postgres-importer/src/main/job_runs.py
+--   cas-to-postgres-importer/src/importer/job_runs.py
 --   global-identity-linker/src/identity/job_runs.py
 --   webapp/src/backend/queries/jobs.py
 --

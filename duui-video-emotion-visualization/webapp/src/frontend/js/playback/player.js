@@ -9,9 +9,9 @@
  * to import every panel in the app.
  */
 
-import { el } from "./dom.js";
-import { formatClock } from "./format.js";
-import { state } from "./state.js";
+import { el } from "../lib/dom.js";
+import { formatClock } from "../lib/format.js";
+import { state } from "../state.js";
 
 const frameSubscribers = [];
 
@@ -92,7 +92,7 @@ const ICON_PAUSE =
 /* Icon and name change together, because they say the same thing. The
  * name used to be a fixed "Play/Pause", which announces both states at
  * once and so is never accurate about the one the button is actually
- * in. Same shape as syncToggleButton() in js/subtitles.js.
+ * in. Same shape as syncToggleButton() in subtitles.js.
  *
  * `playing` is what the button will *do*, not what it shows: while the
  * video plays, the control pauses it. */

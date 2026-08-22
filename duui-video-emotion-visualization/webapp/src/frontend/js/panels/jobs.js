@@ -23,8 +23,8 @@
  *     the compose healthcheck already costs.
  */
 
-import { fetchRunningJobs } from "../api.js";
-import { el, html } from "../dom.js";
+import { fetchRunningJobs } from "../lib/api.js";
+import { el, html } from "../lib/dom.js";
 
 const POLL_IDLE_MS = 10000;
 const POLL_ACTIVE_MS = 2000;

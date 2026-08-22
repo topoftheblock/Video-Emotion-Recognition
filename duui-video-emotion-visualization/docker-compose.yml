@@ -35,7 +35,7 @@
 # otherwise get different projects (surprising), and two folders with
 # the SAME name would silently share containers and volumes (worse --
 # you end up debugging one while running the other).
-name: duui-bundestag-stack
+name: duui-video-emotion-visualization
 
 # Shared by `cas-to-postgres-importer` (profile "import") and anything else that needs to
 # run the cas-to-postgres-importer job, so the two can never drift apart.
@@ -44,7 +44,7 @@ x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
     context: ./cas-to-postgres-importer
   image: duui-video-emotion-visualization/cas-to-postgres-importer:latest
   environment:
-    DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
+    DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_video_emotion}
     DUUI_DB_USER: ${DUUI_DB_USER:-duui}
     DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
     DUUI_DB_HOST: pgvector-db
@@ -110,7 +110,7 @@ services:
     image: duui-video-emotion-visualization/pgvector-db:latest
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DUUI_DB_NAME:-duui_bundestag}
+      POSTGRES_DB: ${DUUI_DB_NAME:-duui_video_emotion}
       POSTGRES_USER: ${DUUI_DB_USER:-duui}
       POSTGRES_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
     volumes:
@@ -123,7 +123,7 @@ services:
       # you already run Postgres locally on 5432.
       - "${DUUI_DB_HOST_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DUUI_DB_USER:-duui} -d ${DUUI_DB_NAME:-duui_bundestag}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DUUI_DB_USER:-duui} -d ${DUUI_DB_NAME:-duui_video_emotion}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -185,7 +185,7 @@ services:
       pgvector-db:
         condition: service_healthy
     environment:
-      DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
+      DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_video_emotion}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
       DUUI_DB_HOST: pgvector-db
@@ -204,7 +204,7 @@ services:
       pgvector-db:
         condition: service_healthy
     environment:
-      DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_bundestag}
+      DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_video_emotion}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
       DUUI_DB_HOST: pgvector-db

@@ -8,7 +8,7 @@
  * panels can read it; this module owns the list markup and the click.
  */
 
-import { el, html } from "../dom.js";
+import { el, html } from "../lib/dom.js";
 import { compareNames, personColorFor, personName, state } from "../state.js";
 
 /**
