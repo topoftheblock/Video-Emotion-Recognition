@@ -414,3 +414,4 @@ which is now its sibling. Fixed.
 | Phase 5 | The comment budget now applies to modules that each have one subject, which is what makes it tractable. `cas/types.py` is 225 lines of pure data and needs a different treatment from code. |
 | Phase 6 | D9 stays registered. The `job_runs` DDL is still declared in four identical places. |
 | Phase 7 | `docs/operations.md` owes users the volume-migration procedure this phase did not need: renaming the Compose project orphans both volumes, and the teardown must precede the rename. |
+| Phase 7 | Every `docker compose --profile … run` in the docs can drop the flag — see the Phase 7 section of [the plan overview](README.md). |

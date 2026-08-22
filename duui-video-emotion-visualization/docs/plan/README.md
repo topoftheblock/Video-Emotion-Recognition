@@ -435,6 +435,30 @@ instructions come before architecture.
   `a11y-ci.yml`).
 - Kill the `.env.example` ↔ README configuration duplication: one of them owns
   it, the other links.
+- **Use the short form for running the two batch jobs** (verified 2026-08-22 on
+  Compose 5.5.0):
+
+  ```bash
+  docker compose run --rm cas-to-postgres-importer
+  ```
+
+  Modern Compose activates a service's own profile when the service is named
+  directly, so `--profile import` / `--profile identity` is **redundant for
+  `run`**. Make the short form the default everywhere the docs show these
+  commands — it is less to type and one less concept to explain.
+
+  Two things the docs must still say, though:
+
+  - **`--profile` is required on older Compose versions**, where `run` did not
+    auto-activate. Mention it as a fallback rather than the default: "if your
+    Compose does not recognise the service, add `--profile import`."
+  - **`--profile` is still required for `up`**, which operates on a set of
+    services rather than a named one. The shorthand applies to `run` only.
+
+  Explain *why* the two jobs are profiled at all, since that is the part a
+  reader cannot infer: the importer writes to the database and the linker wipes
+  and recomputes every global person, so neither may run as a side effect of
+  `docker compose up`.
 - **Decide what happens to `pgvector-db/data_schema_with_types.md`.** It is not a
   stale copy of the schema — it is the *design* document mapping UIMA CAS types
   to tables, and it declares itself as such. It is broadly accurate and states
