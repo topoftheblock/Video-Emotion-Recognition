@@ -156,7 +156,7 @@ what it must **not** cover because another document owns it.
 
 ---
 
-### `[ ]` Phase 2 — Fact ledger (what the system actually does)
+### `[x]` Phase 2 — Fact ledger (what the system actually does)
 
 **Why here:** supplies the source material for every rewrite in phases 5 and 7,
 and is the only defence against copying existing errors forward.
@@ -435,8 +435,14 @@ instructions come before architecture.
   `a11y-ci.yml`).
 - Kill the `.env.example` ↔ README configuration duplication: one of them owns
   it, the other links.
-- **Rewrite `pgvector-db/data_schema_with_types.md` from `schema.sql`**, which is
-  the authoritative one. Consider a test that fails when the two diverge.
+- **Decide what happens to `pgvector-db/data_schema_with_types.md`.** It is not a
+  stale copy of the schema — it is the *design* document mapping UIMA CAS types
+  to tables, and it declares itself as such. It is broadly accurate and states
+  most of its own divergences. Two things are wrong with it regardless of that
+  decision: it is written in mixed German and English (Phase 1 settled on US
+  English), and it specifies `FusedEmotion` / `EmotionFusionReference` types that
+  have no tables and no importer support. Consider a test that fails when the
+  design and `schema.sql` diverge.
 - **Update `webapp/docs/a11y-ci.yml`** — fix the dead `duui-bundestag-stack/…`
   path, and correct its header, which currently justifies leaving it off with a
   claim that is false: the repository *does* have CI, and a `paths:`-scoped
@@ -517,6 +523,13 @@ out — phases marked done, decision records archived.
   and accessibility work is the only exception. They are guesses that read like
   knowledge, and they may be simply wrong.
 
+  **Never say so in the repository.** This paragraph, and this plan, are the only
+  place the provenance is recorded. In every committed file — documentation,
+  comments, commit messages, the legacy quarantine notice — describe such text as
+  *legacy*, *outdated*, *unverified*, or *possibly wrong*. Never as AI-written,
+  AI-generated, or machine-authored. The practical instruction is identical; only
+  the attribution is dropped, and it is dropped everywhere.
+
   So they carry no authority for *anything*: not for what the code does, and
   **not for why it does it**. An existing comment stating a reason is not a
   reason; it is an unsourced claim. Verify it independently or discard it —
@@ -550,6 +563,17 @@ out — phases marked done, decision records archived.
   word, except where behaviour genuinely differs — and there, the difference is
   stated explicitly. The pairs get diffed as a check, not just as a starting
   point.
+- **`docs/todo.md` is not part of this cleanup.** It collects work to do
+  *afterwards*, and nothing in it is in scope for any phase here. Entries are
+  added **only when the project owner asks for one** — never from a passing
+  observation, and never because something looks like it needs doing. The file
+  itself deliberately does not say any of this; it is recorded here instead, so
+  the file reads as a plain to-do list. Phase 7 gives it a proper form.
+- **Terminology trap: "Phase 0" is overloaded.** `webapp/docs/accessibility.md`
+  and `webapp/docs/a11y-baseline/` number their own phases 0–6. Those are the
+  **accessibility remediation** phases from before this pass and have nothing to
+  do with this plan's Phase 0. Both sets are correct in their own context; do not
+  renumber either, and disambiguate when referring to one in prose.
 - **Decisions get written down**, including the ones that end in "no change".
   A documented "we stayed on Python 3.12 because X" prevents the question being
   re-asked in six months.
@@ -631,7 +655,11 @@ this is the index.
 | — | Linters for Dockerfile / compose / YAML / HTML / Markdown | **Yes** — full roster in §6. |
 | — | Branch layout | **`code-cleanup/main`** integrates; **`code-cleanup/phase-<N>`** per phase, merged back with `--no-ff`; `main` only at the very end. No branch may be named plain `code-cleanup` — see §5. |
 | — | Commit attribution | **None.** No AI/Claude attribution in commits, comments or docs — see §5. |
-| — | Authority of existing comments | **None.** They are AI-written and may be wrong, including about intent. Verify independently or discard; ask rather than assume. Only the frontend style/accessibility material reflects real decisions, and it is kept because it is test-verifiable. |
+| — | Authority of existing comments | **None.** Unverified and possibly wrong, including about intent. Verify independently or discard; ask rather than assume. Only the frontend style/accessibility material reflects real decisions, and it is kept because it is test-verifiable. |
+| — | How provenance is described | **Never name AI as the author anywhere in the repository.** Say *legacy*, *outdated*, *unverified*, *possibly wrong*. Recorded in §5 and nowhere else. |
+| — | The root README and `data_schema_with_types.md` | **Quarantined to `docs/legacy/`**, not verified and not rewritten now. A short, true README replaces the root one. Phase 7 uses the quarantined files as a topic checklist, moves the database content into `docs/database.md`, then deletes them. |
+| — | `/api/stats` (D9) | **Keep for now**, and keep it registered as a discrepancy. |
+| — | `docs/todo.md` | A scratchpad for **post-cleanup** work — see §5. |
 | — | `docs/` skeleton | **Built in Phase 1**, not Phase 7, so Phase 5 has real pages to move rationale into. Phase 7 becomes an editing job. |
 | — | Where the plan lives | **`docs/plan/`**, with this file as `README.md` and one `phase-N-*.md` per phase. Cross-cutting content stays here; per-phase detail is split out. |
 | — | The live test data | **Disposable and reproducible.** The running stack is a test stack. Lowers the severity of the Phase 3 volume hazard from data loss to wasted time — it still needs a deliberate decision, not an accident. |
@@ -758,7 +786,7 @@ and verified in Phase 8.
 | --- | --- | --- | --- |
 | 0 — Baseline | `[x]` | `code-cleanup` | Done 2026-08-22. **Green baseline = 150/150 on an empty DB.** 4 findings logged. Detail: [phase-0-baseline.md](phase-0-baseline.md). |
 | 1 — Style guide + doc map | `[x]` | `code-cleanup/phase-1` | Done 2026-08-22. Style guide, glossary, doc map and `docs/` skeleton in place. Detail: [phase-1-style-guide.md](phase-1-style-guide.md). |
-| 2 — Fact ledger | `[ ]` | | |
+| 2 — Fact ledger | `[x]` | `code-cleanup/phase-2` | Done 2026-08-22. D1–D12 registered, contracts verified, legacy docs quarantined. Line-by-line reading deferred to Phase 5. |
 | 3 — Structure | `[ ]` | | |
 | 4 — Dependencies | `[ ]` | | |
 | 5 — In-file docs | `[ ]` | | |
@@ -777,7 +805,7 @@ and verified in Phase 8.
 | --- | --- | --- |
 | 0 — Baseline and safety net | [phase-0-baseline.md](phase-0-baseline.md) | `[x]` done |
 | 1 — Style guide + doc map | [phase-1-style-guide.md](phase-1-style-guide.md) | `[x]` done |
-| 2 — Fact ledger | *not yet written* | `[ ]` |
+| 2 — Fact ledger | [phase-2-ledger.md](phase-2-ledger.md) · [phase-2-modules.md](phase-2-modules.md) | `[x]` done |
 | 3 — Structure | *not yet written* | `[ ]` |
 | 4 — Dependencies + tooling | *not yet written* | `[ ]` |
 | 5 — In-file documentation | *not yet written* | `[ ]` |

@@ -27,7 +27,7 @@ Measured, not assumed:
 | How wide is the prose? | Comments and docstrings already wrap near 72. |
 | Which docstring opening dominates? | 217 open with a bare `"""` and the summary on the next line; 40 put the summary on the first line. |
 | Do the four `job_runs` DDL copies agree? | **Yes — byte-identical** across `schema.sql` and all three Python modules. No drift. |
-| Is the schema doc current? | **No.** `job_runs` exists in `schema.sql` (line 293) but is absent from `data_schema_with_types.md`. |
+| Is the schema doc current? | ~~No~~ — **this reading was wrong; corrected in Phase 2.** `job_runs` is absent from `data_schema_with_types.md` because that file is the pipeline-export *design*, not a description of the database, and `job_runs` is operational. Its absence is correct. |
 | What are the real `kind` / `modality` / `granularity` values? | Read from the live corpus, not from comments — see the glossary tables. |
 
 The docstring measurement drives a real change: **the dominant style is the one

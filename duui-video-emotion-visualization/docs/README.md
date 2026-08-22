@@ -76,6 +76,6 @@ Read [`documentation-style.md`](documentation-style.md) first. The two rules tha
 matter most in this repository:
 
 - **Write only what you can verify** against code, schema, database, or tests.
-- **The existing comments and documents are not evidence.** Nearly all of them
-  were AI-written and may be wrong, including about intent. If something matters
-  and cannot be verified, ask — do not infer it.
+- **Documents and comments predating this pass are not evidence.** They are
+  legacy text and may be outdated or wrong, including about intent. If something
+  matters and cannot be verified, ask — do not infer it.
