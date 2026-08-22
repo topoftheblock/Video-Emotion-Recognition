@@ -3,7 +3,7 @@
 *Detailed plan for Phase 3. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` plan drafted 2026-08-22, awaiting approval of §3.2–§3.6.
+Status: `[~]` plan approved 2026-08-22; one open question in §3.9.
 Branch: `code-cleanup/phase-3`.
 
 ## 3.0 What this phase is for
@@ -12,7 +12,8 @@ All path-changing churn, in one place, before anything is written about those
 paths. **No behavior changes.** Every step is a rename, a move, or a split; the
 suite must sit at 150/150 after each.
 
-This is the highest-risk phase in the plan, for one reason: §3.1.
+It **was** the highest-risk phase. It is not any more: the data is rebuilt from
+its source CAS files rather than migrated (§3.1), so there is nothing to lose.
 
 ---
 
@@ -31,32 +32,28 @@ named-volume names from it, which is why the volumes are
 the video store are not deleted — they are orphaned, which looks identical to
 data loss from the user's side.
 
-### (b) The database name — *not* a project name
+### (b) The database name — a separate change, also destructive
 
 `duui_bundestag` appears as the `DUUI_DB_NAME` default in six places. It is the
-name of a database **that exists inside the volume**. Changing the default means
-the service connects to a database that is not there.
+name of a database **that exists inside the volume**, so changing the default
+points the services at a database that is not there.
 
-**Recommendation: keep `duui_bundestag`.** The glossary already says "Bundestag"
-is correct for the *source material*, and this is a value describing a corpus,
-not a project identifier. Renaming it buys nothing and costs a second migration
-inside the volume.
+**Decided 2026-08-22: rename it.** New name pending — see §3.9.
 
-### The migration, if (a) proceeds
+### Both hazards are dissolved by rebuilding from source data
 
-Development data here is reproducible, so the cheap path is available — but the
-procedure has to be written down regardless, because **any user who renames the
-project hits this**, and their data may not be reproducible.
+**Decided 2026-08-22: no migration.** The volumes are destroyed and the corpus is
+re-imported from the CAS files, which is possible because the source data still
+exists. That removes the risk from both renames at once — there is nothing to
+orphan — and turns the riskiest step in the plan into the **most thorough test
+in it**: a full rebuild that exercises the renamed package, the renamed database,
+the split modules, and all four sub-projects end to end.
 
-1. Before renaming: `pg_dump` the database, and archive the video-store volume.
-2. Rename `name:` in `docker-compose.yml`.
-3. `docker compose up -d` — new empty volumes are created.
-4. Restore the dump; copy the video files back.
-5. Verify row counts against the pre-rename numbers.
-6. Remove the orphaned volumes **only after** verifying.
+The recreation is specified in §3.7 step 9.
 
-Steps 1–6 land in **one commit** with the rename, and the procedure is written
-into `docs/operations.md` (the stub already has the heading).
+> A migration procedure is still owed to *users*, who may rename with data they
+> cannot reproduce. It is written into `docs/operations.md` during Phase 7 — the
+> stub already has the heading — but **not executed here**.
 
 > Confirmed in Phase 0: renaming a **service** (`db` → `pgvector-db`) is
 > data-safe. Only the **project** name moves volumes.
@@ -72,13 +69,19 @@ into `docs/operations.md` (the stub already has the heading).
 | Where | What |
 | --- | --- |
 | `docker-compose.yml:38` | `name: duui-bundestag-stack` → `duui-video-emotion-visualization`. **§3.1(a) applies.** |
-| `webapp/src/backend/app.py:63` | `FastAPI(title="DUUI Bundestag Video Viewer")` — **user-facing**, and carries the retired word "Viewer" too. → `"DUUI Video Emotion Visualization"` |
+| `webapp/src/backend/app.py:63` | `FastAPI(title="DUUI Bundestag Video Viewer")` — **user-facing**, and carries the retired word "Viewer" too. → **`"DUUI Video Emotion Visualization"`** (decided 2026-08-22) |
 | `webapp/src/backend/app.py:2` | Module docstring, "DUUI Bundestag pipeline" |
 | `webapp/docs/a11y-ci.yml` | 6 × `duui-bundestag-stack/` in `paths:` filters and `working-directory:`. Repoint at `duui-video-emotion-visualization/`. **Still not activated** (Phase 7 also fixes its false "no CI" premise). |
 
-### Group B — the database name. Keep (7 occurrences)
+### Group B — the database name. Rename (7 occurrences)
 
-`.env.example:60`, `docker-compose.yml` × 5, `schema_context.py:15`. See §3.1(b).
+`.env.example:60`, `docker-compose.yml` × 5 (the `DUUI_DB_NAME` default, plus
+`POSTGRES_DB` and the healthcheck's `pg_isready -d`), and `schema_context.py:15`.
+
+Also **`.env`**, which is untracked but currently sets
+`DUUI_DB_NAME=duui_bundestag` on this machine — set in Phase 0 so host-side tests
+could reach the database. It must change with the rest or every DB-backed test
+silently skips again.
 
 ### Group C — genuine references to the corpus. Keep (16 occurrences)
 
@@ -97,7 +100,7 @@ Also out of scope: the sibling directory `duui_bundestag_pipeline/` and the root
 
 ## 3.3 Package name: `main` → `importer`
 
-**Recommendation: rename.**
+**Decided 2026-08-22: rename.**
 
 `main` is not a name — it says nothing about what the package does, while its two
 siblings (`backend`, `identity`) do. It also collides conceptually with the
@@ -115,8 +118,9 @@ What it touches:
 - Root `pyproject.toml` needs **no** change — it lists the `src` root, not the package
 - Log prefix `[duui_parser]` is a separate question (§3.6)
 
-**Check before starting:** confirm no installed distribution provides a
-top-level `importer` module that could shadow it.
+**Checked:** no installed distribution provides a top-level `importer`,
+`backend`, `identity` or `main` module, so nothing shadows and nothing is
+shadowed.
 
 ---
 
@@ -149,9 +153,10 @@ be there.
 ## 3.6 Smaller questions, with answers
 
 - **Thin route modules** — `routes/persons.py` (13), `routes/stats.py` (14),
-  `routes/jobs.py` (23). **Keep.** They are thin *by design*: one FastAPI router
-  per resource, a consistent and obvious pattern. Merging them would hide the
-  router registration.
+  `routes/jobs.py` (23). **Keep** (confirmed 2026-08-22). They are thin *by
+  design*: one FastAPI router per resource, a consistent and obvious pattern.
+  Merging them would hide the router registration and make `app.py`'s
+  `include_router` calls stop corresponding to files.
 - **`webapp` folder layout** — `routes/` (HTTP) / `queries/` (SQL) /
   `query_agent/` (LLM). A clean separation by concern. **Keep.**
 - **`importer/parsers/`** — 11 modules, one per annotation layer, with the
@@ -162,11 +167,11 @@ be there.
 - **`identity_resolution.py`** — resolves a face or voice identity feature
   structure to a `person_id` *within one CAS*. The name reads as though it
   concerned cross-video identity, which is the linker's job. **Rename** to
-  `person_resolution.py`.
+  `person_resolution.py` (decided 2026-08-22).
 - **Log prefixes** — `[duui_parser]`, `[duui_global_identity]`, `[duui_webapp]`.
   Inconsistent with each other and with the glossary's names. The style guide
-  (§9) requires `[importer]`, `[identity]`, `[webapp]`. **Change here**, since
-  the package rename touches the same lines.
+  (§9) requires `[importer]`, `[identity]`, `[webapp]`. **Change here**
+  (decided 2026-08-22), since the package rename touches the same lines.
 - **`/api/stats` (D9)** — keep, and keep it registered as a discrepancy.
 
 ---
@@ -178,27 +183,88 @@ rewrites.
 
 | # | Step | Risk |
 | --- | --- | --- |
-| 1 | Approve §3.2–§3.6 | — |
-| 2 | Group A purge **excluding** `docker-compose.yml:38` — `app.py` title and docstring, `a11y-ci.yml` paths | None |
-| 3 | Confirm no `importer` shadowing; `git mv src/main src/importer`; update imports, `Dockerfile`, log prefixes | Low, wide |
-| 4 | `git mv identity_resolution.py person_resolution.py` | Low |
-| 5 | Split `config.py` → `config.py` + `uima_types.py` | Low |
-| 6 | Split `media.py` → sofa handling + file placement | Medium |
-| 7 | Optional: `pipeline.py` → `inputs.py`; `emotions.js` math helpers | Low |
-| 8 | `sidebar.css` section banners | None |
-| 9 | **The Compose project rename + volume migration**, one commit, procedure into `docs/operations.md` | **High — §3.1** |
-| 10 | Full verification: rebuild, all four sub-projects exercised, row counts match | — |
+| 1 | Group A purge **excluding** `docker-compose.yml:38` — `app.py` title and docstring, `a11y-ci.yml` paths | None |
+| 2 | `git mv src/main src/importer`; update every import, the `Dockerfile` `ENTRYPOINT`, and the log prefixes | Low, wide |
+| 3 | `git mv identity_resolution.py person_resolution.py` | Low |
+| 4 | Split `config.py` → `config.py` + `uima_types.py` | Low |
+| 5 | Split `media.py` → sofa handling + file placement | Medium |
+| 6 | Optional: `pipeline.py` → `inputs.py`; `emotions.js` math helpers | Low |
+| 7 | `sidebar.css` section banners | None |
+| 8 | Rename the Compose project **and** the database (§3.1), including `.env` and `.env.example` | None once §3.7.1 is accepted |
+| 9 | **Rebuild and re-import** — §3.7.1 | The real test |
+| 10 | Verify: row counts, all four sub-projects, suite green | — |
 
-Step 9 is deliberately last: everything before it is reversible with `git
-revert`, and there is no reason to carry the one destructive step through eight
-other changes.
+### 3.7.1 The rebuild — recreation instead of migration
+
+Decided 2026-08-22. Destroys the current volumes and rebuilds the corpus from
+its source CAS files.
+
+```bash
+docker compose down -v
+```
+
+```bash
+docker compose up --build -d
+```
+
+Then import, in this order:
+
+```bash
+docker compose --profile import run --rm cas-to-postgres-importer
+```
+
+```bash
+DUUI_INPUT_XMI_DIR=/home/max/Downloads/xmi docker compose --profile import run --rm cas-to-postgres-importer
+```
+
+```bash
+docker compose --profile identity run --rm global-identity-linker
+```
+
+**What the input set contains** — checked before relying on it:
+
+| | |
+| --- | --- |
+| `/home/max/Downloads/xmi` | 9 `.xmi` files, **1** `.mp4`, 1.5 GB total |
+| Sample input | 1 `.xmi` + `first2.mp4` |
+
+Only `ID2021013800…mp4` exists as a file. **The eight `teil_*.mp4.xmi` carry
+their video embedded in the CAS**, which is why the directory is 1.5 GB and why
+this run exercises `media.py`'s extraction path — the one that would otherwise
+go untested by the sample input. That makes step 9 a genuinely better test than
+the migration it replaces.
+
+Expected result: **10 videos**, matching Phase 0's baseline —
+`first2.mp4` + `ID2021013800…mp4` + `teil_000` … `teil_007`.
+
+Row counts to compare against Phase 0: 23 persons, 920 segments, 375,205 emotion
+scores, 42,930 face detections, 8 global persons. Exact equality is not required
+— `video_id` values will differ (D8), and the previous corpus was built over
+several runs — but the totals should match.
+
+Note this step is **slow**: 1.5 GB of XMI with embedded video, parsed serially.
 
 ## 3.8 Exit criteria
 
-- [ ] §3.2–§3.6 approved
+- [x] §3.2–§3.6 approved (2026-08-22)
+- [ ] New database name chosen — §3.9
 - [ ] No Group A occurrence remains; all 16 Group C occurrences intact
 - [ ] Package is `importer`; image builds and runs
+- [ ] Log prefixes are `[importer]`, `[identity]`, `[webapp]`
 - [ ] Splits done; every module has one subject
-- [ ] Volume migration executed **and documented** in `docs/operations.md`
-- [ ] All four sub-projects exercised after the rename; row counts match Phase 0
+- [ ] Corpus rebuilt per §3.7.1; 10 videos; totals match Phase 0
 - [ ] Suite at 150/150
+
+## 3.9 Open question
+
+**What should the database be called?** Renaming was decided; the name was not.
+It has to be settled before step 8, and it is cheap to change now and annoying
+later.
+
+Recommendation: **`duui_video_emotion`**. Short, matches the project without
+restating it, and stays clear of `duui_video_emotion_visualization`, which is
+accurate but long to type at every `psql` invocation. Postgres allows up to 63
+characters, so either fits.
+
+Whatever is chosen appears in `.env`, `.env.example`, `docker-compose.yml` (×5),
+`schema_context.py`, and this plan.
