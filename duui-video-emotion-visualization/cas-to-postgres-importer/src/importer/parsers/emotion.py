@@ -12,7 +12,7 @@ falls back to walking that reference chain.
 """
 
 from ..cas.views import select_across_views
-from ..config import TYPES
+from ..cas.types import TYPES
 from ..cas.person_resolution import (
     resolve_person_id_via_face_fs,
     resolve_person_id_via_voice_fs,

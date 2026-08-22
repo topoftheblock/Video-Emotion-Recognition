@@ -38,11 +38,8 @@ except ImportError:
         "uima.cas.Sofa", "uima.cas.NULL",
     }
 
-from ..config import (
-    IGNORED_ABSENT_TYPES,
-    INJECTED_FALLBACK_TYPES,
-    TYPESYSTEM_FILES,
-)
+from ..config import TYPESYSTEM_FILES
+from .types import IGNORED_ABSENT_TYPES, INJECTED_FALLBACK_TYPES
 
 # How cassis phrases the warning it raises (cassis/xmi.py) when the XMI
 # references a type the typesystem doesn't define. Matched literally,

@@ -19,7 +19,7 @@ the model references its annotations carry.
 """
 
 from ..cas.views import select_across_views
-from ..config import TYPES
+from ..cas.types import TYPES
 from ..cas.typesystem import get_xmi_id
 
 

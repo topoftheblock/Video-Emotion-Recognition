@@ -25,7 +25,7 @@ can use them via person_resolution.py.
 """
 
 from ..cas.views import select_across_views
-from ..config import TYPES
+from ..cas.types import TYPES
 from ..cas.person_resolution import parse_person_label
 from ..cas.typesystem import get_xmi_id
 

@@ -18,7 +18,7 @@ plays from. See pgvector-db/schema.sql's identity note.
 """
 
 from ..cas.views import select_across_views, select_exact_type
-from ..config import TYPES
+from ..cas.types import TYPES
 
 _VIDEO_UPSERT = """
     INSERT INTO videos (filename, duration, processed_at, fps, width, height)
