@@ -121,7 +121,7 @@ and a link:
 ```python
 # Okabe-Ito: the only link between a box on the video and a name in the
 # sidebar is color, so palette entries must stay distinguishable under
-# color-vision deficiency. See docs/accessibility.md#palette.
+# color-vision deficiency. See webapp/docs/accessibility.md.
 PERSON_COLORS = [...]
 ```
 

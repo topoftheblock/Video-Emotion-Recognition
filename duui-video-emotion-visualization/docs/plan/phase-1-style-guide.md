@@ -3,7 +3,7 @@
 *Detailed plan for Phase 1. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` drafts written and validated 2026-08-22. Q1–Q4 answered.
+Status: `[x]` complete, 2026-08-22.
 Branch: `code-cleanup/phase-1`.
 
 ## 1.0 What this phase produces
@@ -13,9 +13,9 @@ written against them, which is why nothing else may start until they are agreed.
 
 | Deliverable | File | State |
 | --- | --- | --- |
-| Style guide | [`docs/documentation-style.md`](../documentation-style.md) | Draft |
-| Glossary | [`docs/glossary.md`](../glossary.md) | Draft |
-| Documentation map | §1.2 below | Draft |
+| Style guide | [`docs/documentation-style.md`](../documentation-style.md) | Done |
+| Glossary | [`docs/glossary.md`](../glossary.md) | Done |
+| Documentation map | [`docs/README.md`](../README.md) | Done |
 
 ## 1.1 Evidence the drafts are based on
 
@@ -36,45 +36,13 @@ being replaced.** 217 docstrings currently put the summary on the line after
 Phase 5 rewrites every docstring anyway, so the cost of standardizing is zero,
 and tooling (`ruff`'s pydocstyle rules) can then check them.
 
-## 1.2 Documentation map — draft
+## 1.2 Documentation map
 
-Who owns what. The purpose is to make duplication impossible by construction:
-every question has exactly one document that answers it, and the others link.
-
-### Root
-
-| Document | Audience | Owns | Must not contain |
-| --- | --- | --- | --- |
-| `README.md` | **A user, first.** Then anyone orienting. | What this is, the four parts and how they fit, prerequisites, one quickstart path, links onward. Two-minute read. | Configuration detail, architecture depth, operational procedure, anything a sub-project owns |
-| `docs/documentation-style.md` | Contributors | How to write anything in this repo | Project facts |
-| `docs/glossary.md` | Everyone | One name per concept | Explanations of how things work |
-| `docs/architecture.md` | Developers | How the four parts fit; the shared contracts — database, video store, environment variables, `job_runs` | Per-part internals |
-| `docs/configuration.md` | Users, operators | **Every** environment variable, in one place | Anything not a setting |
-| `docs/database.md` | Developers | The schema, rewritten from `schema.sql`; replaces `pgvector-db/data_schema_with_types.md` | Application logic |
-| `docs/operations.md` | Operators | Running, upgrading, backup, schema changes on an existing volume, CI | First-run instructions (README) |
-| `docs/plan/` | This effort | The cleanup plan and its phases | Anything about the software itself |
-
-### Per sub-project
-
-Each of the four gets a `README.md` answering, in this order: **what it is, how
-to run it on its own, how to configure it, how to test it, where the detail is.**
-Self-contained enough to work on that part alone.
-
-`<sub-project>/docs/` holds detail belonging to exactly one part —
-`webapp/docs/accessibility.md` is the model, and the existing a11y set folds in
-here.
-
-### The duplication rules that follow
-
-1. **Configuration lives in `docs/configuration.md`.** `.env.example` carries a
-   one-line gloss per variable and links there. The README lists only the
-   variables needed for a first run.
-2. **The schema lives in `docs/database.md`**, generated from or verified
-   against `schema.sql`.
-3. **A sub-project README never explains a shared contract** — it links to
-   `docs/architecture.md`. Otherwise the same explanation exists four times and
-   drifts four ways.
-4. **The root README never explains a sub-project.** It links.
+**Moved to [`docs/README.md`](../README.md)** — it is a durable artifact that
+Phase 7 builds against, and Phase 7 should not have to read a planning file to
+find the structure it is implementing. That page is now the index for `docs/`
+and carries the ownership table, the per-sub-project shape, and the five rules
+that follow from it.
 
 ## 1.3 Review questions — answered 2026-08-22
 
@@ -168,16 +136,7 @@ entire time. The comment now names the model and states that no derivation for
 4. **Are module constants annotated?** Resolved: only where inference is wrong
    or unclear. `MIN_WRITE_INTERVAL = 1.0` needs nothing; `DB_CONFIG` earns it.
 
-## 1.4 Remaining work in this phase
-
-- [x] Resolve Q1–Q4
-- [x] Fold the answers into the style guide and glossary
-- [x] Validate the guide against real code — see §1.4
-- [x] Decide the `docs/` skeleton question in §1.6 — **approved, built**
-- [ ] Move the documentation map into a durable home (Phase 7 should not have to
-      read a plan file to find it)
-
-## 1.6 A sequencing problem the trial exposed
+## 1.5 A sequencing problem the trial exposed
 
 **Phase 5 writes in-file documentation. Phase 7 creates `docs/`. That is the
 wrong way round**, and the trial run hit it immediately.
@@ -211,9 +170,31 @@ rationale moves out of code.
 that Phase 5 has already been appending to, and writes the connective prose. The
 plan's decisions log records the move.
 
-## 1.5 Exit criteria
+## 1.6 Work completed in this phase
 
-- [ ] Style guide agreed
-- [ ] Glossary agreed, including Q1 and Q2
-- [ ] Documentation map agreed and durably located
-- [ ] Guide validated against at least one real file
+- [x] Resolve Q1–Q4
+- [x] Fold the answers into the style guide and glossary
+- [x] Validate the guide against real code — see §1.4
+- [x] Decide the `docs/` skeleton question in §1.5 — **approved, built**
+- [x] Move the documentation map into a durable home — `docs/README.md`
+
+## 1.7 Exit criteria
+
+- [x] Style guide agreed — [`docs/documentation-style.md`](../documentation-style.md)
+- [x] Glossary agreed, including Q1 and Q2 — [`docs/glossary.md`](../glossary.md)
+- [x] Documentation map agreed and durably located — [`docs/README.md`](../README.md)
+- [x] Guide validated against a real file, and amended from what that found
+- [x] `docs/` skeleton built so Phase 5 has real link targets
+
+**Phase 1 is complete.** Everything Phases 2–9 write is now written against
+these three documents.
+
+## 1.8 What this hands to later phases
+
+| To | What |
+| --- | --- |
+| All | The style guide and glossary — binding, and the rule that existing comments are not evidence |
+| Phase 2 | The doc map tells the ledger which document each verified fact belongs to |
+| Phase 4 | Formatter and linter config must encode §8 of the guide: 88 columns for code, 72 for prose, US English |
+| Phase 5 | Real `docs/` pages to move rationale into; the trial rewrite of `identity/config.py` and `db.py` as the worked example |
+| Phase 7 | Edits pages Phase 5 has been appending to, rather than inventing the document set |
