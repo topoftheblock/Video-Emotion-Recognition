@@ -3,12 +3,25 @@
 The single style every file in this project follows: Python, JavaScript, CSS,
 SQL, Dockerfiles, Compose, Markdown, and user-facing output.
 
-Two rules override everything else here:
+Three rules override everything else here:
 
 1. **The code is the source of truth.** Never document what an existing comment
    claims. Read the code, then write what it does.
-2. **Write for a reader who has not seen this file before**, and who is looking
+2. **Never invent a rationale.** If you cannot establish *why* something is the
+   way it is, write what it does and stop — or write the uncertainty plainly:
+   `# Unclear why this threshold is 0.30; not derived anywhere in this repo.`
+   A confident-sounding reason that nobody verified is worse than no reason at
+   all, because the next reader has no way to tell it apart from a real one.
+   This is the failure mode that produced most of what this pass is removing.
+3. **Write for a reader who has not seen this file before**, and who is looking
    for one specific thing.
+
+Rules 1 and 2 pull in opposite directions on one point, so be precise about it:
+a comment claiming **what the code does** must be verified against the code and
+rewritten if wrong. A comment recording **why the author chose something** is
+evidence you cannot get any other way — preserve it, and mark it as the author's
+intent if you cannot confirm it. What you may never do is *supply* an intent
+where the author recorded none.
 
 ---
 
@@ -82,6 +95,16 @@ The rationale is not lost — it moves somewhere it can be read properly, with
 room for the detail a code comment cannot carry. The threshold is deliberately
 mechanical: an argument about whether *this* particular essay is worth keeping
 is an argument you will have fifty times.
+
+**Docstrings are exempt from the line count, not from the principle.** A module
+docstring may run past 8 lines when it is genuinely describing what the module
+owns. It may not run past 8 lines because it is arguing a design decision — that
+still moves to `docs/`. The test is what the text is *doing*, not how long it is.
+
+**Where moved rationale goes:** append it to the `docs/` page that owns the
+subject (see the documentation map), and link to it from the code. If that page
+does not exist yet, create it as a stub with the section you need — do not park
+the text in a comment "for now", and do not link to a file that is not there.
 
 ### History goes, reasons stay
 
@@ -158,6 +181,9 @@ def parse_and_insert(
 - If a type is genuinely unhelpful (`dict[str, Any]` for a free-form context),
   the *docstring* explains the shape. That is a real use of prose; describing
   `str` is not.
+- **Module constants are annotated only when inference is wrong or unclear.**
+  `MIN_WRITE_INTERVAL = 1.0` needs nothing; `DB_CONFIG: dict[str, str]` earns its
+  annotation because the literal alone does not pin the value type.
 
 ### Constants
 
@@ -165,10 +191,15 @@ Plain `#` above the constant. **Not `#:`** — that is Sphinx attribute syntax,
 and this project has no Sphinx build, so it is decoration.
 
 ```python
-# Seconds between heartbeat writes. The viewer polls every two seconds,
+# Seconds between heartbeat writes. The webapp polls every two seconds,
 # so anything finer is invisible.
 MIN_WRITE_INTERVAL = 1.0
 ```
+
+Related constants get **one comment each**, not one shared block above the
+group — a shared block leaves each individual value undocumented, and the reader
+arriving at the second constant has to scroll up and work out which sentence
+applies to it.
 
 ### Section banners
 

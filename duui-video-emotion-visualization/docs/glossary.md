@@ -7,8 +7,7 @@ Terms are derived from `pgvector-db/schema.sql`, which is the authority: the
 database is the contract every sub-project shares, so where a table or column
 already names a concept, that name wins.
 
-> **Status: draft.** Proposed canonical terms, pending review. Row counts are
-> from the development corpus on 2026-08-22 and are illustrative.
+Row counts are from the development corpus on 2026-08-22 and are illustrative.
 
 ---
 
@@ -91,9 +90,9 @@ Say "face detection" or "person detection" when the distinction matters,
 
 ## Emotions
 
-### emotion annotation
+### base emotion
 One emotion reading: a person, a modality, a granularity, a time span, plus
-valence/arousal/dominance and a dominant label. Table **`base_emotions`**.
+valence/arousal/dominance and a dominant label. Table `base_emotions`.
 
 | `modality` | `granularity` | Corpus |
 | --- | --- | --- |
@@ -101,19 +100,29 @@ valence/arousal/dominance and a dominant label. Table **`base_emotions`**.
 | `text` | `sentence` | 1,450 |
 | `audio` | `sentence` | 725 |
 
-> **Open question — see review notes.** The table is named `base_emotions` but
-> nothing in the code explains what "base" distinguishes it from. Either it
-> means "the annotation the scores hang off", in which case the documentation
-> should say so, or it is a leftover and the concept is simply *an emotion
-> annotation*. Renaming a table is a schema migration, so this is flagged, not
-> decided.
+**"Base" is meaningful and the name stays.** The upstream models do not share an
+emotion inventory — some emit far more granular emotions than others — so those
+inventories are reduced to a common base set, which is what makes video, text,
+and audio output comparable at all. That reduction happens **outside this
+project**, during CAS creation; this project only stores and displays the
+result. Documentation here should say that much and link no further: the
+definition belongs to the pipeline that produces it, not to us.
+
+Say "base emotion" for the row, matching the table.
 
 ### emotion score
-One `(label, score)` pair belonging to an emotion annotation. Table
-`emotion_scores` — 375,205 rows, since each annotation carries a score for every
-label in the model's inventory.
+One `(label, score)` pair belonging to a base emotion. Table `emotion_scores` —
+375,205 rows, since each base emotion carries a score for every label in its
+model's inventory.
 
-An annotation has one `dominant_label`; the scores are the full distribution.
+A base emotion has one `dominant_label`; the scores are the full distribution.
+
+Note that **label vocabularies are model-native and differ by modality**: video
+uses eight capitalized labels (`Anger`, `Happiness`, …), text uses lowercase
+GoEmotions-style labels (`joy`, `approval`, `curiosity`, …), and audio uses its
+own set (`happy`, `angry`, `fearful`, …). `dominant_label` also carries `<unk>`
+and empty values in the current corpus. Do not assume a shared label set when
+querying across modalities — the comparable axis is valence/arousal/dominance.
 
 ### modality
 Which channel an annotation came from: `audio`, `video`, or `text` for emotions;
@@ -199,11 +208,15 @@ Fixed and not to be changed. Refer to each by its exact directory name:
 
 | Directory | Package | What it is |
 | --- | --- | --- |
-| `webapp` | `backend` | The viewer: FastAPI backend plus static frontend |
+| `webapp` | `backend` | The webapp: FastAPI backend plus static frontend |
 | `cas-to-postgres-importer` | `main` | The importer: CAS files into the database |
 | `global-identity-linker` | `identity` | The identity linker: assigns global persons |
 | `pgvector-db` | — | Postgres 16 + pgvector, with the schema baked in |
 
 In prose, "the importer", "the linker", "the webapp", and "the database" are the
-short forms. **"The viewer" is an alias for the webapp used throughout the
-current code and docs — pick one.** See review notes.
+short forms.
+
+> **"Viewer" is retired.** The current code and docs use it 92 times against 74
+> for "webapp", for the same thing. **Use "the webapp" everywhere** — it matches
+> the directory name, which is fixed and is what a reader actually sees. Not
+> permitted as a soft alias: a permitted alias is how the count reached 92–74.

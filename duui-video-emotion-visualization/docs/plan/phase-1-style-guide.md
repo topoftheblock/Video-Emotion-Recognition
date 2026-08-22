@@ -3,7 +3,7 @@
 *Detailed plan for Phase 1. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` drafts written 2026-08-22, awaiting review.
+Status: `[~]` drafts written and validated 2026-08-22. Q1–Q4 answered.
 Branch: `code-cleanup/phase-1`.
 
 ## 1.0 What this phase produces
@@ -76,75 +76,107 @@ here.
    drifts four ways.
 4. **The root README never explains a sub-project.** It links.
 
-## 1.3 Open questions for review
+## 1.3 Review questions — answered 2026-08-22
 
-Four. The first two are the ones that matter.
+| | Question | Answer |
+| --- | --- | --- |
+| Q1 | "viewer" or "webapp"? | **"webapp" everywhere.** "Viewer" is retired, not kept as an alias. |
+| Q2 | What does `base_emotions` mean? | **The name is correct and stays.** Upstream models do not share an emotion inventory — the more granular ones are reduced to a common base set so video, text, and audio output are comparable. That reduction happens outside this project, during CAS creation, and is documented there. Say only that much here. |
+| Q3 | Em dash | **Use `—`.** |
+| Q4 | `docs/architecture.md` | **Yes, create it.** |
 
-### Q1 — "viewer" or "webapp"?
+A note recorded while answering Q2: `dominant_label` and `emotion_scores.label`
+are **model-native and differ by modality** in the current corpus — video uses
+eight capitalized labels, text uses lowercase GoEmotions-style labels, audio its
+own set, plus `<unk>` and empty values. The comparable axis across modalities is
+valence/arousal/dominance, not the label. Written into the glossary so nobody
+queries across modalities on `label` and assumes a shared vocabulary.
 
-Both are in use: **92 occurrences of "viewer", 74 of "webapp"**, across code
-comments, docstrings, the README, and Compose. They mean the same thing.
+## 1.4 Validating the guide against real code
 
-The directory is `webapp` and that name is fixed, so consistency argues for
-**"the webapp"** everywhere and retiring "viewer". The counter-argument: "viewer"
-describes what it does for a *user*, and the README is user-first.
+`global-identity-linker/src/identity/config.py` (53 lines) and `db.py` (10 lines)
+were rewritten fully to the guide. Suite stayed green at 150/150.
 
-**Recommendation: "the webapp."** One name, matching the directory the reader
-will actually see. Keep "viewer" out of prose entirely rather than allowing it as
-a soft alias, because a soft alias is how you end up with 92 of one and 74 of the
-other.
+The point was to find what the guide could not answer. It found five gaps, all
+now closed in the guide:
 
-### Q2 — what does `base_emotions` mean?
+### The one that matters: invented rationale
 
-The table holds one emotion reading per (person, modality, granularity, span),
-with VAD values and a dominant label; `emotion_scores` holds the per-label
-distribution hanging off it. **Nothing in the code or comments explains what
-"base" distinguishes.**
+**Writing 60 lines while actively trying to follow the guide, I invented two
+rationales that nothing in the repository supports.**
 
-Three possibilities:
+- For `DB_CONFIG`'s placeholder defaults I wrote that they exist so a
+  misconfigured run "fails to connect rather than reaching an unintended
+  database." Plausible, tidy, and entirely unverified — the placeholders may
+  equally be an unfinished template. Phase 0 finding (c) is evidence *against*
+  the charitable reading: they cause every DB-backed test to skip silently.
+- For the voice threshold being looser than the face threshold I wrote "because
+  voice embeddings separate speakers less sharply." True as general domain
+  knowledge; not something this repository states.
 
-1. "Base" = the annotation the scores attach to. Then the docs should say so and
-   the name stays.
-2. It is a leftover with no current meaning. Then the concept is simply an
-   *emotion annotation*, and the table is a Phase 3 rename candidate.
-3. It means something specific from the upstream DUUI pipeline that is worth
-   preserving.
+Both now say what is actually known and name the uncertainty instead.
 
-**This needs your answer** — it is domain knowledge not recoverable from the
-code. If it is (2), note that renaming a table is a schema migration touching
-all three sub-projects and the live volume, so it may be worth documenting
-rather than renaming.
+This is exactly the failure mode the whole pass exists to remove, reproduced
+under controlled conditions in under an hour. It is not a discipline problem —
+a plausible reason is easier to write than an admission of ignorance, and it
+reads better. So the guide now carries it as **rule 2, above everything except
+"the code is the source of truth"**, with an explicit escape hatch: write the
+uncertainty down.
 
-### Q3 — em dash
+A corollary was needed, because rules 1 and 2 conflict on one point: a comment
+claiming **what the code does** must be verified and rewritten if wrong, while a
+comment recording **why the author chose something** is evidence available
+nowhere else and should be preserved, marked as intent where unconfirmed. What
+is forbidden is *supplying* an intent the author never recorded.
 
-The codebase uses `--` throughout. The guide specifies `—`. Files are UTF-8 and
-already contain non-ASCII, so this is safe. Confirm, or keep `--` if you prefer
-ASCII-only source.
+### The other four
 
-### Q4 — is `docs/architecture.md` worth having?
-
-The map proposes it to stop the four sub-project READMEs each re-explaining the
-shared database and video-store contracts. It is one more file to maintain. The
-alternative is letting the root README carry it, which fights the two-minute
-target.
-
-**Recommendation: keep it.** The contracts are exactly the thing that gets
-explained four times and drifts.
+1. **Do docstrings fall under the 8-line rule?** The original module docstring
+   was 16 lines, most of it arguing why the three configs are separate. Resolved:
+   docstrings are exempt from the *count*, not the *principle* — length is fine
+   for describing what a module owns, not for arguing a design decision. The
+   test is what the text is doing, not how long it is.
+2. **Where does moved rationale go when the target page does not exist?** I
+   wrote "see docs/architecture.md" — a forward reference to a Phase 7 file. See
+   §1.6; this one has a plan consequence.
+3. **One comment per constant, or one block per group?** Resolved: one each. A
+   shared block leaves the second constant undocumented for anyone who lands on
+   it directly.
+4. **Are module constants annotated?** Resolved: only where inference is wrong
+   or unclear. `MIN_WRITE_INTERVAL = 1.0` needs nothing; `DB_CONFIG` earns it.
 
 ## 1.4 Remaining work in this phase
 
-- [ ] Resolve Q1–Q4
-- [ ] Fold the answers into the style guide and glossary
-- [ ] Confirm the documentation map, then move it from this file into a durable
-      home (it is a Phase 7 input, and Phase 7 should not have to read a plan
-      file to find it)
-- [ ] Sanity-check the guide against one real file before Phase 5 depends on it
-      — pick a small module, rewrite it fully to the guide, and see what the
-      guide fails to answer
+- [x] Resolve Q1–Q4
+- [x] Fold the answers into the style guide and glossary
+- [x] Validate the guide against real code — see §1.4
+- [ ] Decide the `docs/` skeleton question in §1.6
+- [ ] Move the documentation map into a durable home (Phase 7 should not have to
+      read a plan file to find it)
 
-That last item matters more than it looks. A style guide that has never been
-applied is a guess; Phase 5's checkpoint after the first sub-project exists for
-the same reason, but catching the gaps on one file now is cheaper.
+## 1.6 A sequencing problem the trial exposed
+
+**Phase 5 writes in-file documentation. Phase 7 creates `docs/`. That is the
+wrong way round**, and the trial run hit it immediately.
+
+The comment budget sends every over-long rationale to a `docs/` page. Rewriting
+*one* 53-line file produced a forward reference to `docs/architecture.md`, which
+does not exist yet. Phase 5 covers roughly fifty files and will produce these
+constantly. Three ways out:
+
+1. **Create the `docs/` skeleton early** — stub pages with real headings, from
+   the documentation map, at the end of this phase or during Phase 2. Phase 5
+   appends rationale to a real page as it goes; Phase 7 then organizes and
+   writes connective prose instead of inventing structure from scratch.
+2. Park moved rationale in a staging file for Phase 7 to distribute. Keeps the
+   phases clean, but every link is broken until Phase 7 lands, and the staging
+   file becomes exactly the kind of dumping ground this pass is removing.
+3. Move Phase 7 before Phase 5. Rejected — it contradicts the ordering principle
+   in §3 of the plan, since READMEs must describe a finished state.
+
+**Recommendation: option 1.** It costs an hour now, keeps every link valid the
+moment it is written, and turns Phase 7 from an authoring job into an editing
+job. Needs your agreement, since it moves work between phases.
 
 ## 1.5 Exit criteria
 
