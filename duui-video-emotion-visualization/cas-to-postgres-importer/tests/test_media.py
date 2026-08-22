@@ -1,4 +1,4 @@
-"""Tests for src/importer/media.py -- pure filesystem and XML logic, no DB
+"""Tests for src/importer/cas/sofas.py and video_files.py -- pure filesystem and XML logic, no DB
 needed. Covers the behavior the Docker "importer places the video"
 flow depends on: idempotent copy, extraction of a video embedded in
 the CAS when no companion file exists, and graceful (non-raising)
@@ -14,7 +14,8 @@ import base64
 
 from lxml import etree
 
-from importer import media
+from importer import video_files
+from importer.cas import sofas
 
 XMI_ID = "{http://www.omg.org/XMI}id"
 
@@ -51,8 +52,8 @@ def _video_xmi(data, mime="video/mp4", sofa_id="_InitialView"):
 
 
 def _payload(tree):
-    """The sofa media.py would treat as the video, for this tree."""
-    return media.select_video_sofa(media.find_media_sofas(tree))
+    """The sofa sofas.py would treat as the video, for this tree."""
+    return sofas.select_video_sofa(sofas.find_media_sofas(tree))
 
 
 def test_place_video_file_copies_when_missing(tmp_path, monkeypatch):
@@ -60,9 +61,9 @@ def test_place_video_file_copies_when_missing(tmp_path, monkeypatch):
     dest_dir = tmp_path / "dest"
     source_dir.mkdir()
     (source_dir / "clip.mp4").write_bytes(b"fake video bytes")
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    result = media.place_video_file("clip.mp4", source_dir)
+    result = video_files.place_video_file("clip.mp4", source_dir)
 
     assert result == dest_dir / "clip.mp4"
     assert (dest_dir / "clip.mp4").read_bytes() == b"fake video bytes"
@@ -73,14 +74,14 @@ def test_place_video_file_is_idempotent(tmp_path, monkeypatch, capsys):
     dest_dir = tmp_path / "dest"
     source_dir.mkdir()
     (source_dir / "clip.mp4").write_bytes(b"original")
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    media.place_video_file("clip.mp4", source_dir)
+    video_files.place_video_file("clip.mp4", source_dir)
     # Change the source after the first placement -- a rerun must NOT
     # overwrite the already-placed file (matches the "already present,
     # leaving as-is" log line rather than silently re-copying).
     (source_dir / "clip.mp4").write_bytes(b"changed")
-    result = media.place_video_file("clip.mp4", source_dir)
+    result = video_files.place_video_file("clip.mp4", source_dir)
 
     assert result == dest_dir / "clip.mp4"
     assert (dest_dir / "clip.mp4").read_bytes() == b"original"
@@ -91,9 +92,9 @@ def test_place_video_file_missing_source_returns_none(tmp_path, monkeypatch, cap
     source_dir = tmp_path / "source"
     dest_dir = tmp_path / "dest"
     source_dir.mkdir()
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    result = media.place_video_file("missing.mp4", source_dir)
+    result = video_files.place_video_file("missing.mp4", source_dir)
 
     assert result is None
     assert not (dest_dir / "missing.mp4").exists()
@@ -102,18 +103,18 @@ def test_place_video_file_missing_source_returns_none(tmp_path, monkeypatch, cap
 
 def test_place_video_file_no_filename_returns_none(tmp_path, monkeypatch):
     dest_dir = tmp_path / "dest"
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    assert media.place_video_file(None, tmp_path) is None
-    assert media.place_video_file("", tmp_path) is None
-    assert media.place_video_file("unknown", tmp_path) is None
+    assert video_files.place_video_file(None, tmp_path) is None
+    assert video_files.place_video_file("", tmp_path) is None
+    assert video_files.place_video_file("unknown", tmp_path) is None
 
 
 def test_extract_video_payload_writes_sofa_bytes(tmp_path, monkeypatch):
     dest_dir = tmp_path / "dest"
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    result = media.extract_video_payload(_payload(_video_xmi(b"fake mp4 bytes")), "clip.mp4")
+    result = video_files.extract_video_payload(_payload(_video_xmi(b"fake mp4 bytes")), "clip.mp4")
 
     assert result == dest_dir / "clip.mp4"
     assert (dest_dir / "clip.mp4").read_bytes() == b"fake mp4 bytes"
@@ -121,7 +122,7 @@ def test_extract_video_payload_writes_sofa_bytes(tmp_path, monkeypatch):
 
 def test_extract_video_payload_reads_a_sofa_byte_array(tmp_path, monkeypatch):
     dest_dir = tmp_path / "dest"
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
     # The other payload form: a reference to a ByteArray of signed
     # bytes rather than base64 text. 0xFF arrives as -1.
     tree = _xmi(
@@ -132,7 +133,7 @@ def test_extract_video_payload_reads_a_sofa_byte_array(tmp_path, monkeypatch):
         if element.get("sofaID") == "_InitialView":
             element.set("sofaArray", "7")
 
-    result = media.extract_video_payload(_payload(tree), "clip.mp4")
+    result = video_files.extract_video_payload(_payload(tree), "clip.mp4")
 
     assert result == dest_dir / "clip.mp4"
     assert (dest_dir / "clip.mp4").read_bytes() == bytes([0, 1, 255, 127])
@@ -140,17 +141,17 @@ def test_extract_video_payload_reads_a_sofa_byte_array(tmp_path, monkeypatch):
 
 def test_no_video_sofa_means_nothing_to_extract(tmp_path, monkeypatch):
     dest_dir = tmp_path / "dest"
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
     # A transcript-only CAS (the shipped demo looks like this): an empty
     # _InitialView plus a text sofa, no video payload to recover.
     tree = _xmi(("_InitialView", None, None), ("transcriptView", "text/plain", b"Vielen Dank."))
 
-    assert media.extract_video_payload(_payload(tree), "clip.mp4") is None
+    assert video_files.extract_video_payload(_payload(tree), "clip.mp4") is None
     assert not dest_dir.exists() or not (dest_dir / "clip.mp4").exists()
 
 
 def test_video_view_selects_the_configured_sofa(monkeypatch):
-    monkeypatch.setattr(media, "VIDEO_VIEW", "videoView")
+    monkeypatch.setattr(sofas, "VIDEO_VIEW", "videoView")
     # Two video sofas: DUUI_VIDEO_VIEW decides which one is the video,
     # rather than "whichever came first".
     tree = _xmi(
@@ -162,7 +163,7 @@ def test_video_view_selects_the_configured_sofa(monkeypatch):
 
 
 def test_video_view_defaults_to_initial_view(monkeypatch):
-    monkeypatch.setattr(media, "VIDEO_VIEW", "_InitialView")
+    monkeypatch.setattr(sofas, "VIDEO_VIEW", "_InitialView")
     tree = _xmi(
         ("_InitialView", "video/mp4", b"initial view video"),
         ("otherVideoView", "video/mp4", b"other"),
@@ -172,7 +173,7 @@ def test_video_view_defaults_to_initial_view(monkeypatch):
 
 
 def test_video_view_falls_back_to_any_video_sofa(monkeypatch, capsys):
-    monkeypatch.setattr(media, "VIDEO_VIEW", "typoView")
+    monkeypatch.setattr(sofas, "VIDEO_VIEW", "typoView")
     tree = _xmi(("videoView", "video/mp4", b"found anyway"))
 
     assert _payload(tree).data() == b"found anyway"
@@ -180,7 +181,7 @@ def test_video_view_falls_back_to_any_video_sofa(monkeypatch, capsys):
 
 
 def test_video_view_pointing_at_audio_is_refused(monkeypatch, capsys):
-    monkeypatch.setattr(media, "VIDEO_VIEW", "audioView")
+    monkeypatch.setattr(sofas, "VIDEO_VIEW", "audioView")
     # Writing an mp3 out as the "video" would just produce an unplayable
     # file under a .mp4 name -- refuse instead.
     tree = _xmi(("audioView", "audio/mp3", b"id3 audio bytes"))
@@ -190,15 +191,15 @@ def test_video_view_pointing_at_audio_is_refused(monkeypatch, capsys):
 
 
 def test_stripping_removes_media_payloads_but_keeps_text(monkeypatch):
-    monkeypatch.setattr(media, "VIDEO_VIEW", "_InitialView")
+    monkeypatch.setattr(sofas, "VIDEO_VIEW", "_InitialView")
     tree = _xmi(
         ("_InitialView", "video/mp4", b"a video"),
         ("audioView", "audio/mp3", b"some audio"),
         ("transcriptView", "text/plain", b"Vielen Dank."),
     )
-    sofas = media.find_media_sofas(tree)
+    found = sofas.find_media_sofas(tree)
 
-    stripped = media.strip_media_sofas(sofas, video=media.select_video_sofa(sofas))
+    stripped = sofas.strip_media_sofas(found, video=sofas.select_video_sofa(found))
 
     assert set(stripped) == {"_InitialView", "audioView"}
     remaining = {
@@ -214,22 +215,22 @@ def test_stripping_removes_media_payloads_but_keeps_text(monkeypatch):
 
 
 def test_stripping_leaves_a_sofa_with_no_mime_alone(monkeypatch):
-    monkeypatch.setattr(media, "VIDEO_VIEW", "videoView")
+    monkeypatch.setattr(sofas, "VIDEO_VIEW", "videoView")
     # Unlabelled and not the video: it could be text, and the cost of
     # being wrong is silently broken offsets.
     tree = _xmi(("mysteryView", None, b"could be anything"))
-    sofas = media.find_media_sofas(tree)
+    found = sofas.find_media_sofas(tree)
 
-    assert media.strip_media_sofas(sofas, video=media.select_video_sofa(sofas)) == []
+    assert sofas.strip_media_sofas(found, video=sofas.select_video_sofa(found)) == []
 
 
 def test_stripping_keeps_the_payload_readable(monkeypatch):
-    monkeypatch.setattr(media, "VIDEO_VIEW", "_InitialView")
+    monkeypatch.setattr(sofas, "VIDEO_VIEW", "_InitialView")
     tree = _xmi(("_InitialView", "video/mp4", b"a video"))
-    sofas = media.find_media_sofas(tree)
-    payload = media.select_video_sofa(sofas)
+    found = sofas.find_media_sofas(tree)
+    payload = sofas.select_video_sofa(found)
 
-    media.strip_media_sofas(sofas, video=payload)
+    sofas.strip_media_sofas(found, video=payload)
 
     # The whole ordering the import depends on: captured before the
     # blanking, still extractable afterwards.
@@ -240,7 +241,7 @@ def test_stripping_keeps_the_payload_readable(monkeypatch):
 def test_cas_source_is_a_readable_stream(monkeypatch):
     tree = _xmi(("transcriptView", "text/plain", b"Vielen Dank."))
 
-    source = media.cas_source(tree)
+    source = sofas.cas_source(tree)
 
     assert b"transcriptView" in source.read()
 
@@ -250,9 +251,9 @@ def test_ensure_video_available_prefers_the_file_on_disk(tmp_path, monkeypatch):
     dest_dir = tmp_path / "dest"
     source_dir.mkdir()
     (source_dir / "clip.mp4").write_bytes(b"from disk")
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    result = media.ensure_video_available(
+    result = video_files.ensure_video_available(
         "clip.mp4", source_dir, _payload(_video_xmi(b"from cas"))
     )
 
@@ -264,9 +265,9 @@ def test_ensure_video_available_falls_back_to_the_sofa(tmp_path, monkeypatch):
     source_dir = tmp_path / "source"
     dest_dir = tmp_path / "dest"
     source_dir.mkdir()  # deliberately empty -- no companion video file
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    result = media.ensure_video_available(
+    result = video_files.ensure_video_available(
         "clip.mp4", source_dir, _payload(_video_xmi(b"from cas"))
     )
 
@@ -280,7 +281,7 @@ def test_ensure_video_available_does_not_decode_an_already_placed_video(
     dest_dir = tmp_path / "dest"
     dest_dir.mkdir()
     (dest_dir / "clip.mp4").write_bytes(b"already here")
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
     payload = _payload(_video_xmi(b"from cas"))
     # Decoding a 169 MB base64 video for a file that is already in the
@@ -288,7 +289,7 @@ def test_ensure_video_available_does_not_decode_an_already_placed_video(
     # is reached at all, this fails.
     payload.data = lambda: (_ for _ in ()).throw(AssertionError("payload was decoded"))
 
-    result = media.ensure_video_available("clip.mp4", tmp_path / "source", payload)
+    result = video_files.ensure_video_available("clip.mp4", tmp_path / "source", payload)
 
     assert result == dest_dir / "clip.mp4"
     assert (dest_dir / "clip.mp4").read_bytes() == b"already here"
@@ -300,9 +301,9 @@ def test_ensure_video_available_warns_when_neither_source_has_it(
     source_dir = tmp_path / "source"
     dest_dir = tmp_path / "dest"
     source_dir.mkdir()
-    monkeypatch.setattr(media, "VIDEO_MEDIA_DIR", str(dest_dir))
+    monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    result = media.ensure_video_available("clip.mp4", source_dir, None)
+    result = video_files.ensure_video_available("clip.mp4", source_dir, None)
 
     assert result is None
     assert "won't be able to play it" in capsys.readouterr().out

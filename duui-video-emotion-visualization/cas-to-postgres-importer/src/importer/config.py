@@ -34,7 +34,7 @@ INPUT_XMI_DIR = os.environ.get("DUUI_INPUT_XMI_DIR", "cas")
 # together: point both at the same folder for the side-by-side layout,
 # or at different folders when the pipeline keeps them apart. Either
 # way a CAS is matched to its video by the exact filename the CAS
-# records (see media.py), never by position.
+# records (see cas/sofas.py), never by position.
 #
 # Unset means "wherever the .xmi files are" rather than a fixed
 # default, so pointing the importer at one folder of pipeline output
@@ -50,7 +50,7 @@ XMI_FILE = os.environ.get("DUUI_XMI_FILE")
 
 # Which CAS view/sofa holds the video, for the case where no video file
 # exists in INPUT_VIDEO_DIR and it has to be recovered from the CAS
-# itself (see media.py). DUUI pipelines put the video on the
+# itself (see cas/sofas.py). DUUI pipelines put the video on the
 # `_InitialView` sofa and derive the other views from it, so that is
 # the default; set DUUI_VIDEO_VIEW when a pipeline routes it elsewhere
 # (e.g. a dedicated `videoView`, the way audio lands on `audioView`).
@@ -92,7 +92,7 @@ TYPESYSTEM_FILES = {
 
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
-# (copies into it, see src/importer/media.py) and the webapp (reads from it,
+# (copies into it, see src/importer/cas/sofas.py) and the webapp (reads from it,
 # see the viewer's src/backend/config.py copy of this setting) agree a
 # video for `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. This
 # is the output side, deliberately separate from the input dirs above so the

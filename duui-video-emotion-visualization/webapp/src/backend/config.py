@@ -30,7 +30,7 @@ except ImportError:
 # --- Video media -------------------------------------------------------
 # Where *served* video files live -- the one place both the importer
 # (copies into it, see
-# cas-to-postgres-importer/src/importer/media.py) and the webapp
+# cas-to-postgres-importer/src/importer/cas/sofas.py) and the webapp
 # (reads from it, see backend/routes/videos.py) agree a video for
 # `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. The viewer only
 # ever reads from it; it never sees the importer's input directory at

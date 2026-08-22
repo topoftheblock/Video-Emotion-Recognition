@@ -54,7 +54,7 @@ class NoCacheStaticFiles(StaticFiles):
 
 def create_app() -> FastAPI:
     # Same DUUI_VIDEO_DIR the importer writes into
-    # (cas-to-postgres-importer/src/importer/media.py) -- this is
+    # (cas-to-postgres-importer/src/importer/cas/sofas.py) -- this is
     # the single place both sides agree a video for
     # `videos.filename = X` lives at `<VIDEO_DIR>/X`. See config.py's
     # VIDEO_MEDIA_DIR comment and README "Docker architecture".

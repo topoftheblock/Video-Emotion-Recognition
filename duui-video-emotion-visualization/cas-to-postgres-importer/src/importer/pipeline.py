@@ -24,14 +24,14 @@ from .config import (
 )
 from .db import delete_video, find_video_by_filename, get_db_connection
 from .job_runs import JobRun
-from .media import (
+from .cas.sofas import (
     cas_source,
-    ensure_video_available,
     find_media_sofas,
     read_video_filename,
     select_video_sofa,
     strip_media_sofas,
 )
+from .video_files import ensure_video_available
 from .parsers import PARSE_STEPS
 from .cas.typesystem import load_merged_typesystem, loading_cas_quietly
 
@@ -206,7 +206,7 @@ def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
 
     print(f"Loading CAS data from {xmi_file}...")
     # Read the XML first and take the media payloads out of it before
-    # cassis ever sees them -- see media.py's docstring for why this is
+    # cassis ever sees them -- see cas/sofas.py's docstring for why this is
     # the difference between "imports in a second" and "needs 20 GB".
     # huge_tree, because these documents carry attributes far past
     # libxml2's default limits.
