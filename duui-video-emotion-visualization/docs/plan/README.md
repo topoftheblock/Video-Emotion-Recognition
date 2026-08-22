@@ -493,8 +493,20 @@ out — phases marked done, decision records archived.
 
 ## 5. Cross-cutting rules
 
-- **One phase per branch**, one commit per logical step. Never mix a rename with
-  a rewrite in the same commit — it makes the diff unreviewable.
+- **One phase per branch**, named **`code-cleanup-phase-<N>`**, branched off the
+  `code-cleanup` integration branch and merged back into it when the phase
+  closes. (A hyphen, not a slash: git stores refs as paths, so
+  `refs/heads/code-cleanup` being a *file* makes `refs/heads/code-cleanup/phase-0`
+  impossible without renaming the integration branch, which is already on
+  `origin`. Switching to a true `code-cleanup/…` hierarchy remains possible later
+  by renaming the integration branch — e.g. to `code-cleanup/main`.) `code-cleanup` reaches `main` only at the end of the whole pass. One
+  commit per logical step; never mix a rename with a rewrite in the same commit,
+  as that makes the diff unreviewable.
+- **No AI attribution, anywhere.** Commits carry no `Co-Authored-By: Claude`
+  trailer, no "generated with" line, and no "written or assisted by AI" note —
+  not in commit messages, not in code comments, not in documentation. The commit
+  author is the repository owner alone. This applies to every file this plan
+  produces.
 - **Tests green before every commit.** A doc-only pass has no excuse for a red suite.
 - **Existing documentation is not evidence.** The current READMEs, comments and
   `.md` files are known to be error-prone and must not be relied on for *any*
@@ -605,6 +617,8 @@ this is the index.
 | — | Python type hints | **Yes — adopt fully, and check them in CI.** Lenient at first, **strict once this plan is complete.** See the ratchet note below. |
 | — | JavaScript types | **Yes — JSDoc annotations, checked in CI** with `tsc --checkJs --noEmit`. **Node in CI is explicitly permitted as an exception** for this. No TypeScript, no build step: the source files ship exactly as written. |
 | — | Linters for Dockerfile / compose / YAML / HTML / Markdown | **Yes** — full roster in §6. |
+| — | Branch naming | **`code-cleanup-phase-<N>`**, off `code-cleanup`, merged back on completion. Hyphen rather than slash — git cannot nest refs under an existing branch name; see §5. |
+| — | Commit attribution | **None.** No AI/Claude attribution in commits, comments or docs — see §5. |
 | — | Where the plan lives | **`docs/plan/`**, with this file as `README.md` and one `phase-N-*.md` per phase. Cross-cutting content stays here; per-phase detail is split out. |
 | — | The live test data | **Disposable and reproducible.** The running stack is a test stack. Lowers the severity of the Phase 3 volume hazard from data loss to wasted time — it still needs a deliberate decision, not an accident. |
 | 1 | `CLAUDE.md` | **You will run `/init` after this plan is finalized.** Not a plan deliverable. It should be pointed at the Phase 1 style guide once that exists, so the two do not drift. |
@@ -728,7 +742,7 @@ and verified in Phase 8.
 
 | Phase | Status | Branch | Notes |
 | --- | --- | --- | --- |
-| 0 — Baseline | `[~]` | `code-cleanup` | Survey done, all four decisions answered 2026-08-22. Detail: [phase-0-baseline.md](phase-0-baseline.md). |
+| 0 — Baseline | `[x]` | `code-cleanup` | Done 2026-08-22. **Green baseline = 150/150 on an empty DB.** 4 findings logged. Detail: [phase-0-baseline.md](phase-0-baseline.md). |
 | 1 — Style guide + doc map | `[ ]` | | |
 | 2 — Fact ledger | `[ ]` | | |
 | 3 — Structure | `[ ]` | | |
@@ -747,7 +761,7 @@ and verified in Phase 8.
 
 | Phase | Detailed plan | Status |
 | --- | --- | --- |
-| 0 — Baseline and safety net | [phase-0-baseline.md](phase-0-baseline.md) | `[~]` in progress |
+| 0 — Baseline and safety net | [phase-0-baseline.md](phase-0-baseline.md) | `[x]` done |
 | 1 — Style guide + doc map | *not yet written* | `[ ]` |
 | 2 — Fact ledger | *not yet written* | `[ ]` |
 | 3 — Structure | *not yet written* | `[ ]` |
