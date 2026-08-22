@@ -79,17 +79,19 @@ confusing failures rather than a clear refusal.
 
 ## 4.2 Decisions needed from you
 
-### Q1 — Python 3.12 → 3.13 or 3.14?
+### Q1 — Python version — **decided: 3.14**
 
-Phase 4 was told to evaluate and recommend. The evaluation is §4.3; the decision
-is yours, and **"stay on 3.12, documented" is a valid answer**.
+All three Dockerfiles move to `python:3.14-slim`. Evidence in §4.3: identical
+test results, and 3.12 is already security-only.
 
-### Q2 — Postgres/pgvector pg16 → pg17 or pg18?
+### Q2 — Postgres/pgvector — **decided: pg18**
 
-Same. Note the calculus changed in Phase 3: the corpus is now **provably
-reproducible** from source CAS in about ten minutes, so a major-version bump no
-longer needs `pg_upgrade` — it can be a teardown and re-import, exactly as
-Phase 3 did.
+`pgvector/pgvector:pg16` → `pg18`. Evidence in §4.3.
+
+> **This one needs another full rebuild.** A Postgres major version has an
+> incompatible on-disk data directory, so the existing volume cannot be reused —
+> `down -v`, `up --build`, re-import, re-link, exactly as Phase 3 step 10 did.
+> About ten minutes, and the row counts are the check.
 
 ### Q3 — Pinning strategy
 
@@ -104,7 +106,14 @@ Three options, in increasing strictness:
 **Decided 2026-08-22: floors and ceilings.** Upper bounds solve the observed
 `openai` risk immediately; Phase 9 adds the lockfile on top.
 
-### Q4 — Does the linter gate anything? — **answered: see §4.9b**
+### Q4 — Does the linter gate anything? — **decided: a hook for the fast checks**
+
+A pre-commit hook runs **`ruff format --check` and `ruff check` only**. The type
+checker, the link checker and everything else stay in CI, where slowness does not
+matter. Rationale and mechanics in §4.9b.
+
+The hook must be installable in one documented command, and `--no-verify` stays
+available — a gate that cannot be bypassed is one people route around.
 
 ---
 

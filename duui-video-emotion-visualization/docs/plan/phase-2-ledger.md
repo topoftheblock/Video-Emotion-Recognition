@@ -212,8 +212,14 @@ working (150/150). It was **gone by Phase 4**, while `duui_video_emotion` in the
 same volume kept all 375,205 rows. The volume was never recreated; the
 `pgvector-db` container was, after an image rebuild.
 
-**No explanation is recorded because none was established.** Recreating it
-restored 150/150 immediately.
+**Cause established 2026-08-22:** the project owner rebuilt the stack, because
+the containers had become orphaned from their images. A rebuild recreates the
+volume, and `duui_baseline_test` does not survive one — it is created by hand,
+not by `schema.sql`, so nothing recreates it. The corpus looked untouched only
+because Phase 3 proved the import is deterministic: the same nine files produce
+the same 375,205 rows every time.
+
+Recreating the database restored 150/150 immediately.
 
 Whatever the cause, it makes the point Phase 6 already decided: the green
 baseline currently depends on a hand-created database that nothing recreates,
