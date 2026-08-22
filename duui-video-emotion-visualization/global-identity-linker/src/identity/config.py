@@ -25,15 +25,16 @@ except ImportError:
 # same person. pgvector's `<=>` returns 0 for identical and 2 for opposite
 # vectors, so a lower value is stricter.
 #
-# 0.30 is conservative for ArcFace-style 512-dimensional embeddings. Retune
-# it against known cross-video duplicates before treating the links as
-# anything more than suggestions.
+# No derivation for 0.30 is recorded in this repository. The embeddings it is
+# applied to are 512-dimensional; in the current corpus they come from
+# `w600k_r50` (InsightFace buffalo_l), per the `models` table.
 GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD = float(
     os.environ.get("DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD", "0.30")
 )
 
-# The same, for 192-dimensional voice embeddings. Looser than the face
-# threshold; no derivation for either value is recorded in this repository.
+# The same, for 192-dimensional voice embeddings — `campplus_cn_en_common_200k`
+# (CAM++) in the current corpus. Looser than the face threshold; no derivation
+# for either value is recorded in this repository.
 GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
     os.environ.get("DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD", "0.35")
 )

@@ -123,11 +123,34 @@ reads better. So the guide now carries it as **rule 2, above everything except
 "the code is the source of truth"**, with an explicit escape hatch: write the
 uncertainty down.
 
-A corollary was needed, because rules 1 and 2 conflict on one point: a comment
-claiming **what the code does** must be verified and rewritten if wrong, while a
-comment recording **why the author chose something** is evidence available
-nowhere else and should be preserved, marked as intent where unconfirmed. What
-is forbidden is *supplying* an intent the author never recorded.
+### Correction: existing comments carry no intent either
+
+The first version of this section concluded that a comment recording *why* the
+author chose something was evidence available nowhere else, and should be
+preserved. **That was wrong, and the user corrected it:** nearly every comment in
+this codebase was written by AI, not by the author. There is no authorial intent
+in them to preserve. They are guesses that read like knowledge.
+
+The rule is therefore simpler and stricter than the corollary it replaced:
+
+- **Write only what can be verified** against code, schema, database, or tests.
+- **An existing comment is never a source** — not for behavior, not for reasons.
+- **If it matters and cannot be verified, stop and ask.** Never infer from
+  plausibility; never let an existing comment settle the question.
+
+Only the frontend style and accessibility material reflects real decisions, and
+even that is kept because it is *verifiable* — `cvd_check.py` and
+`contrast_check.py` check the palette claims — not because a comment asserts it.
+
+**A third invented rationale surfaced while applying this.** My rewrite had kept
+the original comment's claim that 0.30 suits "ArcFace-style 512-dimensional
+embeddings", on the reasoning that the author's stated intent was worth
+preserving. The `models` table records what actually produced the corpus's
+embeddings: `w600k_r50` from InsightFace `buffalo_l`. That *is* an ArcFace-family
+model, so the claim was approximately right — the most dangerous kind of wrong,
+because it survives review. The verifiable fact was sitting in the database the
+entire time. The comment now names the model and states that no derivation for
+0.30 is recorded anywhere.
 
 ### The other four
 
@@ -150,7 +173,7 @@ is forbidden is *supplying* an intent the author never recorded.
 - [x] Resolve Q1–Q4
 - [x] Fold the answers into the style guide and glossary
 - [x] Validate the guide against real code — see §1.4
-- [ ] Decide the `docs/` skeleton question in §1.6
+- [x] Decide the `docs/` skeleton question in §1.6 — **approved, built**
 - [ ] Move the documentation map into a durable home (Phase 7 should not have to
       read a plan file to find it)
 
@@ -174,9 +197,19 @@ constantly. Three ways out:
 3. Move Phase 7 before Phase 5. Rejected — it contradicts the ordering principle
    in §3 of the plan, since READMEs must describe a finished state.
 
-**Recommendation: option 1.** It costs an hour now, keeps every link valid the
-moment it is written, and turns Phase 7 from an authoring job into an editing
-job. Needs your agreement, since it moves work between phases.
+**Option 1 was approved and is done.** `docs/` now holds four stubs —
+`architecture.md`, `configuration.md`, `database.md`, `operations.md` — each with
+the headings the documentation map assigns it and HTML comments naming what
+belongs in each section.
+
+They are deliberately *structure without prose*. Writing the prose now would mean
+writing it from the existing comments, which §2 of the style guide forbids. The
+headings are what Phase 5 needs: a real page and a real anchor to link to when
+rationale moves out of code.
+
+**Plan consequence:** Phase 7 no longer invents the document set. It edits pages
+that Phase 5 has already been appending to, and writes the connective prose. The
+plan's decisions log records the move.
 
 ## 1.5 Exit criteria
 

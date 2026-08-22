@@ -3,25 +3,59 @@
 The single style every file in this project follows: Python, JavaScript, CSS,
 SQL, Dockerfiles, Compose, Markdown, and user-facing output.
 
-Three rules override everything else here:
+Three rules override everything else here.
 
-1. **The code is the source of truth.** Never document what an existing comment
-   claims. Read the code, then write what it does.
-2. **Never invent a rationale.** If you cannot establish *why* something is the
-   way it is, write what it does and stop — or write the uncertainty plainly:
-   `# Unclear why this threshold is 0.30; not derived anywhere in this repo.`
-   A confident-sounding reason that nobody verified is worse than no reason at
-   all, because the next reader has no way to tell it apart from a real one.
-   This is the failure mode that produced most of what this pass is removing.
-3. **Write for a reader who has not seen this file before**, and who is looking
-   for one specific thing.
+### 1. Write only what you can verify
 
-Rules 1 and 2 pull in opposite directions on one point, so be precise about it:
-a comment claiming **what the code does** must be verified against the code and
-rewritten if wrong. A comment recording **why the author chose something** is
-evidence you cannot get any other way — preserve it, and mark it as the author's
-intent if you cannot confirm it. What you may never do is *supply* an intent
-where the author recorded none.
+Every statement must be checkable against the code, the database, the schema, a
+test, or an authoritative external source. If it cannot be checked, it does not
+go in.
+
+### 2. The existing comments are not evidence
+
+**Nearly every comment in this codebase was written by AI, not by the author.**
+They are guesses that read like knowledge. A comment is therefore *never* a
+source for anything — not for what the code does, and **not for why it does
+it**. Treat it exactly as you would an unsourced claim from a stranger: verify
+it independently, or discard it.
+
+This has a consequence that feels wasteful and is not: when an existing comment
+states a reason, you may not carry that reason forward merely because it is
+already written down. Either you can verify it, or it goes.
+
+> The only material that carries genuine authorial intent is the **frontend
+> style and accessibility work** — and even there, keep it because it is
+> *verifiable* (the palette claims are checked by `cvd_check.py` and
+> `contrast_check.py`), not because a comment asserts it.
+
+### 3. Never invent a rationale, and never assume one
+
+If you cannot establish *why* something is the way it is: write what it does,
+and say plainly that the reason is not recorded.
+
+```python
+# 0.30. No derivation for this value is recorded in this repository.
+```
+
+**If the reason matters and you cannot determine it, stop and ask.** Do not
+guess, do not reason from plausibility, and do not let an existing comment
+answer it for you. A confident-sounding reason nobody verified is worse than no
+reason at all — the next reader cannot tell it apart from a real one, and that
+is precisely how this codebase reached its current state.
+
+### And write for a stranger
+
+A reader who has not seen this file before, looking for one specific thing.
+
+---
+
+**Worked example.** A comment in `identity/config.py` described the face
+threshold as tuned for "ArcFace-style 512-dimensional embeddings." Plausible,
+and it survived several readings. The `models` table records what actually
+produced the embeddings in the corpus: `w600k_r50` from InsightFace `buffalo_l`
+— an ArcFace-family model, so the claim was *approximately* right, which is the
+dangerous kind of wrong. The verifiable statement was available in the database
+the whole time. Prefer it.
 
 ---
 
