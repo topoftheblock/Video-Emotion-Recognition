@@ -1,11 +1,11 @@
 # Cleanup & Documentation Plan
 
-Living document. It holds **(a)** the phase order for the cleanup pass,
-**(b)** the decisions each phase must produce, **(c)** the answers already given
-(§7), and **(d)** the progress log.
-Detailed step-by-step plans get appended per phase, under
-[§9](#9-detailed-phase-plans), at the time that phase starts —
-not before.
+Living document, and the **single home** for anything cross-cutting: the phase
+order, the constraints, the rules, the decisions already made (§7), and the
+progress log (§8).
+
+Per-phase detail lives in its own `phase-N-*.md` beside this file, written when
+that phase starts — see the index in [§9](#9-detailed-phase-plans).
 
 ---
 
@@ -62,6 +62,8 @@ Grounding facts the plan is built on. Re-verify before acting on any of them.
 | Tooling | No linter, no formatter, no `CLAUDE.md`, no `LICENSE`, no `CONTRIBUTING`. |
 | CI | **The repository does have CI** — `.github/workflows/ci.yml` at the git root — but it targets the *predecessor* project `duui_bundestag_pipeline/` (`working-directory:` set to it, referencing its `importer/`, `db/schema.sql`, `build-all.sh`). It is valid and working; it simply does not cover this project, which has none. |
 | Doc error, consequential | `webapp/docs/a11y-ci.yml`'s header states "This repository has no CI at all" as the reason it was left inert. **That is false** and was probably false when written. See the note under §7 item 3. |
+| Live data | The stack is running with **real imported data**: 10 videos, 375,205 emotion scores, 42,930 face detections, in volume `duui-bundestag-stack_db_data`. |
+| ⚠️ Rename hazard | Compose derives volume names from the project name (`name: duui-bundestag-stack`, line 38). Changing it orphans the database and the video store. Data is reproducible, so this costs time rather than work — but it must be deliberate. See Phase 3 and [phase-0-baseline.md](phase-0-baseline.md) §0.2(a). |
 | Sibling projects | The git root holds ~13 unrelated directories, including `duui_bundestag_pipeline/` — a tracked, older generation of this same project (`importer/`, `db/`, `webapp/`, `shared/`). Out of scope, but relevant to the name purge: it is a *sibling*, not ours, and must not be renamed. |
 | `.env.example` | 4.7 KB, pure prose comments, no uncommented values. Overlaps the README's "Configuration reference" section — two sources of truth. |
 
@@ -216,6 +218,15 @@ Named questions to answer, each with a rationale:
   webapp; `parsers/` in the importer. Does the grouping still hold?
 - ~~**`pgvector-db`'s shape.**~~ **Resolved:** no `src/`, no `tests/`. It stays
   as it is. It may still gain a `docs/` and a README in Phase 7 like the others.
+- **⚠️ The compose project rename needs a volume migration.** `name:
+  duui-bundestag-stack` in `docker-compose.yml` is what Compose derives volume
+  names from, so changing it re-points `db_data` and `video_media` at new, empty
+  volumes — orphaning a database that currently holds 375k rows. The data is
+  reproducible (§7), so this is lost time rather than lost work — but it must be
+  a **decision**, not a surprise: choose explicitly between migrating the volume
+  (`pg_dump`/restore, or a volume-to-volume copy) and re-importing, and do it in
+  the same commit as the rename. See [phase-0-baseline.md](phase-0-baseline.md)
+  §0.2(a).
 - **Stale name purge.** `DUUI` stays as the prefix; `bundestag` is removed or
   renamed *where it makes sense* (decided 2026-08-22). Read each of the 18 files
   rather than running a global replace: some occurrences are the dead project
@@ -594,6 +605,8 @@ this is the index.
 | — | Python type hints | **Yes — adopt fully, and check them in CI.** Lenient at first, **strict once this plan is complete.** See the ratchet note below. |
 | — | JavaScript types | **Yes — JSDoc annotations, checked in CI** with `tsc --checkJs --noEmit`. **Node in CI is explicitly permitted as an exception** for this. No TypeScript, no build step: the source files ship exactly as written. |
 | — | Linters for Dockerfile / compose / YAML / HTML / Markdown | **Yes** — full roster in §6. |
+| — | Where the plan lives | **`docs/plan/`**, with this file as `README.md` and one `phase-N-*.md` per phase. Cross-cutting content stays here; per-phase detail is split out. |
+| — | The live test data | **Disposable and reproducible.** The running stack is a test stack. Lowers the severity of the Phase 3 volume hazard from data loss to wasted time — it still needs a deliberate decision, not an accident. |
 | 1 | `CLAUDE.md` | **You will run `/init` after this plan is finalized.** Not a plan deliverable. It should be pointed at the Phase 1 style guide once that exists, so the two do not drift. |
 | 2 | Formatters and linters | **Yes**, for every language in the repo: Python, JavaScript, CSS, SQL, Markdown. Configured in Phase 4, and enforced by the CI workflow below rather than by habit. |
 | 3 | `webapp/docs/a11y-ci.yml` | **Update it, do not activate it.** Fix the broken `duui-bundestag-stack/…` path and anything else stale, so it is correct-but-inert rather than wrong-and-inert. Its header must say plainly that it is deliberately not active and what turning it on entails. |
@@ -715,7 +728,7 @@ and verified in Phase 8.
 
 | Phase | Status | Branch | Notes |
 | --- | --- | --- | --- |
-| 0 — Baseline | `[ ]` | | |
+| 0 — Baseline | `[~]` | `code-cleanup` | Survey done, all four decisions answered 2026-08-22. Detail: [phase-0-baseline.md](phase-0-baseline.md). |
 | 1 — Style guide + doc map | `[ ]` | | |
 | 2 — Fact ledger | `[ ]` | | |
 | 3 — Structure | `[ ]` | | |
@@ -730,6 +743,28 @@ and verified in Phase 8.
 
 ## 9. Detailed phase plans
 
-Detailed plans are appended here as each phase starts. One section per phase.
+### Index
 
-*(none yet)*
+| Phase | Detailed plan | Status |
+| --- | --- | --- |
+| 0 — Baseline and safety net | [phase-0-baseline.md](phase-0-baseline.md) | `[~]` in progress |
+| 1 — Style guide + doc map | *not yet written* | `[ ]` |
+| 2 — Fact ledger | *not yet written* | `[ ]` |
+| 3 — Structure | *not yet written* | `[ ]` |
+| 4 — Dependencies + tooling | *not yet written* | `[ ]` |
+| 5 — In-file documentation | *not yet written* | `[ ]` |
+| 6 — Test audit | *not yet written* | `[ ]` |
+| 7 — READMEs + docs | *not yet written* | `[ ]` |
+| 8 — Final sweep | *not yet written* | `[ ]` |
+| 9 — Lockfiles, then changelogs | *not yet written* | `[ ]` |
+
+**What goes where.** This file is the durable record: constraints (§1), the
+starting state (§2), the phase overviews (§4), the cross-cutting rules (§5), the
+tooling roster (§6), the decisions log (§7) and the progress table (§8). Those
+are cross-cutting and must have exactly one home, so they are never duplicated
+into a phase file.
+
+Each `phase-N-*.md` holds that phase's step-by-step plan and its working notes
+and results. They are written when the phase starts, not before. When a phase
+finishes, its outcome is summarised in one line in §8 here; the full detail stays
+in the phase file.
