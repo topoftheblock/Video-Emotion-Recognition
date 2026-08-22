@@ -1,5 +1,5 @@
-"""Tests for src/pipeline.py's batch path resolution -- pure
-path logic, no DB or CAS parsing involved."""
+"""Tests for src/importer/inputs.py -- pure path logic, no database and no
+CAS parsing involved."""
 
 import importlib
 import os
@@ -7,7 +7,7 @@ import os
 import pytest
 
 from importer import config
-from importer.pipeline import describe_missing_inputs, resolve_xmi_paths
+from importer.inputs import describe_missing_inputs, resolve_xmi_paths
 
 
 def _config_with_env(monkeypatch, **env):
