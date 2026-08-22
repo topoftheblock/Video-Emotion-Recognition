@@ -54,7 +54,12 @@ Phase 2 did.
 Verified findings. Every entry names where it is resolved.
 
 ### D1 — the design specifies emotion fusion that does not exist
-**Phase 7 (docs), possibly Phase 3.** `data_schema_with_types.md` specifies
+**Closed 2026-08-22: ignore.** Verified that `FusedEmotion` /
+`EmotionFusionReference` appear **only** in `data_schema_with_types.md` — not in
+`schema.sql`, not in the typesystems, not in any code. Since that file is being
+retired (§2.7), the fusion layer has no other trace and needs no decision.
+
+*Original entry:* `data_schema_with_types.md` specifies
 `FusedEmotion` (`fused_id`, `fusion_method`, `target_modality`, …) and
 `EmotionFusionReference` (`fused_id`, `source_emotion_id`) as an n:m bridge for
 combining emotions across modalities. **Neither has a table in `schema.sql`, and
@@ -102,19 +107,24 @@ capitalized labels, text lowercase GoEmotions-style ones, audio its own set, plu
 **Phase 5.** `linking.py`'s header explains the composite `(video_id, person_id)`
 key by asserting that "two videos routinely both have a 'person 1'."
 
-**The underlying reason is correct; the illustration is false.** `person_id` is
-the CAS's `xmi:id`, which is a *document-wide* counter across all annotations,
-not a small per-type counter. In the corpus the values are large and sparse —
-`32608`, `70438`, `87720`, `132525`, `1755` — and **no `person_id` occurs in more
-than one video**. The ranges differ wildly per file, which is itself the real
-evidence that these are document-scoped ids and cannot be assumed unique
-corpus-wide.
+**The mechanism is real; only the word "routinely" overstates it** (confirmed by
+the project owner, 2026-08-22 — ids genuinely can collide across videos; this
+corpus is simply too small for it to show).
 
-So the composite key is right, and the justification should be the verifiable
-one (per-document counters, ranges that differ per file, collisions therefore
-possible) rather than a collision that does not occur in this data. A textbook
-case of the guide's §2: the comment sounds authoritative and is wrong in its
-particulars.
+`person_id` is the CAS's `xmi:id`, a *document-wide* counter across all
+annotations. In this corpus the values are large and sparse — `32608`, `70438`,
+`87720`, `132525`, `1755` — and no `person_id` occurs in more than one video.
+The ranges differ wildly per file, which is the real evidence that they are
+document-scoped and cannot be assumed unique corpus-wide.
+
+So the composite key is right and the reason is right. Phase 5 should keep the
+reason and state it in the form that can be checked — per-document counters,
+ranges differing per file, collisions therefore possible — rather than asserting
+a collision the data does not show.
+
+**Note for Phase 6:** the test corpus not exercising id collision is a coverage
+gap. A test with two videos sharing a `person_id` would pin the composite key's
+behavior; nothing currently does.
 
 ### D8 — `--on-existing replace` does not preserve `video_id`
 **Phase 5 (document), Phase 7 (operations).** Verified by observation during
@@ -131,7 +141,10 @@ Not a bug: delete-and-insert behaving as delete-and-insert. But it is undocument
 and it is the kind of thing a user discovers the hard way.
 
 ### D9 — `/api/stats` is served and tested but has no consumer
-**Phase 3 (keep or remove), Phase 6 (tests).** `routes/stats.py`,
+**Open, deliberately.** Decided 2026-08-22: **keep the code as it is**, and keep
+this entry registered rather than closing it. Not a defect — the endpoint works
+correctly; it simply has no caller. Registered so it stays visible and does not
+get rediscovered as a surprise later. `routes/stats.py`,
 `queries/stats.py` (120 lines, four functions) and the `/api/stats/{video_id}`
 endpoint are live and return 200. **Nothing calls them.** `grep` over the whole
 frontend finds one hit, and it is the comment in `api.js` saying so.
@@ -143,6 +156,42 @@ query functions, so it is tested code with no product behind it.
 
 Decision needed: remove the route and its queries, or keep them as a documented
 API for external use. Not a bug either way.
+
+### D10 — `accessibility.md` uses retired terminology
+**Phase 5/7, small.** `webapp/docs/accessibility.md` is factually correct — the
+one pre-existing document that is — but it says "viewer" twice, which Phase 1
+retired in favor of "webapp", and its heading and prose style predate the style
+guide. Content keeps; terminology and style get a pass.
+
+### D11 — `a11y-baseline/` is sound, contrary to first impressions
+**No action.** Checked because it was suspected of being stale. It is a
+**deliberately historical snapshot** — "Captured 2026-08-20, before any
+remediation work" — so describing a state that no longer exists is its purpose,
+not a defect. Its reproduction instructions were checked too: `../../../` from
+`webapp/docs/a11y-baseline/` really does resolve to the project root. Accurate
+as written.
+
+### D12 — 17 code references point at documentation that has moved or been replaced
+**Phase 5, across 15 files.** Quarantining the root `README.md` and the design
+document (§2.7) invalidated every in-code pointer to them. Verified count: **17
+references in 15 files**, split three ways.
+
+1. **Now broken by the move** — `pgvector-db/schema.sql:134` and
+   `cas-to-postgres-importer/src/main/config.py:138` cite
+   `data_schema_with_types.md`, now `docs/legacy/data-schema-design.md` and due
+   for deletion. Their targets become `docs/database.md`.
+2. **Already broken before the move** —
+   `webapp/src/backend/query_agent/schema_context.py:11` cites
+   `docs/data_schema_with_types.md`. That path never existed; the file was in
+   `pgvector-db/`. A pre-existing error, found by this check.
+3. **"See README" pointers** — the three `Dockerfile`s, `docker-compose.yml`, the
+   three `conftest.py` files, `app.py`, `db.py`, `queries/stats.py`, `media.py`
+   and `pipeline.py` refer to README sections ("Docker architecture", "Tests",
+   "Configuration reference") that no longer exist at the root. Each must be
+   repointed at whichever `docs/` page now owns that subject, per the map.
+
+Left broken deliberately: Phase 2 changes no source, and Phase 5 rewrites all of
+these comments anyway. Recorded at this precision so none is missed.
 
 <!-- New entries append here as each sub-project is read. -->
 

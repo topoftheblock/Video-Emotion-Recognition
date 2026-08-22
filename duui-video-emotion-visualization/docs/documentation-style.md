@@ -13,20 +13,19 @@ go in.
 
 ### 2. The existing comments are not evidence
 
-**Nearly every comment in this codebase was written by AI, not by the author.**
-They are guesses that read like knowledge. A comment is therefore *never* a
-source for anything — not for what the code does, and **not for why it does
-it**. Treat it exactly as you would an unsourced claim from a stranger: verify
-it independently, or discard it.
+**The comments predating this documentation pass are unverified.** They are
+legacy text: some accurate, some outdated, some simply wrong, with nothing to
+tell them apart. A comment is therefore *never* a source for anything — not for
+what the code does, and **not for why it does it**. Treat it as you would an
+unsourced claim: verify it independently, or discard it.
 
 This has a consequence that feels wasteful and is not: when an existing comment
 states a reason, you may not carry that reason forward merely because it is
 already written down. Either you can verify it, or it goes.
 
-> The only material that carries genuine authorial intent is the **frontend
-> style and accessibility work** — and even there, keep it because it is
-> *verifiable* (the palette claims are checked by `cvd_check.py` and
-> `contrast_check.py`), not because a comment asserts it.
+> The **frontend style and accessibility work** is the exception — and even
+> there, keep it because it is *verifiable* (the palette claims are checked by
+> `cvd_check.py` and `contrast_check.py`), not because a comment asserts it.
 
 ### 3. Never invent a rationale, and never assume one
 
@@ -41,7 +40,7 @@ and say plainly that the reason is not recorded.
 guess, do not reason from plausibility, and do not let an existing comment
 answer it for you. A confident-sounding reason nobody verified is worse than no
 reason at all — the next reader cannot tell it apart from a real one, and that
-is precisely how this codebase reached its current state.
+is precisely how the current comments became untrustworthy.
 
 ### And write for a stranger
 
