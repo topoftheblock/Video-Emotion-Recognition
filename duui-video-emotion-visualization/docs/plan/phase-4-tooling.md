@@ -51,9 +51,25 @@ The `openai` floor is the one that matters: `>=1.50.0` permits 1.x, whose client
 API differs from the 3.x actually installed and tested against. **A fresh install
 resolving to a 1.x would be a different program.** Nothing pins it down.
 
-`uvicorn` is declared by the webapp but is **not installed in `.venv`** — it only
-exists inside the image. Worth confirming that is intended rather than an
-oversight, since it means `uvicorn` is never exercised outside Docker.
+`uvicorn` is declared by the webapp but is **not installed in `.venv`**.
+Investigated 2026-08-22 — **it is not redundant, and the venv is incomplete**:
+
+- It is the image's `CMD`: `uvicorn backend.app:create_app --factory --host
+  0.0.0.0 --port 8000`. It is the server that actually runs the webapp.
+- `webapp/src/backend/__main__.py:23` does `import uvicorn`, so `python -m
+  backend` raises `ImportError` from `.venv` today.
+
+The suite passes without it only because the route tests use
+`fastapi.testclient.TestClient`, which drives the ASGI app through `httpx` and
+never binds a port. So the venv is fine for tests and broken for running the app
+— which nobody noticed, because nobody runs the app outside Docker.
+
+### The interpreter cannot be installed locally
+
+Recorded 2026-08-22: **Python 3.14 is not installable on the development
+machine.** Every test run, from this phase onward, happens inside a container.
+
+That is a workflow change, not a footnote — see §4.4b.
 
 ### No `requires-python` anywhere
 
@@ -84,14 +100,20 @@ confusing failures rather than a clear refusal.
 All three Dockerfiles move to `python:3.14-slim`. Evidence in §4.3: identical
 test results, and 3.12 is already security-only.
 
+`requires-python = ">=3.14"` — **only** 3.14. It is the one version tested, and
+claiming support for a version nobody exercises is the kind of unverified claim
+the style guide forbids.
+
 ### Q2 — Postgres/pgvector — **decided: pg18**
 
 `pgvector/pgvector:pg16` → `pg18`. Evidence in §4.3.
 
-> **This one needs another full rebuild.** A Postgres major version has an
-> incompatible on-disk data directory, so the existing volume cannot be reused —
-> `down -v`, `up --build`, re-import, re-link, exactly as Phase 3 step 10 did.
-> About ten minutes, and the row counts are the check.
+> **This one needs another full rebuild, and it comes first.** A Postgres major
+> version has an incompatible on-disk data directory, so the existing volume
+> cannot be reused. Decided 2026-08-22: **tear down before making any changes**,
+> then rebuild on the new versions — `down -v`, edit, `up --build`, re-import,
+> re-link. Same ordering lesson as Phase 3 step 8: the teardown belongs before
+> the rename, not after. About ten minutes, and the row counts are the check.
 
 ### Q3 — Pinning strategy
 
@@ -198,18 +220,69 @@ data file that happens to be `.py`.
 
 ### The JS side
 
-One dev-only `package.json` at the repository root carrying `eslint`,
-`prettier`, `stylelint`, `html-validate` and `typescript`. Dev-only is the
+One dev-only `package.json` at the **project root**
+(`duui-video-emotion-visualization/`), not the git root — the git root belongs to
+the container repository and holds unrelated sibling projects. Only the CI
+workflow has to live above this directory. It carries `eslint`,
+`prettier`, `stylelint`, `html-validate` and `typescript`, and **pins a Node
+version** (`engines` plus `.nvmrc`) so CI and any local run cannot drift.
+Dev-only is the
 load-bearing word: **the frontend keeps its no-build-step deployment**, and the
 files served stay byte-identical to the files in `src/`. A Phase 4 exit check
 should assert exactly that.
 
 ---
 
+## 4.4b Testing moves into Docker
+
+Python 3.14 cannot be installed on the development machine, so **the container is
+the only place the suite can run against the real interpreter**. This phase owes
+that a first-class path, because a test command nobody can type is a test command
+nobody runs.
+
+What has to exist by the end of this phase:
+
+- **One short command that runs the whole suite** against `python:3.14-slim`,
+  joined to the compose network so the database-backed tests actually run rather
+  than skip. Today that is a nine-line `docker run` invocation — unusable as a
+  habit. A compose service (`docker compose run --rm tests`) fits the project's
+  existing idiom better than a shell script, and inherits the network and
+  environment for free.
+- **The same command in CI**, so local and CI cannot diverge.
+- A loud failure when the database is unreachable, rather than 29 quiet skips.
+  D13 showed how invisible that is; Phase 6 fixes it properly with
+  testcontainers, but the runner should not hide it in the meantime.
+
+### What happens to `.venv`
+
+It is Python 3.12.3 and will no longer match the runtime. It also cannot run the
+app at all (no `uvicorn`, §4.1). Three options, and this needs a decision:
+
+1. **Delete it.** Honest — nothing should run from it any more. Costs editor
+   autocomplete and go-to-definition unless the editor is pointed at the
+   container.
+2. **Keep it for the editor only**, and say so in a comment at the top of the
+   project docs: not a runtime, not a test environment, just symbols. Requires
+   accepting that it resolves 3.12 semantics for 3.14 code.
+3. **Keep it and add `uvicorn`**, closing the gap found above — but it still
+   cannot run 3.14, so it stays a half-truth.
+
+**Recommendation: 2.** Keeping it is genuinely useful for editing, and the
+danger is not its existence but the belief that a green run from it means
+anything. That belief is fixed by documenting the Docker command as the only
+supported one, which this phase does anyway.
+
 ## 4.5 The type-checking ratchet
 
 7 of 140 functions carry a return annotation today. Phase 5 adds the rest as it
 rewrites each file.
+
+`mypy` is the checker (decided 2026-08-22, over `pyright`): it is the reference
+implementation, its per-module strictness is exactly what the ratchet needs, and
+it does not pull Node into the Python toolchain.
+
+Run it with `--python-version 3.14` so it checks against the target semantics
+even when invoked from an older interpreter.
 
 So this phase installs `mypy` **lenient everywhere**, and Phase 5 tightens each
 sub-project as it finishes it, per the ratchet in [§7](README.md#7-decisions-log).
@@ -239,16 +312,19 @@ Each step is one commit; suite green before each.
 
 | # | Step | Risk |
 | --- | --- | --- |
-| 1 | Declare `lxml` and `starlette`; add `requires-python`; review `requirements-dev.txt` against actual imports | None |
-| 2 | Answer Q1/Q2 by experiment (§4.3) and record the outcome | None — throwaway images |
-| 3 | Apply the version decisions, if any | Medium if bumping |
+| 0 | **`docker compose down -v`** — before any change, since pg18 cannot reuse the pg16 volume (§4.2 Q2) | Destroys the corpus, by design |
+| 1 | Declare `lxml`, `starlette` and `uvicorn`; set `requires-python = ">=3.14"`; review `requirements-dev.txt` against actual imports | None |
+| 2 | ~~Answer Q1/Q2 by experiment~~ — **done**, §4.3 | — |
+| 3 | Apply the bumps: `python:3.14-slim` ×3, `pgvector/pgvector:pg18`; then `up --build`, re-import, re-link, compare row counts | Medium |
+| 3b | Add the Docker test runner (§4.4b) and make it the documented way to run the suite | Low |
 | 4 | Apply the pinning strategy from Q3 | Low |
 | 5 | Add `ruff` config + `pyproject` tool sections; **do not run the formatter yet** | None |
 | 6 | **Run the formatter — its own commit, nothing else in it** | Touches ~182 lines across 74 files |
 | 7 | Add the remaining Python-side linters (`mypy` lenient, `sqlfluff`, `hadolint`, `yamllint`, `actionlint`, `markdownlint`, link checker) | Low |
 | 8 | Add `package.json` and the JS/CSS/HTML/Markdown tooling; run `prettier` in **its own commit** | Touches most JS and CSS |
 | 9 | Write the CI workflow; verify it fires on a change inside the project and stays silent on one outside | Low |
-| 10 | Full verification — build all four images, rebuild the corpus, suite at 150/150, frontend byte-identical | — |
+| 10 | Add the pre-commit hook for `ruff format --check` and `ruff check` (§4.9b) | Low |
+| 11 | Full verification — all four images build, corpus row counts match Phase 0, suite at 150/150 **via the Docker runner**, frontend byte-identical | — |
 
 **Steps 6 and 8 are the ones to keep isolated.** A formatting run mixed with a
 config change produces a diff nobody can review, and this phase's whole purpose
@@ -314,7 +390,11 @@ little. If the slowdown would annoy you, CI-only is defensible.
 
 ## 4.10 Exit criteria
 
-- [ ] `lxml` and `starlette` declared; `requires-python` set
+- [ ] `lxml`, `starlette` and `uvicorn` declared; `requires-python = ">=3.14"`
+- [ ] Python 3.14 and pgvector pg18 in place; corpus rebuilt and verified
+- [ ] A short Docker command runs the whole suite, documented as the only
+      supported way; `.venv`'s status decided and written down
+- [ ] Pre-commit hook installs in one command and is bypassable
 - [ ] Q1–Q4 answered, outcomes documented — including any "no change"
 - [ ] Pinning strategy applied; `openai` no longer permits 1.x
 - [ ] Every tool in the §6 roster configured, from repo-root config
