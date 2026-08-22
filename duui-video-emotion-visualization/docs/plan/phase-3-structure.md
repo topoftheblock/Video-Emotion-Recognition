@@ -3,7 +3,7 @@
 *Detailed plan for Phase 3. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` plan approved 2026-08-22; one open question in §3.9.
+Status: `[x]` complete, 2026-08-22.
 Branch: `code-cleanup/phase-3`.
 
 ## 3.0 What this phase is for
@@ -389,3 +389,28 @@ populated, three people, three cross-video matches, and a clean console.
 
 **`duui_video_emotion`** (decided 2026-08-22). Appears in `.env`,
 `.env.example`, `docker-compose.yml` (×5) and `schema_context.py`.
+
+## 3.11 Final verification
+
+| Check | Result |
+| --- | --- |
+| Combined suite, empty database | 150 / 150 |
+| Combined suite, populated corpus | 3 known isolation failures — matches Phase 0 baseline B |
+| Each sub-project standalone | 49 + 90 + 11 = 150 |
+| All four images build | yes |
+| Markdown links across `docs/` | all resolve |
+| Stale identifiers from every rename | none |
+| Webapp end to end | video, subtitles, all three modalities, people, cross-video matches, clean console |
+
+The stale-identifier sweep covered all seventeen names this phase changed and
+found one survivor: a comment in `player.js` referring to `js/subtitles.js`,
+which is now its sibling. Fixed.
+
+## 3.12 What this hands to later phases
+
+| To | What |
+| --- | --- |
+| Phase 4 | Formatter and linter config must cover the new layout: `importer/cas/`, `js/lib/`, `js/playback/` |
+| Phase 5 | The comment budget now applies to modules that each have one subject, which is what makes it tractable. `cas/types.py` is 225 lines of pure data and needs a different treatment from code. |
+| Phase 6 | D9 stays registered. The `job_runs` DDL is still declared in four identical places. |
+| Phase 7 | `docs/operations.md` owes users the volume-migration procedure this phase did not need: renaming the Compose project orphans both volumes, and the teardown must precede the rename. |
