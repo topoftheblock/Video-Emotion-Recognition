@@ -164,13 +164,15 @@ Members: `views.py` (was `cas_views.py`), `typesystem.py`, `types.py` (the UIMA
 vocabulary split out of `config.py`), `sofas.py` (the raw-XML half of
 `media.py`), `person_resolution.py`.
 
-### `js/helpers/` and `js/playback/`
+### `js/lib/` and `js/playback/`
 
 From the frontend import graph:
 
-- **`helpers/`** — `api.js`, `dom.js`, `format.js`. The only three modules with
+- **`lib/`** — `api.js`, `dom.js`, `format.js`. The only three modules with
   **zero internal imports**; generic primitives holding no application state.
-  That property is the evidence.
+  That property is the evidence. Named `lib` rather than `helpers` to follow the
+  convention readers already know from other JavaScript projects — the one place
+  in this project where a familiar abbreviation beats a plainer word.
 - **`playback/`** — `player.js`, `subtitles.js`, `overlay.js`. All three import
   `dom` + `state` and nothing else structural, and all three render synchronized
   to playback time. `videoLoader.js` looks similar but is not: it orchestrates
@@ -179,13 +181,13 @@ From the frontend import graph:
 ```
 js/
   main.js  state.js  videoLoader.js  legend.js
-  helpers/   api.js  dom.js  format.js
+  lib/       api.js  dom.js  format.js
   playback/  player.js  subtitles.js  overlay.js
   panels/    (5 modules)
 ```
 
 Cost, and it is real if small: with no build step every import path is literal,
-so `"./api.js"` becomes `"../helpers/api.js"` in every consumer.
+so `"./api.js"` becomes `"../lib/api.js"` in every consumer.
 
 `legend.js` stays top level. It is a 27-line sidebar disclosure that is arguably
 a panel; forcing it into one of the groups would be tidier than it is true.
@@ -257,7 +259,7 @@ rewrites.
 | 5 | Split `media.py` → `cas/sofas.py` + `video_files.py` | Medium |
 | 6 | `pipeline.py` → `inputs.py`; `emotions.js` math helpers (**both confirmed** 2026-08-22) | Low |
 | 7 | `sidebar.css` section banners | None |
-| 7b | Create `js/helpers/` and `js/playback/`; update every import path (§3.4b) | Low, wide |
+| 7b | Create `js/lib/` and `js/playback/`; update every import path (§3.4b) | Low, wide |
 | 8 | Rename the Compose project **and** the database (§3.1), including `.env` and `.env.example` | None once §3.7.1 is accepted |
 | 9 | **Rebuild and re-import** — §3.7.1 | The real test |
 | 10 | Verify: row counts, all four sub-projects, suite green | — |
@@ -321,7 +323,7 @@ Note this step is **slow**: 1.5 GB of XMI with embedded video, parsed serially.
 - [ ] Log prefixes are `[importer]`, `[identity]`, `[webapp]`
 - [ ] Splits done; every module has one subject
 - [ ] `importer/cas/` exists and holds the five CAS-reading modules
-- [ ] `js/helpers/` and `js/playback/` exist; every import path updated
+- [ ] `js/lib/` and `js/playback/` exist; every import path updated
 - [ ] Corpus rebuilt per §3.7.1; 10 videos; totals match Phase 0
 - [ ] Suite at 150/150
 
