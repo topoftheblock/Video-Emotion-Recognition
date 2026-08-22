@@ -49,7 +49,7 @@ orphan — and turns the riskiest step in the plan into the **most thorough test
 in it**: a full rebuild that exercises the renamed package, the renamed database,
 the split modules, and all four sub-projects end to end.
 
-The recreation is specified in §3.7 step 9.
+The recreation is specified in §3.7.1, run as step 10.
 
 > A migration procedure is still owed to *users*, who may rename with data they
 > cannot reproduce. It is written into `docs/operations.md` during Phase 7 — the
@@ -98,7 +98,7 @@ Checked before drawing the line: **no identifier anywhere contains "viewer"** �
 no variable, function, class, CSS class, or custom property. It is purely a
 prose problem, which is what makes the split clean.
 
-### Group C — genuine references to the corpus. Keep (16 occurrences)
+### Group C — genuine references to the corpus. Keep (17 occurrences)
 
 `linking.py`, `media.py`, `text_emotion.py`, `typesystem.py`, `config.py` × 2,
 `cas_views.py` × 2, `embedding.py`, `identity_resolution.py`, `emotion.py` × 3,
@@ -106,7 +106,11 @@ prose problem, which is what makes the split clean.
 
 Every one describes the actual source material — "the real Bundestag CAS", "the
 Bundestag corpus". Correct per the glossary. **A global find-and-replace would
-have destroyed all sixteen**, which is why the plan required reading each file.
+have destroyed all seventeen**, which is why the plan required reading each file.
+
+*(Counted as 16 when this plan was written; the recount after the splits found
+17. The original count used a narrower file filter and predated `config.py`
+becoming `cas/types.py`.)*
 
 Also out of scope: the sibling directory `duui_bundestag_pipeline/` and the root
 `.github/workflows/ci.yml` that targets it. Different project.
@@ -332,8 +336,8 @@ docker compose --profile identity run --rm global-identity-linker
 Only `ID2021013800…mp4` exists as a file. **The eight `teil_*.mp4.xmi` carry
 their video embedded in the CAS**, which is why the directory is 1.5 GB and why
 this run exercises `media.py`'s extraction path — the one that would otherwise
-go untested by the sample input. That makes step 9 a genuinely better test than
-the migration it replaces.
+go untested by the sample input. That makes the rebuild a genuinely better test
+than the migration it replaces.
 
 Expected result: **10 videos**, matching Phase 0's baseline —
 `first2.mp4` + `ID2021013800…mp4` + `teil_000` … `teil_007`.
@@ -349,14 +353,37 @@ Note this step is **slow**: 1.5 GB of XMI with embedded video, parsed serially.
 
 - [x] §3.2–§3.6 approved (2026-08-22)
 - [x] Database name: `duui_video_emotion`
-- [ ] No Group A occurrence remains; all 16 Group C occurrences intact
-- [ ] Package is `importer`; image builds and runs
-- [ ] Log prefixes are `[importer]`, `[identity]`, `[webapp]`
-- [ ] Splits done; every module has one subject
-- [ ] `importer/cas/` exists and holds the five CAS-reading modules
-- [ ] `js/lib/` and `js/playback/` exist; every import path updated
-- [ ] Corpus rebuilt per §3.7.1; 10 videos; totals match Phase 0
-- [ ] Suite at 150/150
+- [x] No Group A occurrence remains; all 17 Group C occurrences intact
+- [x] Log prefixes verified: only `[importer]`, `[identity]`, `[webapp]`
+- [x] Package is `importer`; image builds and runs
+- [x] Splits done — `config.py` 341→116, `pipeline.py` 373→273, `emotions.js` 359→251
+- [x] `importer/cas/` holds the five CAS-reading modules
+- [x] `js/lib/` and `js/playback/` exist; every import path updated
+- [x] Corpus rebuilt per §3.7.1 — 10 videos, **every row count matches Phase 0**
+- [x] Suite at 150/150 on an empty database; the same 3 known isolation
+      failures on the populated one, matching Phase 0 baselines C and B exactly
+
+## 3.10 Rebuild result
+
+| Table | Rebuilt | Phase 0 |
+| --- | --- | --- |
+| videos | 10 | 10 |
+| persons | 23 | 23 |
+| segments | 920 | 920 |
+| emotion_scores | 375,205 | 375,205 |
+| face_detections | 42,930 | 42,930 |
+| face_embeddings | 330 | 330 |
+| voice_embeddings | 122 | 122 |
+| global_persons | 8 | 8 |
+
+Eight of the nine CAS files carry their video embedded, and all eight were
+extracted successfully — 94 MB to 145 MB each. That path is never touched by the
+sample input, so this was its first real exercise since `media.py` was split
+into `cas/sofas.py` and `video_files.py`.
+
+End-to-end in the browser: `teil_007.mp4`, a file that exists only because it was
+pulled out of a CAS, plays with German subtitles, all three emotion modalities
+populated, three people, three cross-video matches, and a clean console.
 
 ## 3.9 The database name
 
