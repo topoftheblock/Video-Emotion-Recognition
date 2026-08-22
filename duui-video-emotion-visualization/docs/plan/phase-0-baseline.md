@@ -214,10 +214,11 @@ taken; the README's fuller claims remain unverified and belong to Phase 2.
 
 Agreed 2026-08-22:
 
-- **`code-cleanup-phase-<N>`**, branched off the `code-cleanup` integration
-  branch and merged back into it when the phase closes. Hyphen rather than
-  slash: `refs/heads/code-cleanup` already exists as a file, so git cannot also
-  create the directory `refs/heads/code-cleanup/`. `code-cleanup` reaches
+- **`code-cleanup/phase-<N>`**, branched off **`code-cleanup/main`** and merged
+  back into it with `--no-ff` when the phase closes. `code-cleanup/main` reaches
+  `main` only at the very end. No branch may be named plain `code-cleanup`: git
+  cannot hold both a `code-cleanup` ref file and a `code-cleanup/` ref
+  directory. `code-cleanup` reaches
   `main` only at the end of the whole pass. Phases are strictly sequential, so
   branching off `code-cleanup` rather than `main` means each phase starts on top
   of finished work.

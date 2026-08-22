@@ -493,13 +493,17 @@ out — phases marked done, decision records archived.
 
 ## 5. Cross-cutting rules
 
-- **One phase per branch**, named **`code-cleanup-phase-<N>`**, branched off the
-  `code-cleanup` integration branch and merged back into it when the phase
-  closes. (A hyphen, not a slash: git stores refs as paths, so
-  `refs/heads/code-cleanup` being a *file* makes `refs/heads/code-cleanup/phase-0`
-  impossible without renaming the integration branch, which is already on
-  `origin`. Switching to a true `code-cleanup/…` hierarchy remains possible later
-  by renaming the integration branch — e.g. to `code-cleanup/main`.) `code-cleanup` reaches `main` only at the end of the whole pass. One
+- **Branch layout.** Everything lives under one `code-cleanup/` namespace:
+  - **`code-cleanup/main`** — the integration branch. Every phase merges here.
+  - **`code-cleanup/phase-<N>`** — one per phase, branched off
+    `code-cleanup/main`, merged back with `--no-ff` when the phase closes.
+  - `code-cleanup/main` merges into `main` **once, at the very end** of the
+    whole pass.
+
+  The namespace requires that no branch is literally named `code-cleanup`: git
+  stores refs as file paths, so a `code-cleanup` *file* and a `code-cleanup/`
+  *directory* cannot coexist. This applies on `origin` as well as locally, which
+  is why the old remote `code-cleanup` branch is deleted rather than kept. `code-cleanup` reaches `main` only at the end of the whole pass. One
   commit per logical step; never mix a rename with a rewrite in the same commit,
   as that makes the diff unreviewable.
 - **No AI attribution, anywhere.** Commits carry no `Co-Authored-By: Claude`
@@ -617,7 +621,7 @@ this is the index.
 | — | Python type hints | **Yes — adopt fully, and check them in CI.** Lenient at first, **strict once this plan is complete.** See the ratchet note below. |
 | — | JavaScript types | **Yes — JSDoc annotations, checked in CI** with `tsc --checkJs --noEmit`. **Node in CI is explicitly permitted as an exception** for this. No TypeScript, no build step: the source files ship exactly as written. |
 | — | Linters for Dockerfile / compose / YAML / HTML / Markdown | **Yes** — full roster in §6. |
-| — | Branch naming | **`code-cleanup-phase-<N>`**, off `code-cleanup`, merged back on completion. Hyphen rather than slash — git cannot nest refs under an existing branch name; see §5. |
+| — | Branch layout | **`code-cleanup/main`** integrates; **`code-cleanup/phase-<N>`** per phase, merged back with `--no-ff`; `main` only at the very end. No branch may be named plain `code-cleanup` — see §5. |
 | — | Commit attribution | **None.** No AI/Claude attribution in commits, comments or docs — see §5. |
 | — | Where the plan lives | **`docs/plan/`**, with this file as `README.md` and one `phase-N-*.md` per phase. Cross-cutting content stays here; per-phase detail is split out. |
 | — | The live test data | **Disposable and reproducible.** The running stack is a test stack. Lowers the severity of the Phase 3 volume hazard from data loss to wasted time — it still needs a deliberate decision, not an accident. |
