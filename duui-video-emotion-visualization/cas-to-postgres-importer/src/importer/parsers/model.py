@@ -18,9 +18,9 @@ xmi:id -> model_id in `context` so parsers/embedding.py can translate
 the model references its annotations carry.
 """
 
-from ..cas_views import select_across_views
+from ..cas.views import select_across_views
 from ..config import TYPES
-from ..typesystem import get_xmi_id
+from ..cas.typesystem import get_xmi_id
 
 
 def parse(cas, cursor, context):

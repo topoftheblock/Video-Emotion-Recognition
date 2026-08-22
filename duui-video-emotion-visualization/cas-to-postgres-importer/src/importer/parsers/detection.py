@@ -4,10 +4,10 @@ Both share the same shape (presence/person/frame/bbox/score), so a
 single helper handles both tables.
 """
 
-from ..cas_views import select_across_views
+from ..cas.views import select_across_views
 from ..config import TYPES
-from ..identity_resolution import resolve_person_id_via_face_fs
-from ..typesystem import get_xmi_id
+from ..cas.person_resolution import resolve_person_id_via_face_fs
+from ..cas.typesystem import get_xmi_id
 
 
 def _resolve_detection_person_id(detection, context):

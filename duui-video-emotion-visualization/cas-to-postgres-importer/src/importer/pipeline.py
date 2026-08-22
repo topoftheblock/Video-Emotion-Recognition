@@ -33,7 +33,7 @@ from .media import (
     strip_media_sofas,
 )
 from .parsers import PARSE_STEPS
-from .typesystem import load_merged_typesystem, loading_cas_quietly
+from .cas.typesystem import load_merged_typesystem, loading_cas_quietly
 
 
 def parse_and_insert(cas, cursor, on_step=None, context=None):

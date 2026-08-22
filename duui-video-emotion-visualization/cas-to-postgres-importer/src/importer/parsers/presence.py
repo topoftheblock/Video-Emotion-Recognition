@@ -8,13 +8,13 @@ the real typesystem, so `'visible'` is set explicitly here rather than
 read from the CAS.
 """
 
-from ..cas_views import select_across_views
+from ..cas.views import select_across_views
 from ..config import TYPES
-from ..identity_resolution import (
+from ..cas.person_resolution import (
     resolve_person_id_via_face_fs,
     resolve_person_id_via_voice_fs,
 )
-from ..typesystem import get_xmi_id
+from ..cas.typesystem import get_xmi_id
 
 
 def _resolve_track_person_id(track, context):

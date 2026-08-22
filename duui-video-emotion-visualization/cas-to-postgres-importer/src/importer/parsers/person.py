@@ -21,13 +21,13 @@ with matching identity:FaceIdentity.faceId="face_7" /
 identity:VoiceIdentity.voiceId="SPEAKER_00" elsewhere in the CAS.
 These maps are stored on the shared pipeline `context` dict so later
 parser steps (which run after this one -- see parsers/__init__.py)
-can use them via identity_resolution.py.
+can use them via person_resolution.py.
 """
 
-from ..cas_views import select_across_views
+from ..cas.views import select_across_views
 from ..config import TYPES
-from ..identity_resolution import parse_person_label
-from ..typesystem import get_xmi_id
+from ..cas.person_resolution import parse_person_label
+from ..cas.typesystem import get_xmi_id
 
 
 def _parse_persons(cas, cursor, video_id, context):

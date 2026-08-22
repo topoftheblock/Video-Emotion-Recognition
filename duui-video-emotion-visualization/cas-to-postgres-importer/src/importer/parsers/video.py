@@ -17,7 +17,7 @@ video, and it is already the join key to the video store the webapp
 plays from. See pgvector-db/schema.sql's identity note.
 """
 
-from ..cas_views import select_across_views, select_exact_type
+from ..cas.views import select_across_views, select_exact_type
 from ..config import TYPES
 
 _VIDEO_UPSERT = """

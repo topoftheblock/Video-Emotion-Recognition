@@ -38,7 +38,7 @@ except ImportError:
         "uima.cas.Sofa", "uima.cas.NULL",
     }
 
-from .config import (
+from ..config import (
     IGNORED_ABSENT_TYPES,
     INJECTED_FALLBACK_TYPES,
     TYPESYSTEM_FILES,

@@ -10,20 +10,20 @@ Two embedding storage patterns show up across DUUI pipelines:
      (`org.texttechnologylab.uima.type.Embedding`) that holds the real
      `.embedding` vector and a `.ModelReference` -- confirmed in the
      real Bundestag video-emotion CAS. In this pattern, person
-     linkage is string-based and resolved via identity_resolution
+     linkage is string-based and resolved via person_resolution
      using the face_id/voice_id -> person_id maps built in person.py.
 
 Both patterns are handled so this keeps working regardless of which
 DUUI component version produced the CAS.
 """
 
-from ..cas_views import select_across_views
+from ..cas.views import select_across_views
 from ..config import TYPES
-from ..identity_resolution import (
+from ..cas.person_resolution import (
     resolve_person_id_via_face_fs,
     resolve_person_id_via_voice_fs,
 )
-from ..typesystem import as_list, get_xmi_id
+from ..cas.typesystem import as_list, get_xmi_id
 
 
 def _to_pgvector_literal(embedding_repr):
