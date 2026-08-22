@@ -205,6 +205,22 @@ references in 15 files**, split three ways.
 Left broken deliberately: Phase 2 changes no source, and Phase 5 rewrites all of
 these comments anyway. Recorded at this precision so none is missed.
 
+### D13 — the test database vanished without explanation
+**Phase 6.** `duui_baseline_test` — the empty schema-applied database the suite's
+green baseline depends on — was created during Phase 3 step 10 and confirmed
+working (150/150). It was **gone by Phase 4**, while `duui_video_emotion` in the
+same volume kept all 375,205 rows. The volume was never recreated; the
+`pgvector-db` container was, after an image rebuild.
+
+**No explanation is recorded because none was established.** Recreating it
+restored 150/150 immediately.
+
+Whatever the cause, it makes the point Phase 6 already decided: the green
+baseline currently depends on a hand-created database that nothing recreates,
+nothing documents, and nothing notices the loss of — the run just quietly
+reports 121 passed, 29 skipped. Testcontainers removes the whole class of
+problem.
+
 <!-- New entries append here as each sub-project is read. -->
 
 ## 2.4 Shared contracts

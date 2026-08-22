@@ -3,7 +3,8 @@
 *Detailed plan for Phase 4. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` plan drafted 2026-08-22, awaiting approval of §4.2 and §4.9.
+Status: `[~]` plan drafted 2026-08-22. Q1–Q4 and §4.9 answered; version
+evaluation done — see §4.3.
 Branch: `code-cleanup/phase-4`.
 
 ## 4.0 What this phase is for
@@ -100,39 +101,71 @@ Three options, in increasing strictness:
 3. **Full lock** — a `requirements.lock` per image. Strongest, but Phase 9 owns
    generating it, so this phase would only commit to the strategy.
 
-**Recommendation: 2 now, 3 in Phase 9.** Upper bounds solve the actual observed
-risk immediately; the lockfile makes it exact later.
+**Decided 2026-08-22: floors and ceilings.** Upper bounds solve the observed
+`openai` risk immediately; Phase 9 adds the lockfile on top.
 
-### Q4 — Does the linter gate anything?
-
-CI will run it. Should a **pre-commit hook** run it too? Without one, a red CI is
-found after pushing rather than before committing. Cheap to add, mildly annoying
-in daily use.
+### Q4 — Does the linter gate anything? — **answered: see §4.9b**
 
 ---
 
-## 4.3 The version evaluation (to be filled in during the phase)
+## 4.3 The version evaluation — done 2026-08-22
 
-Not decided here — this records *how* the question gets answered, so the answer
-is evidence rather than preference.
+Answered by experiment and by checking published support windows, not by
+preference.
 
-For **Python 3.13/3.14**, per dependency: does a wheel exist for the target
-version on `linux/amd64`? The five that matter are `psycopg2-binary`,
-`dkpro-cassis` (and its `lxml` pin), `fastapi`, `pydantic`, `openai`. Method:
-build a throwaway image `FROM python:3.13-slim`, install each
-`requirements.txt`, and run the suite. That answers it properly rather than by
-reading changelogs.
+### Python: the suite passes identically on 3.12, 3.13 and 3.14
 
-For **Postgres**, the questions are whether `pgvector` publishes a `pg17`/`pg18`
-tag, whether the vector operators used (`<=>`, `avg()` over `vector`) behave
-identically, and whether the schema needs anything. Method: bring up the new tag
-against a scratch database, apply `schema.sql`, re-import, compare row counts to
-Phase 0 — the same check Phase 3 used.
+Every dependency installed cleanly on each, and the suite was run inside each
+image against the real database:
 
-**Write the outcome down either way.** A documented "stayed on 3.12 because X"
-is the deliverable; a silent no-change is not.
+| Image | Interpreter | Result |
+| --- | --- | --- |
+| `python:3.12-slim` | 3.12.14 | 149 passed, 1 skipped |
+| `python:3.13-slim` | 3.13.15 | 149 passed, 1 skipped |
+| `python:3.14-slim` | 3.14.7 | 149 passed, 1 skipped |
 
----
+Identical. Wheels exist on all three for `psycopg2-binary`, `dkpro-cassis`,
+`lxml`, `fastapi`, `pydantic` and `openai`, so nothing needed a compiler.
+
+**Support status is what decides it, and it is not close:**
+
+| Version | Status | Released | End of life |
+| --- | --- | --- | --- |
+| 3.12 | **Security-only** | Oct 2023 | Oct 2028 |
+| 3.13 | Bugfix | Oct 2024 | Oct 2029 |
+| 3.14 | Bugfix | Oct 2025 | **Oct 2030** |
+
+**The project is already on a version that receives no bug fixes** — only
+security patches. That is the finding: staying put is not "no change", it is
+choosing an interpreter that has stopped being repaired.
+
+**Recommendation: 3.14.** It tests identically to 3.12, is in active bugfix
+support, and buys two more years than staying. 3.13 is equally safe and buys one
+year less for the same work, so there is no reason to prefer it.
+
+### Postgres: pg17 and pg18 both work unchanged
+
+A scratch instance of each, with `schema.sql` applied and the vector operations
+this project actually uses exercised:
+
+| Image | Server | Schema | `<=>` | `avg(vector)` | pgvector |
+| --- | --- | --- | --- | --- | --- |
+| `pgvector/pgvector:pg17` | 17.11 | 14 tables, no errors | ok | ok | 0.8.6 |
+| `pgvector/pgvector:pg18` | 18.6 | 14 tables, no errors | ok | ok | 0.8.6 |
+
+Same pgvector version on both, so the vector behaviour is identical by
+construction.
+
+| Version | Released | Support ends |
+| --- | --- | --- |
+| 16 (current) | Sep 2023 | Nov 2028 |
+| 17 | Sep 2024 | Nov 2029 |
+| 18 | Sep 2025 | **Nov 2030** |
+
+**Recommendation: pg18.** It applies the schema unchanged, runs the operators
+identically, and is on its sixth minor release. The migration cost that made
+this hard is gone: Phase 3 proved the corpus rebuilds from source CAS in about
+ten minutes, so this is a teardown and re-import, not a `pg_upgrade`.
 
 ## 4.4 Tooling configuration
 
@@ -239,9 +272,36 @@ is about to rewrite by hand anyway**.
 - **Defer to Phase 5**: no throwaway churn, but Phase 5 does formatting and
   meaning in the same commits, which is exactly what makes a diff unreviewable.
 
-**Recommendation: run it now.** The churn is the point — it is cheap, mechanical,
-and gets a large, boring diff out of the way while it is still separable from the
-work that needs reading.
+**Decided 2026-08-22: run it in this phase, in its own commit** — steps 6 and 8.
+
+## 4.9b Q4, explained: what a pre-commit hook would mean
+
+A **pre-commit hook** is a script git runs on your machine every time you type
+`git commit`. If it exits non-zero, the commit does not happen.
+
+The choice is *when* you find out a file breaks the rules:
+
+| | Where it runs | You find out | If it fails |
+| --- | --- | --- | --- |
+| **CI only** | GitHub, after `git push` | Minutes later, in a browser | The commit exists; you fix it in a follow-up commit |
+| **CI + hook** | Your machine, at `git commit` | Immediately, in the terminal | The commit never happens; you fix and retry |
+
+What it costs: every commit gets slower by however long the linters take —
+seconds here — and it occasionally blocks a commit you wanted to make anyway,
+mid-thought. It can always be bypassed with `git commit --no-verify`, which
+matters because a hook you cannot override becomes a hook people work around.
+
+It is also **local-only**: hooks are not committed by git, so each clone has to
+install it. In practice that means a `make hooks` or a line in the README.
+
+**My recommendation: yes, but only for the fast, non-negotiable checks** —
+formatting and lint. Leave the type checker and the link checker to CI, since
+those are slower and their failures are less clear-cut. That way a commit stays
+fast and the hook never becomes the thing you routinely skip.
+
+There is a real argument for CI-only: this is a single-developer project, so the
+hook mostly protects you from yourself, and a red CI on your own branch costs
+little. If the slowdown would annoy you, CI-only is defensible.
 
 ## 4.10 Exit criteria
 
