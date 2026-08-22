@@ -94,7 +94,7 @@ Status: `[ ]` not started · `[~]` in progress · `[x]` done
 
 ---
 
-### `[ ]` Phase 0 — Baseline and safety net
+### `[x]` Phase 0 — Baseline and safety net
 
 **Why first:** every later phase is a large-scale edit. Without a green
 baseline there is no way to tell a refactor regression from a pre-existing
@@ -112,7 +112,7 @@ failure.
 
 ---
 
-### `[ ]` Phase 1 — Documentation style guide + documentation map
+### `[x]` Phase 1 — Documentation style guide + documentation map
 
 **Why here:** the contract every later phase writes against. Two deliverables,
 both decisions rather than prose.
@@ -512,15 +512,23 @@ out — phases marked done, decision records archived.
   author is the repository owner alone. This applies to every file this plan
   produces.
 - **Tests green before every commit.** A doc-only pass has no excuse for a red suite.
-- **Existing documentation is not evidence.** The current READMEs, comments and
-  `.md` files are known to be error-prone and must not be relied on for *any*
-  decision or any new prose. **The code is the only source of truth.** This
-  applies to structural decisions as much as to documentation: if a comment
-  claims something about how two modules relate, verify it in the code before
-  acting on it. Documentation written *after* this plan began, and explicitly
-  verified against code, may be relied on — nothing earlier may. When a
-  discrepancy is found, log it in the fact ledger (Phase 2) rather than quietly
-  correcting it in passing.
+- **Existing documentation and comments are not evidence.** Nearly every comment
+  in this codebase was **written by AI, not by the author** — the frontend style
+  and accessibility work is the only exception. They are guesses that read like
+  knowledge, and they may be simply wrong.
+
+  So they carry no authority for *anything*: not for what the code does, and
+  **not for why it does it**. An existing comment stating a reason is not a
+  reason; it is an unsourced claim. Verify it independently or discard it —
+  never carry it forward just because it is already written down.
+
+  **The code, the schema, the database and the tests are the only sources of
+  truth.** Write only what they can verify. Where something matters and cannot
+  be verified, **record the uncertainty and ask** — never invent, never infer
+  from plausibility, never assume a previous comment got it right. Documentation
+  written *after* this plan began and explicitly verified may be relied on;
+  nothing earlier may. Log discrepancies in the fact ledger (Phase 2) rather
+  than quietly correcting them in passing.
 - **A found bug stops the work.** Note it. If the correct fix is clear and
   sensible, implement it and document both the bug and the fix. If it is not
   clear, **interrupt and ask for guidance** — do not continue past a known bug
@@ -623,6 +631,8 @@ this is the index.
 | — | Linters for Dockerfile / compose / YAML / HTML / Markdown | **Yes** — full roster in §6. |
 | — | Branch layout | **`code-cleanup/main`** integrates; **`code-cleanup/phase-<N>`** per phase, merged back with `--no-ff`; `main` only at the very end. No branch may be named plain `code-cleanup` — see §5. |
 | — | Commit attribution | **None.** No AI/Claude attribution in commits, comments or docs — see §5. |
+| — | Authority of existing comments | **None.** They are AI-written and may be wrong, including about intent. Verify independently or discard; ask rather than assume. Only the frontend style/accessibility material reflects real decisions, and it is kept because it is test-verifiable. |
+| — | `docs/` skeleton | **Built in Phase 1**, not Phase 7, so Phase 5 has real pages to move rationale into. Phase 7 becomes an editing job. |
 | — | Where the plan lives | **`docs/plan/`**, with this file as `README.md` and one `phase-N-*.md` per phase. Cross-cutting content stays here; per-phase detail is split out. |
 | — | The live test data | **Disposable and reproducible.** The running stack is a test stack. Lowers the severity of the Phase 3 volume hazard from data loss to wasted time — it still needs a deliberate decision, not an accident. |
 | 1 | `CLAUDE.md` | **You will run `/init` after this plan is finalized.** Not a plan deliverable. It should be pointed at the Phase 1 style guide once that exists, so the two do not drift. |
@@ -747,7 +757,7 @@ and verified in Phase 8.
 | Phase | Status | Branch | Notes |
 | --- | --- | --- | --- |
 | 0 — Baseline | `[x]` | `code-cleanup` | Done 2026-08-22. **Green baseline = 150/150 on an empty DB.** 4 findings logged. Detail: [phase-0-baseline.md](phase-0-baseline.md). |
-| 1 — Style guide + doc map | `[ ]` | | |
+| 1 — Style guide + doc map | `[x]` | `code-cleanup/phase-1` | Done 2026-08-22. Style guide, glossary, doc map and `docs/` skeleton in place. Detail: [phase-1-style-guide.md](phase-1-style-guide.md). |
 | 2 — Fact ledger | `[ ]` | | |
 | 3 — Structure | `[ ]` | | |
 | 4 — Dependencies | `[ ]` | | |
@@ -766,7 +776,7 @@ and verified in Phase 8.
 | Phase | Detailed plan | Status |
 | --- | --- | --- |
 | 0 — Baseline and safety net | [phase-0-baseline.md](phase-0-baseline.md) | `[x]` done |
-| 1 — Style guide + doc map | *not yet written* | `[ ]` |
+| 1 — Style guide + doc map | [phase-1-style-guide.md](phase-1-style-guide.md) | `[x]` done |
 | 2 — Fact ledger | *not yet written* | `[ ]` |
 | 3 — Structure | *not yet written* | `[ ]` |
 | 4 — Dependencies + tooling | *not yet written* | `[ ]` |
