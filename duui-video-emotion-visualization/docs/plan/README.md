@@ -512,6 +512,11 @@ out — phases marked done, decision records archived.
   is why the old remote `code-cleanup` branch is deleted rather than kept. `code-cleanup` reaches `main` only at the end of the whole pass. One
   commit per logical step; never mix a rename with a rewrite in the same commit,
   as that makes the diff unreviewable.
+- **Every commit message starts `Phase <N>: `**, followed by a lowercase
+  summary — `Phase 3: rename the importer package`. Without it the log gives no
+  way to tell which phase a change belongs to, and the phases are the only
+  structure this work has. It applies to every commit in a phase branch, not
+  only the ones that touch the plan.
 - **No AI attribution, anywhere.** Commits carry no `Co-Authored-By: Claude`
   trailer, no "generated with" line, and no "written or assisted by AI" note —
   not in commit messages, not in code comments, not in documentation. The commit
