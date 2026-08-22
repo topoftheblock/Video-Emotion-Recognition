@@ -12,7 +12,7 @@
  * job has been run there are none at all.
  */
 
-import { el, html } from "../dom.js";
+import { el, html } from "../lib/dom.js";
 import { compareNames, personColorFor, personName, state } from "../state.js";
 
 /**

@@ -99,8 +99,8 @@ backstop and depend on whoever is reviewing.
   `test_no_control_is_named_only_by_its_title`
 - **A name that describes state must change when the state does.** `"Play/Pause"`
   announces both and is never accurate about either. Move the icon and the name
-  together in one function — `syncPlayButton()` in `js/player.js` and
-  `syncToggleButton()` in `js/subtitles.js` are the pattern. → *judgement*, with
+  together in one function — `syncPlayButton()` in `js/playback/player.js` and
+  `syncToggleButton()` in `js/playback/subtitles.js` are the pattern. → *judgement*, with
   the initial value checked by `test_toggle_buttons_declare_their_pressed_state`
 - **Interpolating a value next to a name needs a separator, and the value needs
   naming.** `${name}<span>${score}</span>` with no whitespace concatenates into

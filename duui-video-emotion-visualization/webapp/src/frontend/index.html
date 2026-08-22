@@ -89,7 +89,7 @@
              CC button turns subtitles off. subtitleBox is the one
              translucent card -- transcript line on top, emotion label
              beneath, sharing a single background rather than each
-             carrying its own pill. js/subtitles.js hides it too,
+             carrying its own pill. js/playback/subtitles.js hides it too,
              separately from subtitleBar, for the frame-by-frame case
              where captions are on but neither line has anything to
              say at this instant (see the comment above
@@ -107,7 +107,7 @@
         </div>
       </div>
       <div class="transport">
-        <!-- Initial (paused) icon; js/player.js swaps it on play/pause
+        <!-- Initial (paused) icon; js/playback/player.js swaps it on play/pause
              and holds the matching pair of paths. -->
         <button id="playBtn" class="transport-btn" type="button" aria-label="Play">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.5 5v14l10.5-7z"/></svg>
@@ -115,7 +115,7 @@
         <button id="subtitleToggle" class="transport-toggle is-on" type="button"
                 aria-pressed="true" title="Hide subtitles">CC</button>
         <span class="time-readout"><span id="timeCurrent">0:00</span> <span class="time-sep">/</span> <span id="timeTotal">0:00</span></span>
-        <!-- The value is a position out of 1000; js/player.js keeps
+        <!-- The value is a position out of 1000; js/playback/player.js keeps
              aria-valuetext holding the clock instead, which is what a
              screen reader announces when it is present. -->
         <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0" step="1"

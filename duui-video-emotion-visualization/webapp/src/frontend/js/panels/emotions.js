@@ -16,9 +16,9 @@
  * the one thing in this app that would actually cost something.
  */
 
-import { el, html } from "../dom.js";
+import { el, html } from "../lib/dom.js";
 import { overlayEnabled, personColorFor, personName, readableTextColor, state } from "../state.js";
-import { coveredBy } from "../subtitles.js";
+import { coveredBy } from "../playback/subtitles.js";
 import {
   DISPLAY_LABELS,
   SAMPLE_TOLERANCE,

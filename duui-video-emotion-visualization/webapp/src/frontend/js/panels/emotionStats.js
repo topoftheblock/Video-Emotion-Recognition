@@ -7,7 +7,7 @@
  * about arithmetic; the two were interleaved and neither read clearly.
  */
 
-import { coveredBy } from "../subtitles.js";
+import { coveredBy } from "../playback/subtitles.js";
 
 /** Model labels that are not the word a reader wants to see. */
 export const DISPLAY_LABELS = { "<unk>": "unknown" };

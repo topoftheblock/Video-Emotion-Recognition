@@ -3,8 +3,8 @@
  * are live at this instant" helper every time-synced panel shares.
  */
 
-import { el } from "./dom.js";
-import { overlayEnabled, state } from "./state.js";
+import { el } from "../lib/dom.js";
+import { overlayEnabled, state } from "../state.js";
 
 /** Rows whose [start_time, end_time] window covers `t`. */
 export function coveredBy(rows, t) {

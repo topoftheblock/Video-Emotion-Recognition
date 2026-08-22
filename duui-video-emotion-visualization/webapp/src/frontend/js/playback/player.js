@@ -9,9 +9,9 @@
  * to import every panel in the app.
  */
 
-import { el } from "./dom.js";
-import { formatClock } from "./format.js";
-import { state } from "./state.js";
+import { el } from "../lib/dom.js";
+import { formatClock } from "../lib/format.js";
+import { state } from "../state.js";
 
 const frameSubscribers = [];
 

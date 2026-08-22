@@ -13,10 +13,10 @@
  * the renderers from having to import each other.
  */
 
-import { el } from "./dom.js";
-import { renderBoundingBoxes, syncCanvasSize } from "./overlay.js";
-import { initPlayer, onFrame, render } from "./player.js";
-import { initSubtitleToggle, renderSubtitle } from "./subtitles.js";
+import { el } from "./lib/dom.js";
+import { renderBoundingBoxes, syncCanvasSize } from "./playback/overlay.js";
+import { initPlayer, onFrame, render } from "./playback/player.js";
+import { initSubtitleToggle, renderSubtitle } from "./playback/subtitles.js";
 import { initAskPanel } from "./panels/ask.js";
 import { initJobBanner } from "./panels/jobs.js";
 import { initLegendDisclosures } from "./legend.js";

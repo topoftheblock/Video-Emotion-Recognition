@@ -8,9 +8,9 @@
  * by window containment the way segments are.
  */
 
-import { el } from "./dom.js";
-import { overlayEnabled, personColorFor, readableTextColor } from "./state.js";
-import { renderActiveList } from "./panels/people.js";
+import { el } from "../lib/dom.js";
+import { overlayEnabled, personColorFor, readableTextColor } from "../state.js";
+import { renderActiveList } from "../panels/people.js";
 
 const ctx = el.overlay.getContext("2d");
 

@@ -8,8 +8,8 @@
  * failed to load.
  */
 
-import { fetchGlobalPersons, fetchVideoData, fetchVideos } from "./api.js";
-import { el, html } from "./dom.js";
+import { fetchGlobalPersons, fetchVideoData, fetchVideos } from "./lib/api.js";
+import { el, html } from "./lib/dom.js";
 import { assignPersonColors, state } from "./state.js";
 import { renderCrossVideoPanel } from "./panels/crossVideo.js";
 import { initEmotionPanels } from "./panels/emotions.js";

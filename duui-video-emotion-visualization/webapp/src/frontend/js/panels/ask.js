@@ -9,10 +9,10 @@
  * view" puts every overlay back.
  */
 
-import { askQuestion } from "../api.js";
-import { el, html } from "../dom.js";
-import { formatMeta, formatTime } from "../format.js";
-import { render, seekOnceLoaded, seekTo } from "../player.js";
+import { askQuestion } from "../lib/api.js";
+import { el, html } from "../lib/dom.js";
+import { formatMeta, formatTime } from "../lib/format.js";
+import { render, seekOnceLoaded, seekTo } from "../playback/player.js";
 import { state } from "../state.js";
 import { loadVideo } from "../videoLoader.js";
 
