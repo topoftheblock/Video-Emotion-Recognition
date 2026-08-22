@@ -747,7 +747,7 @@ and verified in Phase 8.
 | Phase | Status | Branch | Notes |
 | --- | --- | --- | --- |
 | 0 — Baseline | `[x]` | `code-cleanup` | Done 2026-08-22. **Green baseline = 150/150 on an empty DB.** 4 findings logged. Detail: [phase-0-baseline.md](phase-0-baseline.md). |
-| 1 — Style guide + doc map | `[ ]` | | |
+| 1 — Style guide + doc map | `[~]` | `code-cleanup/phase-1` | Drafts written 2026-08-22; 4 questions open. Detail: [phase-1-style-guide.md](phase-1-style-guide.md). |
 | 2 — Fact ledger | `[ ]` | | |
 | 3 — Structure | `[ ]` | | |
 | 4 — Dependencies | `[ ]` | | |
@@ -766,7 +766,7 @@ and verified in Phase 8.
 | Phase | Detailed plan | Status |
 | --- | --- | --- |
 | 0 — Baseline and safety net | [phase-0-baseline.md](phase-0-baseline.md) | `[x]` done |
-| 1 — Style guide + doc map | *not yet written* | `[ ]` |
+| 1 — Style guide + doc map | [phase-1-style-guide.md](phase-1-style-guide.md) | `[~]` in progress |
 | 2 — Fact ledger | *not yet written* | `[ ]` |
 | 3 — Structure | *not yet written* | `[ ]` |
 | 4 — Dependencies + tooling | *not yet written* | `[ ]` |
