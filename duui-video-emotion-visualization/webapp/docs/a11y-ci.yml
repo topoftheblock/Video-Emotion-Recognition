@@ -2,11 +2,11 @@
 #
 # Phase 6.3 of accessibility.md, next to this file. It does nothing
 # where it sits. To turn it on, move it into `.github/workflows/` at the
-# *repository root* -- which is the parent of `duui-bundestag-stack`, not
+# *repository root* -- which is the parent of `duui-video-emotion-visualization`, not
 # this directory and not the stack. Run these from the repository root:
 #
 #     mkdir -p .github/workflows
-#     git mv duui-bundestag-stack/webapp/docs/a11y-ci.yml \
+#     git mv duui-video-emotion-visualization/webapp/docs/a11y-ci.yml \
 #            .github/workflows/accessibility.yml
 #
 # The `paths:` filters and `working-directory:` below are already written
@@ -30,8 +30,8 @@ name: Accessibility
 on:
   push:
     paths:
-      - "duui-bundestag-stack/webapp/src/frontend/**"
-      - "duui-bundestag-stack/webapp/tests/**"
+      - "duui-video-emotion-visualization/webapp/src/frontend/**"
+      - "duui-video-emotion-visualization/webapp/tests/**"
       - ".github/workflows/accessibility.yml"
   pull_request:
   workflow_dispatch:
@@ -56,7 +56,7 @@ jobs:
       # of that directory needs the application's own dependencies (a
       # database, an LLM client) and this job deliberately has none.
       - name: Accessibility checks
-        working-directory: duui-bundestag-stack/webapp
+        working-directory: duui-video-emotion-visualization/webapp
         run: |
           pytest \
             tests/test_contrast.py \
@@ -71,7 +71,7 @@ jobs:
       # whether the thresholds held.
       - name: Report
         if: always()
-        working-directory: duui-bundestag-stack/webapp
+        working-directory: duui-video-emotion-visualization/webapp
         run: |
           python3 tests/contrast_check.py || true
           python3 tests/cvd_check.py || true

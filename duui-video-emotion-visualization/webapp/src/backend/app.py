@@ -1,5 +1,5 @@
 """
-Web viewer backend for the DUUI Bundestag pipeline.
+Backend for the DUUI Video Emotion Visualization webapp.
 
 Serves two things:
   1. The video file itself, from VIDEO_DIR (range-request aware, so
@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
     # VIDEO_MEDIA_DIR comment and README "Docker architecture".
     VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 
-    app = FastAPI(title="DUUI Bundestag Video Viewer")
+    app = FastAPI(title="DUUI Video Emotion Visualization")
 
     @app.get("/healthz")
     def healthz():

@@ -83,6 +83,21 @@ Also **`.env`**, which is untracked but currently sets
 could reach the database. It must change with the rest or every DB-backed test
 silently skips again.
 
+### Where the "viewer" → "webapp" purge belongs
+
+Decided during step 1, because `app.py` carried both problems in one line.
+
+- **Phase 3** owns identifiers, filenames, and **user-facing strings** — anything
+  a person or another program consumes. The FastAPI `title=` is user-facing (it
+  is the browser tab and the OpenAPI document), so it was fixed here.
+- **Phase 5** owns prose in comments and docstrings. All 92 remaining "viewer"
+  occurrences are prose, and Phase 5 rewrites those comments wholesale — fixing
+  them now would mean editing the same lines twice.
+
+Checked before drawing the line: **no identifier anywhere contains "viewer"** —
+no variable, function, class, CSS class, or custom property. It is purely a
+prose problem, which is what makes the split clean.
+
 ### Group C — genuine references to the corpus. Keep (16 occurrences)
 
 `linking.py`, `media.py`, `text_emotion.py`, `typesystem.py`, `config.py` × 2,
