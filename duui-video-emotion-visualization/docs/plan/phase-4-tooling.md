@@ -253,24 +253,36 @@ What has to exist by the end of this phase:
   D13 showed how invisible that is; Phase 6 fixes it properly with
   testcontainers, but the runner should not hide it in the meantime.
 
-### What happens to `.venv`
+### `.venv` is deleted
 
-It is Python 3.12.3 and will no longer match the runtime. It also cannot run the
-app at all (no `uvicorn`, §4.1). Three options, and this needs a decision:
+**Decided 2026-08-22.** It is Python 3.12.3, will not match the runtime, cannot
+run the app (no `uvicorn`, §4.1), and a green run from it would mean nothing.
+Keeping it as an editor convenience was considered and rejected: the risk is not
+the directory, it is the belief that results from it count.
 
-1. **Delete it.** Honest — nothing should run from it any more. Costs editor
-   autocomplete and go-to-definition unless the editor is pointed at the
-   container.
-2. **Keep it for the editor only**, and say so in a comment at the top of the
-   project docs: not a runtime, not a test environment, just symbols. Requires
-   accepting that it resolves 3.12 semantics for 3.14 code.
-3. **Keep it and add `uvicorn`**, closing the gap found above — but it still
-   cannot run 3.14, so it stays a half-truth.
+It is gitignored, so removing it is a local action plus a documentation change:
+**`README.md:46` currently tells the reader to run `.venv/bin/python -m pytest`**
+and must point at the Docker service instead. `docs/plan/phase-0-baseline.md`
+keeps its references — that file is a record of what was true then, not
+instructions.
 
-**Recommendation: 2.** Keeping it is genuinely useful for editing, and the
-danger is not its existence but the belief that a green run from it means
-anything. That belief is fixed by documenting the Docker command as the only
-supported one, which this phase does anyway.
+The consequence to plan around: **ruff, for the pre-commit hook, then has no
+Python to live in.** It is a standalone binary, so install it via `pipx`, the
+system package manager, or `uv tool`, configured with `target-version = "py314"`
+so it judges the code by the runtime rather than by whatever interpreter it
+happens to run under. That instruction has to be written down, or the hook is
+uninstallable.
+
+### The test service creates its own database
+
+D13 was caused by nothing recreating `duui_baseline_test` after a rebuild. The
+runner should close that hole rather than leave it for Phase 6: **the service
+ensures the empty test database exists and has `schema.sql` applied before it
+runs `pytest`.**
+
+Two things follow. A rebuild stops silently degrading the suite from 150 passed
+to 121 passed and 29 skipped, and the green baseline stops depending on a
+manual step nobody has written down.
 
 ## 4.5 The type-checking ratchet
 
@@ -312,11 +324,12 @@ Each step is one commit; suite green before each.
 
 | # | Step | Risk |
 | --- | --- | --- |
-| 0 | **`docker compose down -v`** — before any change, since pg18 cannot reuse the pg16 volume (§4.2 Q2) | Destroys the corpus, by design |
+| 0a | **Add the Docker test service first** (§4.4b), on the current 3.12 images, and confirm it reproduces 150/150 | None — this is the safety net for everything after |
+| 0b | **`docker compose down -v`** — only once 0a passes, since pg18 cannot reuse the pg16 volume (§4.2 Q2) | Destroys the corpus, by design |
 | 1 | Declare `lxml`, `starlette` and `uvicorn`; set `requires-python = ">=3.14"`; review `requirements-dev.txt` against actual imports | None |
 | 2 | ~~Answer Q1/Q2 by experiment~~ — **done**, §4.3 | — |
 | 3 | Apply the bumps: `python:3.14-slim` ×3, `pgvector/pgvector:pg18`; then `up --build`, re-import, re-link, compare row counts | Medium |
-| 3b | Add the Docker test runner (§4.4b) and make it the documented way to run the suite | Low |
+| 3b | Delete `.venv`; repoint `README.md:46` at the test service; document how to install `ruff` standalone | Low |
 | 4 | Apply the pinning strategy from Q3 | Low |
 | 5 | Add `ruff` config + `pyproject` tool sections; **do not run the formatter yet** | None |
 | 6 | **Run the formatter — its own commit, nothing else in it** | Touches ~182 lines across 74 files |
