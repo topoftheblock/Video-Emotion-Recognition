@@ -3,7 +3,7 @@
 *Detailed plan for Phase 2. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` in progress, started 2026-08-22.
+Status: `[x]` complete, 2026-08-22.
 Branch: `code-cleanup/phase-2`.
 
 ## 2.0 What this phase is for
@@ -261,7 +261,38 @@ reading happens now or as part of rewriting each file.
 
 - [x] Every module placed and recorded in [`phase-2-modules.md`](phase-2-modules.md)
 - [x] Shared contracts written up (§2.4)
-- [x] `data_schema_with_types.md` verified against `schema.sql` — D1–D3
-- [x] Discrepancy register: D1–D9, every entry assigned to a phase
-- [ ] Line-by-line reading of `config.py`, `media.py`, `parsers/`, `query_agent/`, the frontend JS and CSS — see §2.5
-- [ ] README claims about commands and paths verified — 968 lines, not yet started
+- [x] Design document verified against `schema.sql` — D1–D3
+- [x] Discrepancy register: **D1–D12**, every entry assigned to a phase
+- [x] Line-by-line reading — **deferred to Phase 5 by decision.** It is the same
+      reading Phase 5 must do to rewrite each file; doing it twice buys nothing.
+- [x] README claims verified — **moot.** The README was quarantined instead of
+      checked (§2.7), so there is nothing left to verify.
+
+**Phase 2 is complete.**
+
+## 2.7 The legacy quarantine
+
+The root `README.md` and `pgvector-db/data_schema_with_types.md` were moved to
+[`docs/legacy/`](../legacy/README.md) rather than verified or rewritten.
+
+Verifying them now would have been work thrown away: much of what they claim
+describes commands, paths and service names that Phases 3 and 4 will change.
+Rewriting them now is Phase 7's job, and Phase 7 has to write against a finished
+state that does not exist yet. Leaving them in place was the worse option — the
+root README is the first file anyone opens and it reads as authoritative.
+
+They are kept, not deleted, because their *claims* are unreliable while their
+*topics* are real: quickstart, configuration, operations, cross-video identity,
+job status. Phase 7 uses that list so no section is forgotten, then deletes both.
+
+A short replacement `README.md` now sits at the root. Every claim in it was
+checked against the running system before it was written.
+
+## 2.8 What this hands to later phases
+
+| To | What |
+| --- | --- |
+| Phase 3 | D9 (`/api/stats` has no consumer — keep, but registered). The `job_runs` DDL exists in four identical copies. `queries/stats.py` is 120 lines with no product behind it. |
+| Phase 5 | D4 (no `connect_timeout`), D5 (importer's misleading skip message), D7 (state the composite-key reason in checkable form), D8 (document `video_id` instability), D10 (terminology in `accessibility.md`), **D12 (17 stale doc references across 15 files)**. Plus the line-by-line reading deferred here. |
+| Phase 6 | D7's coverage gap — nothing tests two videos sharing a `person_id`, which is the case the composite key exists for. D9's tests. |
+| Phase 7 | §2.4's shared contracts → `docs/architecture.md`. The design document's tables → `docs/database.md`. Both legacy files deleted at the end. |

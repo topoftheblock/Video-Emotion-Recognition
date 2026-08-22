@@ -156,7 +156,7 @@ what it must **not** cover because another document owns it.
 
 ---
 
-### `[ ]` Phase 2 — Fact ledger (what the system actually does)
+### `[x]` Phase 2 — Fact ledger (what the system actually does)
 
 **Why here:** supplies the source material for every rewrite in phases 5 and 7,
 and is the only defence against copying existing errors forward.
@@ -786,7 +786,7 @@ and verified in Phase 8.
 | --- | --- | --- | --- |
 | 0 — Baseline | `[x]` | `code-cleanup` | Done 2026-08-22. **Green baseline = 150/150 on an empty DB.** 4 findings logged. Detail: [phase-0-baseline.md](phase-0-baseline.md). |
 | 1 — Style guide + doc map | `[x]` | `code-cleanup/phase-1` | Done 2026-08-22. Style guide, glossary, doc map and `docs/` skeleton in place. Detail: [phase-1-style-guide.md](phase-1-style-guide.md). |
-| 2 — Fact ledger | `[~]` | `code-cleanup/phase-2` | D1–D12 registered; legacy docs quarantined. Line-by-line reading deferred to Phase 5. |
+| 2 — Fact ledger | `[x]` | `code-cleanup/phase-2` | Done 2026-08-22. D1–D12 registered, contracts verified, legacy docs quarantined. Line-by-line reading deferred to Phase 5. |
 | 3 — Structure | `[ ]` | | |
 | 4 — Dependencies | `[ ]` | | |
 | 5 — In-file docs | `[ ]` | | |
@@ -805,7 +805,7 @@ and verified in Phase 8.
 | --- | --- | --- |
 | 0 — Baseline and safety net | [phase-0-baseline.md](phase-0-baseline.md) | `[x]` done |
 | 1 — Style guide + doc map | [phase-1-style-guide.md](phase-1-style-guide.md) | `[x]` done |
-| 2 — Fact ledger | [phase-2-ledger.md](phase-2-ledger.md) · [phase-2-modules.md](phase-2-modules.md) | `[~]` in progress |
+| 2 — Fact ledger | [phase-2-ledger.md](phase-2-ledger.md) · [phase-2-modules.md](phase-2-modules.md) | `[x]` done |
 | 3 — Structure | *not yet written* | `[ ]` |
 | 4 — Dependencies + tooling | *not yet written* | `[ ]` |
 | 5 — In-file documentation | *not yet written* | `[ ]` |
