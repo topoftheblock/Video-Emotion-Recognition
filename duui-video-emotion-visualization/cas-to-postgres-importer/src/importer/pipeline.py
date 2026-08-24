@@ -14,9 +14,6 @@ from pathlib import Path
 from cassis import load_cas_from_xmi
 from lxml import etree
 
-from .config import INPUT_VIDEO_DIR, ON_EXISTING, ON_EXISTING_CHOICES, XMI_FILE
-from .db import delete_video, find_video_by_filename, get_db_connection
-from .job_runs import JobRun
 from .cas.sofas import (
     cas_source,
     find_media_sofas,
@@ -24,10 +21,13 @@ from .cas.sofas import (
     select_video_sofa,
     strip_media_sofas,
 )
-from .video_files import ensure_video_available
-from .inputs import default_input_paths, describe_missing_inputs, resolve_xmi_paths
-from .parsers import PARSE_STEPS
 from .cas.typesystem import load_merged_typesystem, loading_cas_quietly
+from .config import INPUT_VIDEO_DIR, ON_EXISTING, ON_EXISTING_CHOICES, XMI_FILE
+from .db import delete_video, find_video_by_filename, get_db_connection
+from .inputs import default_input_paths, describe_missing_inputs, resolve_xmi_paths
+from .job_runs import JobRun
+from .parsers import PARSE_STEPS
+from .video_files import ensure_video_available
 
 
 def parse_and_insert(cas, cursor, on_step=None, context=None):

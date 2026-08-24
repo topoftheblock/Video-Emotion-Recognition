@@ -11,7 +11,6 @@ from backend.query_agent.sql_guard import (
     validate_select_only,
 )
 
-
 # ---------------- Pure validation (no DB needed) ----------------
 
 

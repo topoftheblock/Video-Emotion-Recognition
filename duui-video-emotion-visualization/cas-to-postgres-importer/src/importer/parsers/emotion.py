@@ -11,13 +11,13 @@ it was computed from, which in turn links to a PersonTrack -> FaceIdentity.
 falls back to walking that reference chain.
 """
 
-from ..cas.views import select_across_views
-from ..cas.types import TYPES
 from ..cas.person_resolution import (
     resolve_person_id_via_face_fs,
     resolve_person_id_via_voice_fs,
 )
+from ..cas.types import TYPES
 from ..cas.typesystem import as_list, get_xmi_id
+from ..cas.views import select_across_views
 
 
 def _resolve_emotion_person_id(emotion, context):

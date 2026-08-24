@@ -24,10 +24,10 @@ parser steps (which run after this one -- see parsers/__init__.py)
 can use them via person_resolution.py.
 """
 
-from ..cas.views import select_across_views
-from ..cas.types import TYPES
 from ..cas.person_resolution import parse_person_label
+from ..cas.types import TYPES
 from ..cas.typesystem import get_xmi_id
+from ..cas.views import select_across_views
 
 
 def _parse_persons(cas, cursor, video_id, context):

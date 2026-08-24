@@ -29,16 +29,16 @@ two columns at all.
 """
 
 from . import (
-    video,
+    detection,
+    embedding,
+    emotion,
     model,
     person,
-    segment,
-    token,
-    embedding,
     presence,
-    detection,
-    emotion,
+    segment,
     text_emotion,
+    token,
+    video,
 )
 
 PARSE_STEPS = [

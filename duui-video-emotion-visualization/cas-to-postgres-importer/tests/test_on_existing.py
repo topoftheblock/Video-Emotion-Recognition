@@ -13,8 +13,8 @@ import base64
 import pytest
 from lxml import etree
 
-from importer.cas import sofas
 from importer.__main__ import _split_args
+from importer.cas import sofas
 from importer.config import ON_EXISTING_CHOICES
 
 
