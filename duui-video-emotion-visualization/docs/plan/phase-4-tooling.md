@@ -220,6 +220,71 @@ identically, and is on its sixth minor release. The migration cost that made
 this hard is gone: Phase 3 proved the corpus rebuilds from source CAS in about
 ten minutes, so this is a teardown and re-import, not a `pg_upgrade`.
 
+### What this evaluation missed, and why
+
+**pg18 does not start against this project's Compose file**, and the test above
+did not reveal it:
+
+```
+Error: in 18+, these Docker images are configured to store database data in a
+       format which is compatible with "pg_ctlcluster" (specifically, using
+       major-version-specific directory names).
+       Counter to that, there appears to be PostgreSQL data in:
+         /var/lib/postgresql/data (unused mount/volume)
+```
+
+Postgres 18 moved the data directory from `/var/lib/postgresql/data` to a
+major-version subdirectory, `/var/lib/postgresql/18/docker`. The service mounted
+its volume on the old path, so the image saw an unused mount and refused to
+start, restarting in a loop.
+
+The fix is one line — mount `db_data:/var/lib/postgresql`, the parent — and it is
+what the image documents. It also makes a future `pg_upgrade --link` possible,
+since both versions then live inside a single mount.
+
+**The method had a hole.** The evaluation ran `docker run` on a throwaway
+container with **no volume mounted**, so it exercised the schema and the vector
+operators but never the one thing a major-version bump most often breaks: how
+data is laid out on disk. A version test that does not mount the project's own
+volume is testing a different deployment from the one being shipped.
+
+Recorded because the same hole would recur on the next bump: **test a database
+version through the project's Compose file, not through a bare container.**
+
+## 4.3b The bump, as applied
+
+| | Before | After |
+| --- | --- | --- |
+| Python (4 images) | 3.12 | **3.14.7** |
+| Postgres | 16.15 | **18.6** |
+| pgvector | 0.8.6 | 0.8.6 |
+
+Corpus rebuilt from source CAS and compared to the counts captured before the
+teardown:
+
+| Table | Rebuilt | Before |
+| --- | --- | --- |
+| videos | 10 | 10 |
+| persons | 23 | 23 |
+| segments | 920 | 920 |
+| emotion_scores | 375,205 | 375,205 |
+| face_detections | 42,930 | 42,930 |
+| face_embeddings | 330 | 330 |
+| voice_embeddings | 122 | 122 |
+| global_persons | 8 | 8 |
+
+Every count identical. The extracted videos also matched byte for byte — each of
+the eight embedded videos came out at exactly the size it had on Postgres 16 and
+Python 3.12.
+
+Suite: **150 passed** via `docker compose run --rm tests`. Webapp: all four
+endpoints 200, ten videos served with every file present. Both jobs recorded
+`finished` runs in `job_runs`.
+
+Six stale version references were also corrected — a comment in
+`pgvector-db/Dockerfile`, four `python:3.12-slim` commands in the accessibility
+documentation, and `python-version` in the inactive CI template.
+
 ## 4.4 Tooling configuration
 
 The roster is [§6 of the plan](README.md#6-the-linter-and-checker-roster). Two

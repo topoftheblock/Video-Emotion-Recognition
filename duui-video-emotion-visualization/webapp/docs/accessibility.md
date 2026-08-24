@@ -22,7 +22,7 @@ application dependencies — which is what makes it cheap enough to run on every
 change:
 
 ```bash
-docker run --rm -v "$PWD":/w -w /w python:3.12-slim sh -c \
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim sh -c \
   "pip install -q pytest && pytest tests/test_contrast.py tests/test_palette.py \
    tests/test_markup.py tests/test_stylesheets.py tests/test_scripts.py -q"
 ```
@@ -30,8 +30,8 @@ docker run --rm -v "$PWD":/w -w /w python:3.12-slim sh -c \
 For the colour reports rather than pass/fail:
 
 ```bash
-docker run --rm -v "$PWD":/w -w /w python:3.12-slim python3 tests/contrast_check.py
-docker run --rm -v "$PWD":/w -w /w python:3.12-slim python3 tests/cvd_check.py
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 tests/contrast_check.py
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 tests/cvd_check.py
 ```
 
 The second half needs the app running, because three of the five states it

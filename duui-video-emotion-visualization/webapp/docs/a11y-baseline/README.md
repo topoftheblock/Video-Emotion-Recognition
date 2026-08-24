@@ -18,13 +18,13 @@ to this directory.
 **Contrast** — pure functions over committed values; no browser, no database.
 
 ```bash
-docker run --rm -v "$PWD":/w -w /w python:3.12-slim python3 webapp/tests/contrast_check.py
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 webapp/tests/contrast_check.py
 ```
 
 The pytest gate that enforces it:
 
 ```bash
-docker run --rm -v "$PWD":/w -w /w python:3.12-slim sh -c "pip install -q pytest psycopg2-binary && pytest webapp/tests/test_contrast.py -q"
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim sh -c "pip install -q pytest psycopg2-binary && pytest webapp/tests/test_contrast.py -q"
 ```
 
 `tests/test_contrast.py` carries a `KNOWN_FAILURES` baseline rather than

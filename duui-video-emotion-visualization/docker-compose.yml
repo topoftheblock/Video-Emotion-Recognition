@@ -116,7 +116,14 @@ services:
     volumes:
       # The database itself. schema.sql is baked into the image and runs
       # automatically the first time this volume is created (empty).
-      - db_data:/var/lib/postgresql/data
+      #
+      # Mounted at /var/lib/postgresql, NOT /var/lib/postgresql/data. Postgres 18
+      # changed the layout: data now lives in a major-version subdirectory
+      # (/var/lib/postgresql/18/docker), so the image treats a mount on the old
+      # path as an unused volume and refuses to start. Mounting the parent is
+      # what the image expects, and it is also what makes `pg_upgrade --link`
+      # possible later, since both versions then sit inside one mount.
+      - db_data:/var/lib/postgresql
     ports:
       # Host port only -- the other containers reach Postgres as
       # pgvector-db:5432 on the compose network regardless of this. Change it if

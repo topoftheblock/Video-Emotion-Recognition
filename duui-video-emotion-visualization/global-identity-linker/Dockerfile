@@ -11,7 +11,7 @@
 # global-identity-linker/, nothing is pulled in from
 # elsewhere in the stack.
 #   docker build -t duui-video-emotion-visualization/global-identity-linker global-identity-linker/
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
