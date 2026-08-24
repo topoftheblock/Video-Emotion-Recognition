@@ -354,11 +354,15 @@ keeps its references — that file is a record of what was true then, not
 instructions.
 
 The consequence to plan around: **ruff, for the pre-commit hook, then has no
-Python to live in.** It is a standalone binary, so install it via `pipx`, the
-system package manager, or `uv tool`, configured with `target-version = "py314"`
-so it judges the code by the runtime rather than by whatever interpreter it
-happens to run under. That instruction has to be written down, or the hook is
-uninstallable.
+Python to live in.** It is a standalone binary, so it installs via `pipx`, the
+system package manager, or `uv tool`, and takes `target-version = "py314"` from
+the config so it judges the code by the runtime rather than by whatever
+interpreter it happens to run under.
+
+Writing that instruction down belongs with **step 10**, not here: ruff is not
+part of the project until step 5, and there is no contributor-setup section to
+put it in until Phase 7. Documenting the install of a tool the repository does
+not yet use would be a page describing something that does not exist.
 
 ### The test service creates its own database
 
@@ -487,7 +491,7 @@ Each step is one commit; suite green before each.
 | 1 | Declare `lxml` and `starlette`; review `requirements-dev.txt` against actual imports. (`uvicorn` was already declared; `requires-python` withdrawn — §4.1) | None |
 | 2 | ~~Answer Q1/Q2 by experiment~~ — **done**, §4.3 | — |
 | 3 | Apply the bumps: `python:3.14-slim` ×3, `pgvector/pgvector:pg18`; then `up --build`, re-import, re-link, compare row counts | Medium |
-| 3b | Delete `.venv`; repoint `README.md:46` at the test service; document how to install `ruff` standalone | Low |
+| 3b | Delete `.venv`; repoint `README.md` at the test service. (The `ruff` install instructions move to step 10, where the hook that needs them is created.) | Low |
 | 4 | Apply the pinning strategy from Q3 | Low |
 | 5 | Add `ruff` config + `pyproject` tool sections; **do not run the formatter yet** | None |
 | 6 | **Run the formatter — its own commit, nothing else in it** | Touches ~182 lines across 74 files |
