@@ -321,15 +321,39 @@ test_inputs.py:135: root bypasses directory permissions
 
 `test_unreadable_directory_is_reported_as_a_permission_problem` chmods a
 directory to `0o000` and expects a permission error. Root ignores that, so the
-test skips rather than passing vacuously.
+test skips rather than passing vacuously. Running as anyone else: **150 passed,
+0 skipped**.
 
-Setting `user:` on the service fixed it — **150 passed, 0 skipped**. Worth
-noting where this leads: it is the first concrete cost of the "all four
-Dockerfiles run as root" finding from the linter roster. A container running as
-root did not fail, it silently tested one thing less.
+**Where it belongs, re-checked:** the fix lives in `Dockerfile.tests` as a
+`USER` directive, not in the Compose service. Reasons:
 
-The uid is `${DUUI_TEST_UID:-1000}`, overridable, because the mounted source is
-owned by the host user.
+- It is correct by default, including for anyone running the image directly.
+- **Which** non-root user is irrelevant — verified at uid 1000 and 1234, both
+  150 passed with no warnings. The mounted source is world-readable, and pytest
+  degrades quietly when it cannot write its cache. Only *not being root*
+  matters, so pinning it to the host's ids was solving a problem that does not
+  exist.
+- It is the same fix the other three images need, written once where it can be
+  copied from.
+
+The Compose `user:` override stays, but now documented as what it actually is:
+needed only by a host whose ids differ *and* which needs the container to write
+into the mounted source. Not needed to run the tests.
+
+### This promotes the root-user finding
+
+"All four Dockerfiles run as root" entered the plan as a `hadolint` nit from the
+linter roster — a security abstraction with no demonstrated cost.
+
+It now has one. Running as root did not fail anything; it **silently made one
+fewer assertion**. That is a better argument than the security case, and it
+makes adding `USER` to `webapp`, `cas-to-postgres-importer` and
+`global-identity-linker` a real item rather than a lint suggestion.
+
+Deferred within this phase to step 7, alongside `hadolint` itself, because those
+three images write to the video store and the database and need their
+permissions checked rather than assumed — unlike the test runner, which writes
+nothing.
 
 ## 4.5 The type-checking ratchet
 
@@ -381,6 +405,7 @@ Each step is one commit; suite green before each.
 | 5 | Add `ruff` config + `pyproject` tool sections; **do not run the formatter yet** | None |
 | 6 | **Run the formatter — its own commit, nothing else in it** | Touches ~182 lines across 74 files |
 | 7 | Add the remaining Python-side linters (`mypy` lenient, `sqlfluff`, `hadolint`, `yamllint`, `actionlint`, `markdownlint`, link checker) | Low |
+| 7b | Add `USER` to the other three Dockerfiles, verifying each still writes what it must (§4.4c) | Medium — they write to the video store and the database |
 | 8 | Add `package.json` and the JS/CSS/HTML/Markdown tooling; run `prettier` in **its own commit** | Touches most JS and CSS |
 | 9 | Write the CI workflow; verify it fires on a change inside the project and stays silent on one outside | Low |
 | 10 | Add the pre-commit hook for `ruff format --check` and `ruff check` (§4.9b) | Low |

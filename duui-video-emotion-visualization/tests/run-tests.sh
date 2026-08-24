@@ -5,5 +5,5 @@
 # run never issues CREATE DATABASE against whatever DUUI_DB_NAME happens to
 # point at.
 set -e
-python /app/tools/ensure_test_db.py
+python /app/tests/ensure_test_db.py
 exec python -m pytest "$@"

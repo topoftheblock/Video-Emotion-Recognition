@@ -225,10 +225,10 @@ services:
       DUUI_DB_NAME: ${DUUI_TEST_DB_NAME:-duui_video_emotion_test}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
-    # Not root. One test asserts that an unreadable input directory is reported
-    # as a permission problem, and root bypasses directory permissions, so it
-    # skips itself rather than passing vacuously -- the suite is 149 + 1 skipped
-    # as root and 150 as anyone else. Override if your host ids differ.
+    # The image already runs as a non-root user, which is what keeps the suite
+    # at 150 rather than 149 + 1 skipped -- see Dockerfile.tests. This override
+    # exists only for a host whose ids differ and which needs the container to
+    # write into the mounted source; it is not needed to run the tests.
     user: "${DUUI_TEST_UID:-1000}:${DUUI_TEST_GID:-1000}"
     volumes:
       # Read-write because pytest writes nothing but the source has to be live;
