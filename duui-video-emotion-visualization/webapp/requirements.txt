@@ -5,6 +5,9 @@
 # Keeping the two requirement sets apart keeps this image small and
 # free of a UIMA library it never touches.
 fastapi>=0.110
+# app.py imports starlette.responses directly. FastAPI is built on starlette and
+# requires it, so this too was resolving by luck rather than by declaration.
+starlette>=0.46
 uvicorn[standard]>=0.29
 psycopg2-binary>=2.9
 python-dotenv>=1.0

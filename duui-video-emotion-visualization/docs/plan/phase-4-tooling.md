@@ -71,11 +71,34 @@ machine.** Every test run, from this phase onward, happens inside a container.
 
 That is a workflow change, not a footnote — see §4.4b.
 
-### No `requires-python` anywhere
+### `requires-python` would have no effect here
 
-None of the four `pyproject.toml` files declares one. The images say
-`python:3.12-slim`; nothing else states a floor, so a contributor on 3.9 gets
-confusing failures rather than a clear refusal.
+The four `pyproject.toml` files contain **only** `[tool.pytest.ini_options]` —
+no `[project]` table and no `build-system`. Nothing in this repository is a
+distribution: the requirements files are installed *into* an interpreter the
+Dockerfile has already chosen.
+
+`requires-python` is a `[project]` field, so declaring it would mean inventing a
+`[project]` table with a name and a version for something that is not a package,
+to hold a field **pip would never consult**. That is decoration claiming to be a
+constraint.
+
+The original worry — a contributor on the wrong interpreter getting confusing
+failures — was also dissolved by a later decision: the only supported way to run
+the suite is now `docker compose run --rm tests`, which pins the interpreter. A
+contributor's local Python is no longer able to produce a confusing failure,
+because it is no longer used.
+
+**So the version gets declared where it is actually enforced or actually read:**
+
+| Where | What it does |
+| --- | --- |
+| The four `Dockerfile`s | `FROM python:3.14-slim` — the only real enforcement |
+| `[tool.ruff] target-version = "py314"` | Judges syntax by the runtime, not by whatever runs ruff |
+| `[tool.mypy] python_version = "3.14"` | Same, for type checking |
+| The README (Phase 7) | Where a human looks |
+
+Step 5 and step 7 carry the tool settings; step 3 carries the Dockerfiles.
 
 ### Scale of what the tooling will touch
 
@@ -100,9 +123,8 @@ confusing failures rather than a clear refusal.
 All three Dockerfiles move to `python:3.14-slim`. Evidence in §4.3: identical
 test results, and 3.12 is already security-only.
 
-`requires-python = ">=3.14"` — **only** 3.14. It is the one version tested, and
-claiming support for a version nobody exercises is the kind of unverified claim
-the style guide forbids.
+~~`requires-python = ">=3.14"`~~ — **withdrawn during step 1; it would have done
+nothing.** See §4.1's revised note.
 
 ### Q2 — Postgres/pgvector — **decided: pg18**
 
@@ -397,7 +419,7 @@ Each step is one commit; suite green before each.
 | --- | --- | --- |
 | 0a | ~~Add the Docker test service first~~ — **done**, §4.4c | — |
 | 0b | **`docker compose down -v`** — only once 0a passes, since pg18 cannot reuse the pg16 volume (§4.2 Q2) | Destroys the corpus, by design |
-| 1 | Declare `lxml`, `starlette` and `uvicorn`; set `requires-python = ">=3.14"`; review `requirements-dev.txt` against actual imports | None |
+| 1 | Declare `lxml` and `starlette`; review `requirements-dev.txt` against actual imports. (`uvicorn` was already declared; `requires-python` withdrawn — §4.1) | None |
 | 2 | ~~Answer Q1/Q2 by experiment~~ — **done**, §4.3 | — |
 | 3 | Apply the bumps: `python:3.14-slim` ×3, `pgvector/pgvector:pg18`; then `up --build`, re-import, re-link, compare row counts | Medium |
 | 3b | Delete `.venv`; repoint `README.md:46` at the test service; document how to install `ruff` standalone | Low |
@@ -475,7 +497,8 @@ little. If the slowdown would annoy you, CI-only is defensible.
 
 ## 4.10 Exit criteria
 
-- [ ] `lxml`, `starlette` and `uvicorn` declared; `requires-python = ">=3.14"`
+- [ ] `lxml` and `starlette` declared; the 3.14 target stated in the Dockerfiles
+      and in the ruff and mypy configs
 - [ ] Python 3.14 and pgvector pg18 in place; corpus rebuilt and verified
 - [ ] A short Docker command runs the whole suite, documented as the only
       supported way; `.venv`'s status decided and written down
