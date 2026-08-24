@@ -136,7 +136,10 @@ def test_models_are_shared_across_videos_not_duplicated(db_cursor):
     # Two "CAS files" naming the same model: one row, and both imports
     # learn the same model_id for their own xmi:id.
     contexts = []
-    for xmi_id, cas in ((11, [FakeMetaData("insightface")]), (77, [FakeMetaData("insightface")])):
+    for xmi_id, cas in (
+        (11, [FakeMetaData("insightface")]),
+        (77, [FakeMetaData("insightface")]),
+    ):
         context = {}
         for metadata in cas:
             db_cursor.execute(

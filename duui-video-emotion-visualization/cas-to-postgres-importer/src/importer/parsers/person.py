@@ -43,10 +43,10 @@ def _parse_persons(cas, cursor, video_id, context):
         # Prefer an explicit clip_label; otherwise the human-readable
         # personId ("person_1"); otherwise fall back to the raw
         # encoded label string.
-        clip_label = getattr(
-            person, "clip_label", getattr(person, "personId", label)
+        clip_label = getattr(person, "clip_label", getattr(person, "personId", label))
+        audio_video_match_score = getattr(
+            person, "match_score", label_parts.get("score")
         )
-        audio_video_match_score = getattr(person, "match_score", label_parts.get("score"))
 
         cursor.execute(
             """

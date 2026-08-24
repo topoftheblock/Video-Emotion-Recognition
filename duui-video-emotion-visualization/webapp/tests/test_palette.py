@@ -13,7 +13,6 @@ roughly one man in twelve. That is a property worth pinning down rather
 than re-deriving by eye whenever someone likes a different blue.
 """
 
-
 import cvd_check
 
 
@@ -28,7 +27,9 @@ def test_no_two_person_colours_converge_under_any_deficiency():
     assert not convergent, (
         f"palette pairs below dE2000 {cvd_check.MIN_SEPARATION} "
         "(indistinguishable on the video, with no text fallback):\n"
-        + "\n".join(f"  {kind:13} {a} vs {b}: {de:.2f}" for kind, a, b, de in convergent)
+        + "\n".join(
+            f"  {kind:13} {a} vs {b}: {de:.2f}" for kind, a, b, de in convergent
+        )
     )
 
 
@@ -59,4 +60,6 @@ def test_simulation_is_a_no_op_for_a_neutral_colour():
     plausible-looking but wrong separations."""
     for kind in cvd_check.CVD_MATRICES:
         out = cvd_check.simulate((128, 128, 128), kind)
-        assert all(abs(c - 128) <= 6 for c in out), f"{kind} moved a neutral grey to {out}"
+        assert all(abs(c - 128) <= 6 for c in out), (
+            f"{kind} moved a neutral grey to {out}"
+        )

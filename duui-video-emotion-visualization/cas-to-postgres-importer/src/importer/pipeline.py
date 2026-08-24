@@ -55,7 +55,6 @@ def parse_and_insert(cas, cursor, on_step=None, context=None):
     return context
 
 
-
 def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
     """
     Load one CAS, parse it, commit to the database, and place the video
@@ -163,6 +162,7 @@ def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+
         # The step counter goes in the phase text, not in
         # progress_current: that pair counts files for the whole run,
         # and a bar that switched scale halfway through a batch would
@@ -198,7 +198,9 @@ def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
     # not interpreted.
     if job is not None:
         job.update(phase=f"placing video for {Path(xmi_file).name}")
-    ensure_video_available(context.get("video_filename"), INPUT_VIDEO_DIR, video_payload)
+    ensure_video_available(
+        context.get("video_filename"), INPUT_VIDEO_DIR, video_payload
+    )
 
     print(f"Finished {xmi_file}")
     return "replaced" if replaced else "imported"
@@ -259,14 +261,13 @@ def run_many(paths=None, on_existing=None):
                 failed.append((xmi_file, exc))
 
         outcomes["failed"] = len(failed)
-        summary = ", ".join(
-            f"{count} {name}" for name, count in outcomes.items() if count
-        ) or "nothing to do"
+        summary = (
+            ", ".join(f"{count} {name}" for name, count in outcomes.items() if count)
+            or "nothing to do"
+        )
         job.update(current=len(xmi_files), message=summary, force=True)
 
-    print(
-        f"\nDone: {summary} (of {len(xmi_files)} file(s))."
-    )
+    print(f"\nDone: {summary} (of {len(xmi_files)} file(s)).")
     for xmi_file, exc in failed:
         print(f"  FAILED {xmi_file}: {exc}")
     return succeeded, failed

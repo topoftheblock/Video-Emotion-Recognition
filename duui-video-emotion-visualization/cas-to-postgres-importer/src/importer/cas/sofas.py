@@ -92,7 +92,9 @@ def find_media_sofas(tree):
     for element in sofa_elements:
         encoded = element.get("sofaString")
         array_element = elements_by_id.get(element.get("sofaArray"))
-        byte_array = array_element.get("elements") if array_element is not None else None
+        byte_array = (
+            array_element.get("elements") if array_element is not None else None
+        )
         if not encoded and not byte_array:
             continue
         payloads.append(

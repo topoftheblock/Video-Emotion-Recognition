@@ -68,7 +68,7 @@ def _dominant_label_from_scores(scores):
             continue
         try:
             numeric_score = float(raw_score)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         if best_score is None or numeric_score > best_score:
             best_score = numeric_score
@@ -115,7 +115,8 @@ def _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, score
             getattr(emotion, "valence", None),
             getattr(emotion, "arousal", None),
             getattr(emotion, "dominance", None),
-            getattr(emotion, "dominant_label", None) or _dominant_label_from_scores(scores),
+            getattr(emotion, "dominant_label", None)
+            or _dominant_label_from_scores(scores),
         ),
     )
 

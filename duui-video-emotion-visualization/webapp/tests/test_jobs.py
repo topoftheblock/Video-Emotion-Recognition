@@ -67,7 +67,10 @@ def job_rows(db_available):
 
 def test_a_running_job_is_reported_with_its_progress(job_rows):
     run_id = job_rows(
-        "importer", phase="inserting emotion (9/10)", progress_current=3, progress_total=12
+        "importer",
+        phase="inserting emotion (9/10)",
+        progress_current=3,
+        progress_total=12,
     )
 
     row = next(j for j in jobs.active() if j["job_run_id"] == run_id)

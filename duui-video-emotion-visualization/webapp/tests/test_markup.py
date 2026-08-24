@@ -65,7 +65,7 @@ def test_every_id_reference_resolves(doc):
     pointing at nothing is worse than not being there: it silently
     removes the relationship rather than failing loudly."""
     broken = [
-        f"{element!r} {attr}=\"{ref}\""
+        f'{element!r} {attr}="{ref}"'
         for element, attr, ref in doc.idrefs()
         if doc.by_id(ref) is None
     ]
@@ -89,7 +89,7 @@ def test_no_positive_tabindex(doc):
             if int(raw.strip()) > 0:
                 offenders.append(element)
         except ValueError:
-            offenders.append(element)   # not a number at all
+            offenders.append(element)  # not a number at all
     assert not offenders, f"positive or malformed tabindex on {offenders}"
 
 
@@ -108,7 +108,7 @@ def test_skip_link_targets_a_real_and_focusable_element(doc):
     target = doc.by_id(href[1:])
     assert target is not None, f"skip link points at {href}, which does not exist"
     assert target.get("tabindex") == "-1", (
-        f"{target!r} needs tabindex=\"-1\" or the skip link moves the scroll "
+        f'{target!r} needs tabindex="-1" or the skip link moves the scroll '
         "position without moving focus"
     )
 
@@ -122,6 +122,7 @@ def test_every_focusable_element_is_inside_a_landmark(doc):
     The skip link is the one legitimate exception: it belongs before
     everything, including the landmarks.
     """
+
     def is_landmark(element):
         if element.tag in ("header", "main", "nav", "aside", "footer"):
             return True
@@ -130,7 +131,8 @@ def test_every_focusable_element_is_inside_a_landmark(doc):
         return False
 
     orphans = [
-        e for e in doc.focusable
+        e
+        for e in doc.focusable
         if "skip-link" not in e.get("class", "")
         and not any(is_landmark(p) for p in e.parents)
     ]
@@ -148,7 +150,9 @@ def test_every_focusable_element_has_an_accessible_name(doc):
 def test_no_control_is_named_only_by_its_placeholder(doc):
     """A placeholder is a last-resort fallback, not a name: it vanishes
     on the first keystroke, exactly when a name is still needed."""
-    offenders = [e for e in doc.focusable if doc.accessible_name_source(e) == "placeholder"]
+    offenders = [
+        e for e in doc.focusable if doc.accessible_name_source(e) == "placeholder"
+    ]
     assert not offenders, f"named only by placeholder: {offenders}"
 
 
@@ -182,8 +186,11 @@ def test_combobox_state_lives_on_the_element_that_has_the_role(doc):
     assert combobox[0].has("aria-expanded"), "the combobox input needs aria-expanded"
 
     stray = [
-        e for e in doc.elements
-        if e.has("aria-expanded") and not e.get("role") and e.tag not in ("button", "summary")
+        e
+        for e in doc.elements
+        if e.has("aria-expanded")
+        and not e.get("role")
+        and e.tag not in ("button", "summary")
     ]
     assert not stray, f"aria-expanded on elements that cannot carry it: {stray}"
 
@@ -195,7 +202,7 @@ def test_disclosure_buttons_are_wired_both_ways(doc):
     assert toggles, "no legend disclosure toggles found"
     for toggle in toggles:
         assert toggle.tag == "button", f"{toggle!r} should be a <button>"
-        assert toggle.get("type") == "button", f"{toggle!r} needs type=\"button\""
+        assert toggle.get("type") == "button", f'{toggle!r} needs type="button"'
         assert toggle.has("aria-expanded"), f"{toggle!r} needs aria-expanded"
         target = doc.by_id(toggle.get("aria-controls", ""))
         assert target is not None, f"{toggle!r} aria-controls points at nothing"
@@ -209,4 +216,6 @@ def test_toggle_buttons_declare_their_pressed_state(doc):
     announces as a plain button and its state is invisible."""
     cc = doc.by_id("subtitleToggle")
     assert cc is not None
-    assert cc.get("aria-pressed") in ("true", "false"), "#subtitleToggle needs aria-pressed"
+    assert cc.get("aria-pressed") in ("true", "false"), (
+        "#subtitleToggle needs aria-pressed"
+    )

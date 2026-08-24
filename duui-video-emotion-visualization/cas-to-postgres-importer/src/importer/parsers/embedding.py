@@ -65,7 +65,11 @@ def _resolve_embedding_rows(identity_fs):
         # Every item is a real Embedding FeatureStructure: dereference
         # each one into its own row so none are silently dropped.
         return [
-            (get_xmi_id(item), get_xmi_id(getattr(item, "ModelReference", None)), getattr(item, "embedding", None))
+            (
+                get_xmi_id(item),
+                get_xmi_id(getattr(item, "ModelReference", None)),
+                getattr(item, "embedding", None),
+            )
             for item in items
         ]
 
@@ -91,7 +95,9 @@ def _parse_embeddings(cas, cursor, uima_type, table_name, resolve_person_id, con
         person_id = resolve_person_id(item, context)
         own_model_id = get_xmi_id(getattr(item, "model", None))
 
-        for embedding_id, derived_model_id, embedding_repr in _resolve_embedding_rows(item):
+        for embedding_id, derived_model_id, embedding_repr in _resolve_embedding_rows(
+            item
+        ):
             if embedding_id is None:
                 continue
             cursor.execute(
@@ -112,10 +118,18 @@ def _parse_embeddings(cas, cursor, uima_type, table_name, resolve_person_id, con
 
 def parse(cas, cursor, context):
     _parse_embeddings(
-        cas, cursor, TYPES["face_identity"], "face_embeddings",
-        resolve_person_id_via_face_fs, context,
+        cas,
+        cursor,
+        TYPES["face_identity"],
+        "face_embeddings",
+        resolve_person_id_via_face_fs,
+        context,
     )
     _parse_embeddings(
-        cas, cursor, TYPES["voice_identity"], "voice_embeddings",
-        resolve_person_id_via_voice_fs, context,
+        cas,
+        cursor,
+        TYPES["voice_identity"],
+        "voice_embeddings",
+        resolve_person_id_via_voice_fs,
+        context,
     )

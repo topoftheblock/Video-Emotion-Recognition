@@ -47,8 +47,12 @@ def test_canvas_text_uses_a_font_the_app_actually_ships():
     monospace and nobody could see it from the page.
     """
     overlay = (FRONTEND / "js" / "playback" / "overlay.js").read_text(encoding="utf-8")
-    bundled = set(re.findall(r'font-family:\s*"([^"]+)"',
-                             (FRONTEND / "css" / "base.css").read_text(encoding="utf-8")))
+    bundled = set(
+        re.findall(
+            r'font-family:\s*"([^"]+)"',
+            (FRONTEND / "css" / "base.css").read_text(encoding="utf-8"),
+        )
+    )
     assert bundled, "no @font-face families found in base.css"
 
     generic = {"monospace", "sans-serif", "serif", "system-ui", "cursive", "fantasy"}

@@ -78,11 +78,15 @@ def run_read_only(sql: str, row_limit: int = None):
     try:
         conn.set_session(readonly=True, autocommit=False)
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(f"SET LOCAL statement_timeout = {QUERY_AGENT_STATEMENT_TIMEOUT_MS}")
+            cur.execute(
+                f"SET LOCAL statement_timeout = {QUERY_AGENT_STATEMENT_TIMEOUT_MS}"
+            )
             cur.execute(wrapped, (limit + 1,))
             rows = [dict(row) for row in cur.fetchall()]
-            columns = list(rows[0].keys()) if rows else (
-                [d.name for d in cur.description] if cur.description else []
+            columns = (
+                list(rows[0].keys())
+                if rows
+                else ([d.name for d in cur.description] if cur.description else [])
             )
         conn.rollback()
     except psycopg2.Error as exc:

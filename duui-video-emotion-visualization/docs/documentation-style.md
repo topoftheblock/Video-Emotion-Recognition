@@ -81,13 +81,13 @@ for step in PARSE_STEPS:          # the code says this
 
 ```python
 # Increment the counter
-count += 1                        # the code says this
+count += 1  # the code says this
 ```
 
 ```python
 def get_db_connection():
     """Open a new psycopg2 connection using DB_CONFIG."""
-    return psycopg2.connect(**DB_CONFIG)     # the signature says this
+    return psycopg2.connect(**DB_CONFIG)  # the signature says this
 ```
 
 Also delete: commented-out code, `# TODO` with no owner or date, changelog

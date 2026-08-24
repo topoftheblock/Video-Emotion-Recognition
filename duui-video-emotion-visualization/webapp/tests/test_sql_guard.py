@@ -5,10 +5,15 @@ independently of whether the LLM behind it is configured at all."""
 
 import pytest
 
-from backend.query_agent.sql_guard import SQLGuardError, run_read_only, validate_select_only
+from backend.query_agent.sql_guard import (
+    SQLGuardError,
+    run_read_only,
+    validate_select_only,
+)
 
 
 # ---------------- Pure validation (no DB needed) ----------------
+
 
 @pytest.mark.parametrize(
     "sql",
@@ -47,7 +52,9 @@ def test_validate_select_only_rejects(sql):
 
 def test_validate_select_only_rejects_keyword_hidden_in_cte():
     with pytest.raises(SQLGuardError):
-        validate_select_only("WITH x AS (DELETE FROM videos RETURNING *) SELECT * FROM x")
+        validate_select_only(
+            "WITH x AS (DELETE FROM videos RETURNING *) SELECT * FROM x"
+        )
 
 
 # ---------------- run_read_only (needs a live DB) ----------------

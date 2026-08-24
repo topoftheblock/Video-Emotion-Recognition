@@ -99,8 +99,16 @@ LIMIT 1
 # of the same name if the schema ever grew one, and dropping a real
 # table here would be a very bad way to find that out.
 _MODALITIES = (
-    ("pg_temp.face_centroids", "face_embeddings", GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD),
-    ("pg_temp.voice_centroids", "voice_embeddings", GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD),
+    (
+        "pg_temp.face_centroids",
+        "face_embeddings",
+        GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD,
+    ),
+    (
+        "pg_temp.voice_centroids",
+        "voice_embeddings",
+        GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD,
+    ),
 )
 
 
@@ -145,7 +153,9 @@ def build_centroids(cursor):
     for temp_table, source_table, _threshold in _MODALITIES:
         cursor.execute(f"DROP TABLE IF EXISTS {temp_table}")
         cursor.execute(
-            _BUILD_CENTROIDS_SQL.format(temp_table=temp_table, source_table=source_table)
+            _BUILD_CENTROIDS_SQL.format(
+                temp_table=temp_table, source_table=source_table
+            )
         )
         # Without stats on a freshly created temp table the planner
         # assumes a token row count and can pick a nested loop that is
@@ -177,7 +187,9 @@ def _best_cross_video_match(cursor, person, temp_table, threshold):
 
 
 def _create_global_person(cursor):
-    cursor.execute("INSERT INTO global_persons (real_name) VALUES (NULL) RETURNING global_person_id")
+    cursor.execute(
+        "INSERT INTO global_persons (real_name) VALUES (NULL) RETURNING global_person_id"
+    )
     return cursor.fetchone()[0]
 
 
@@ -224,7 +236,11 @@ def link_person(cursor, person):
         return None
 
     candidate_person, candidate_global_id, _distance = match
-    global_id = candidate_global_id if candidate_global_id is not None else _create_global_person(cursor)
+    global_id = (
+        candidate_global_id
+        if candidate_global_id is not None
+        else _create_global_person(cursor)
+    )
 
     _assign_global_person(cursor, person, global_id)
     if candidate_global_id is None:
@@ -301,7 +317,9 @@ def recompute_global_identities(cursor, progress=None):
 
     build_centroids(cursor)
 
-    cursor.execute("SELECT video_id, person_id FROM persons ORDER BY video_id, person_id")
+    cursor.execute(
+        "SELECT video_id, person_id FROM persons ORDER BY video_id, person_id"
+    )
     persons = cursor.fetchall()
 
     linked_ids = set()
