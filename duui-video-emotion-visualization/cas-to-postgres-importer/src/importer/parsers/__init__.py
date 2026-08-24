@@ -29,31 +29,31 @@ two columns at all.
 """
 
 from . import (
-    video,
+    detection,
+    embedding,
+    emotion,
     model,
     person,
-    segment,
-    token,
-    embedding,
     presence,
-    detection,
-    emotion,
+    segment,
     text_emotion,
+    token,
+    video,
 )
 
 PARSE_STEPS = [
-    video,          # must run first: resolves context["global_video_id"]
+    video,  # must run first: resolves context["global_video_id"]
     model,
-    person,         # video-local Person rows; builds face/voice -> person maps.
-                    # Must run before anything with a person_id FK (segment, embedding,
-                    # presence, detection, emotion all reference persons.person_id).
+    person,  # video-local Person rows; builds face/voice -> person maps.
+    # Must run before anything with a person_id FK (segment, embedding,
+    # presence, detection, emotion all reference persons.person_id).
     segment,
     token,
-    embedding,      # Face + Voice embeddings (uses the maps built by `person`)
-    presence,       # uses the maps built by `person`
-    detection,      # Face + Person detections (uses the maps built by `person`)
-    emotion,        # video/audio BaseEmotion + EmotionScore
-    text_emotion,   # text-based GoEmotions -> BaseEmotion + EmotionScore
+    embedding,  # Face + Voice embeddings (uses the maps built by `person`)
+    presence,  # uses the maps built by `person`
+    detection,  # Face + Person detections (uses the maps built by `person`)
+    emotion,  # video/audio BaseEmotion + EmotionScore
+    text_emotion,  # text-based GoEmotions -> BaseEmotion + EmotionScore
 ]
 
 __all__ = ["PARSE_STEPS"]

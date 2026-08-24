@@ -245,7 +245,7 @@ references left outside historical context.
 
 ---
 
-### `[ ]` Phase 4 — Dependencies, runtime versions, tooling
+### `[x]` Phase 4 — Dependencies, runtime versions, tooling
 
 **Why here:** before the doc rewrite, because bumping Python changes what the
 code may use (and therefore what gets documented), and because a formatter
@@ -475,6 +475,11 @@ instructions come before architecture.
   wrong and inert. Do **not** activate it.
 - **Font attribution.** A short note that Oxanium / Roboto / Ubuntu Mono are
   third-party, under OFL/UFL, with their license files alongside them.
+- **`tests/` at the project root needs its own README.** It holds no tests — the
+  four sub-projects do. It holds the *runners*: `Dockerfile.tests`,
+  `Dockerfile.lint`, `run-tests.sh`, `run-lint.sh`, `ensure_test_db.py` and
+  `check_links.py`. A directory called `tests` that contains no tests, sitting
+  beside four directories that do, needs one paragraph saying so.
 - **Document where the CI workflow lives and why it is outside the project**,
   and carry the §7 portability warning into the root `README.md` (or the docs
   page it links to) and anywhere the project layout is described.
@@ -533,10 +538,11 @@ out — phases marked done, decision records archived.
   The namespace requires that no branch is literally named `code-cleanup`: git
   stores refs as file paths, so a `code-cleanup` *file* and a `code-cleanup/`
   *directory* cannot coexist. This applies on `origin` as well as locally, which
-  is why the old remote `code-cleanup` branch is deleted rather than kept. `code-cleanup` reaches `main` only at the end of the whole pass. One
+  is why the old remote `code-cleanup` branch is deleted rather than kept.
+  `code-cleanup` reaches `main` only at the end of the whole pass. One
   commit per logical step; never mix a rename with a rewrite in the same commit,
   as that makes the diff unreviewable.
-- **Every commit message starts `Phase <N>: `**, followed by a lowercase
+- **Every commit message starts `Phase <N>:`**, followed by a lowercase
   summary — `Phase 3: rename the importer package`. Without it the log gives no
   way to tell which phase a change belongs to, and the phases are the only
   structure this work has. It applies to every commit in a phase branch, not
@@ -592,6 +598,14 @@ out — phases marked done, decision records archived.
   word, except where behaviour genuinely differs — and there, the difference is
   stated explicitly. The pairs get diffed as a check, not just as a starting
   point.
+- **Upgrade steps go in the plan, not in the documentation.** Where a phase
+  changes something an existing deployment would have to fix by hand — a volume
+  that needs chowning, a database that needs recreating — record it in that
+  phase's file and nowhere else. **Nobody but the project owner runs this
+  software until the whole plan is finished**, so a migration note in `docs/` is
+  addressed to a reader who does not exist, and would have to be re-checked
+  against the finished state anyway. Phase 7 decides what, if anything, survives
+  into `docs/operations.md`.
 - **`docs/todo.md` is not part of this cleanup.** It collects work to do
   *afterwards*, and nothing in it is in scope for any phase here. Entries are
   added **only when the project owner asks for one** — never from a passing
@@ -752,7 +766,7 @@ nothing to do.** Recorded for the day that changes:
   triggers those obligations, and a `THIRD-PARTY-NOTICES.md` is the tidy answer.
   Not now.
 
-### On linting in CI (answer to the linting question) — yes, and it is the established pattern here
+### On linting in CI — yes, and it is the established pattern here
 
 **It works, and the repository is already doing exactly this.** GitHub Actions
 only reads workflows from `<git-root>/.github/workflows/`, never from a
@@ -787,6 +801,7 @@ directory. The project's own docs should say where it is and why.
 >
 > This warning is not to live only in this plan. It must appear in three places
 > that a person will actually encounter:
+>
 > 1. In the workflow file's own header comment.
 > 2. In the root `README.md` (or the docs page it links to for CI).
 > 3. Alongside anything else describing the project's layout.
@@ -817,7 +832,7 @@ and verified in Phase 8.
 | 1 — Style guide + doc map | `[x]` | `code-cleanup/phase-1` | Done 2026-08-22. Style guide, glossary, doc map and `docs/` skeleton in place. Detail: [phase-1-style-guide.md](phase-1-style-guide.md). |
 | 2 — Fact ledger | `[x]` | `code-cleanup/phase-2` | Done 2026-08-22. D1–D12 registered, contracts verified, legacy docs quarantined. Line-by-line reading deferred to Phase 5. |
 | 3 — Structure | `[x]` | `code-cleanup/phase-3` | Done 2026-08-22. Renames, splits and groupings landed; corpus rebuilt and every row count matches Phase 0. |
-| 4 — Dependencies | `[ ]` | | |
+| 4 — Dependencies | `[x]` | `code-cleanup/phase-4` | Done 2026-08-22. Python 3.14, Postgres 18, 13 checkers, CI and a pre-commit hook. |
 | 5 — In-file docs | `[ ]` | | |
 | 6 — Test audit | `[ ]` | | |
 | 7 — READMEs + docs | `[ ]` | | |
@@ -836,7 +851,7 @@ and verified in Phase 8.
 | 1 — Style guide + doc map | [phase-1-style-guide.md](phase-1-style-guide.md) | `[x]` done |
 | 2 — Fact ledger | [phase-2-ledger.md](phase-2-ledger.md) · [phase-2-modules.md](phase-2-modules.md) | `[x]` done |
 | 3 — Structure | [phase-3-structure.md](phase-3-structure.md) | `[x]` done |
-| 4 — Dependencies + tooling | *not yet written* | `[ ]` |
+| 4 — Dependencies + tooling | [phase-4-tooling.md](phase-4-tooling.md) | `[x]` done |
 | 5 — In-file documentation | *not yet written* | `[ ]` |
 | 6 — Test audit | *not yet written* | `[ ]` |
 | 7 — READMEs + docs | *not yet written* | `[ ]` |

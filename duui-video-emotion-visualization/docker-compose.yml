@@ -37,7 +37,8 @@
 # you end up debugging one while running the other).
 name: duui-video-emotion-visualization
 
-# Shared by `cas-to-postgres-importer` (profile "import") and anything else that needs to
+# Shared by `cas-to-postgres-importer` (profile "import") and anything
+# else that needs to
 # run the cas-to-postgres-importer job, so the two can never drift apart.
 x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
   build:
@@ -116,14 +117,23 @@ services:
     volumes:
       # The database itself. schema.sql is baked into the image and runs
       # automatically the first time this volume is created (empty).
-      - db_data:/var/lib/postgresql/data
+      #
+      # Mounted at /var/lib/postgresql, NOT /var/lib/postgresql/data. Postgres 18
+      # changed the layout: data now lives in a major-version subdirectory
+      # (/var/lib/postgresql/18/docker), so the image treats a mount on the old
+      # path as an unused volume and refuses to start. Mounting the parent is
+      # what the image expects, and it is also what makes `pg_upgrade --link`
+      # possible later, since both versions then sit inside one mount.
+      - db_data:/var/lib/postgresql
     ports:
       # Host port only -- the other containers reach Postgres as
       # pgvector-db:5432 on the compose network regardless of this. Change it if
       # you already run Postgres locally on 5432.
       - "${DUUI_DB_HOST_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DUUI_DB_USER:-duui} -d ${DUUI_DB_NAME:-duui_video_emotion}"]
+      test:
+        - "CMD-SHELL"
+        - "pg_isready -U ${DUUI_DB_USER:-duui} -d ${DUUI_DB_NAME:-duui_video_emotion}"
       interval: 5s
       timeout: 5s
       retries: 10
@@ -135,7 +145,9 @@ services:
   # paths -- the .xmi directory is /data/input/xmi in here, whatever it
   # is on the host):
   #   docker compose run --rm cas-to-postgres-importer                # whole xmi dir
-  #   docker compose run --rm cas-to-postgres-importer /data/input/xmi/one_file.xmi   # a single file
+  #   # a single file:
+  #   docker compose run --rm cas-to-postgres-importer \
+  #       /data/input/xmi/one_file.xmi
   #
   # Importing is idempotent (rows are upserted, already-placed videos
   # are left alone), so re-running is harmless. It is not a dependency of
@@ -169,7 +181,7 @@ services:
   #      to run it is after a batch of imports, not during one.
   #
   # The "identity" profile keeps it out of `up`; `run` starts it anyway:
-#   docker compose run --rm global-identity-linker
+  #   docker compose run --rm global-identity-linker
   #
   # It takes no arguments, and its own thresholds are the only tuning
   # (see .env.example / README "Cross-video person identity"). Re-running
@@ -192,8 +204,66 @@ services:
       # Cosine distance, lower = stricter. See README before changing.
       DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD: ${DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD:-0.30}
       DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD: ${DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD:-0.35}
-    # No volumes at all: this job never touches the .xmi input or the
-    # video store. The database is its entire input and output.
+      # No volumes at all: this job never touches the .xmi input or the
+      # video store. The database is its entire input and output.
+
+  # --- Lint ---------------------------------------------------------------
+  # Every checker in one pass:
+  #
+  #     docker compose run --rm lint
+  #
+  # Read-only -- nothing here rewrites a file, so it is safe in CI and safe to
+  # run mid-edit. Needs no database and no application dependencies, which is
+  # what keeps it fast and stops an unrelated dependency break from masking a
+  # lint failure.
+  lint:
+    profiles: ["lint"]
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.lint
+    image: duui-video-emotion-visualization/lint:latest
+    volumes:
+      - ./:/app:ro
+
+  # --- Tests ------------------------------------------------------------
+  # Runs every suite against the same interpreter the images use. Profiled, so
+  # `docker compose up` never starts it:
+  #
+  #     docker compose run --rm tests
+  #     docker compose run --rm tests webapp/tests -k contrast
+  #
+  # Anything after `tests` is passed through to pytest.
+  #
+  # This is the supported way to run the suite. There is no local environment to
+  # run it from -- the project's Python is not installable everywhere, which is
+  # the whole reason this service exists.
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.tests
+    image: duui-video-emotion-visualization/tests:latest
+    depends_on:
+      pgvector-db:
+        condition: service_healthy
+    environment:
+      DUUI_DB_HOST: pgvector-db
+      # A database of its own, empty and schema-only. The DB-backed tests assume
+      # they are the only writer; several fail rather than skip against a
+      # populated corpus, so pointing this at duui_video_emotion would report
+      # three failures that are not defects.
+      DUUI_DB_NAME: ${DUUI_TEST_DB_NAME:-duui_video_emotion_test}
+      DUUI_DB_USER: ${DUUI_DB_USER:-duui}
+      DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
+    # The image already runs as a non-root user, which is what keeps the suite
+    # at 150 rather than 149 + 1 skipped -- see Dockerfile.tests. This override
+    # exists only for a host whose ids differ and which needs the container to
+    # write into the mounted source; it is not needed to run the tests.
+    user: "${DUUI_TEST_UID:-1000}:${DUUI_TEST_GID:-1000}"
+    volumes:
+      # Read-write because pytest writes nothing but the source has to be live;
+      # bytecode is disabled in the image so nothing lands back on the host.
+      - ./:/app
 
   webapp:
     build:
@@ -222,7 +292,13 @@ services:
     ports:
       - "${DUUI_WEBAPP_HOST_PORT:-8010}:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=3)"]
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://localhost:8000/healthz', timeout=3)
       interval: 10s
       timeout: 5s
       retries: 5

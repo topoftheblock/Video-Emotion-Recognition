@@ -62,7 +62,11 @@ def _seed_person(cursor, person, clip_label):
 
 def _embed(cursor, table, person, base, embedding_id=None, invert=False):
     video_id, person_id = person
-    vec = _opposite_vector(_DIMENSIONS[table], base) if invert else _vector_literal(_DIMENSIONS[table], base)
+    vec = (
+        _opposite_vector(_DIMENSIONS[table], base)
+        if invert
+        else _vector_literal(_DIMENSIONS[table], base)
+    )
     cursor.execute(
         f"INSERT INTO {table} (video_id, embedding_id, person_id, embedding) "
         f"VALUES (%s, %s, %s, %s)",

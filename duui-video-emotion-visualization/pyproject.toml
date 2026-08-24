@@ -21,3 +21,58 @@ testpaths = [
     "webapp/tests",
     "global-identity-linker/tests",
 ]
+
+# --- Formatting and linting -----------------------------------------------
+# One configuration for all four sub-projects. Their own pyproject.toml files
+# carry pytest settings only and no [tool.ruff] section, which ruff skips when
+# it looks for configuration, so every file in the repository is governed from
+# here and the four cannot drift apart.
+[tool.ruff]
+# 88 for code, matching docs/documentation-style.md section 8. Prose in comments
+# and docstrings wraps at 72 there; that stays a human rule, because the
+# formatter does not reflow comments and E501 cannot distinguish prose from code.
+line-length = 88
+
+# The runtime, not whatever interpreter happens to run ruff. Nothing in this
+# repository is a distribution, so there is no requires-python for ruff to read.
+target-version = "py314"
+
+[tool.ruff.lint]
+# Deliberately narrow to start: pyflakes (F), pycodestyle errors (E) and import
+# sorting (I). These are the rules the style guide already implies, and none of
+# them asks for a judgement call.
+#
+# Opinionated families are left off on purpose. Docstring rules (D) in
+# particular would fire on almost every function, since Phase 5 has not
+# rewritten the docstrings yet -- turning them on now would bury the errors that
+# mean something. Revisit once Phase 5 is done.
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.isort]
+# The three package names, so their imports sort as first-party rather than
+# being mistaken for third-party ones.
+known-first-party = ["importer", "backend", "identity"]
+
+[tool.ruff.lint.per-file-ignores]
+# 224 lines of UIMA type names and injected fallback type definitions, most of
+# them inside XML string literals. Wrapping those to satisfy a line limit
+# written for code would corrupt data. It is a data file that happens to end
+# in .py.
+"cas-to-postgres-importer/src/importer/cas/types.py" = ["E501"]
+
+[tool.mypy]
+# The runtime, not whatever interpreter runs mypy.
+python_version = "3.14"
+
+# Lenient on purpose. 7 of 140 functions carry a return annotation today; Phase 5
+# adds the rest as it rewrites each file, and tightens this per sub-project as it
+# finishes one. Turning strictness on now would report the absence of work that
+# has not been scheduled yet.
+#
+# To tighten one sub-project when Phase 5 finishes it, add:
+#
+#     [[tool.mypy.overrides]]
+#     module = ["identity.*"]
+#     disallow_untyped_defs = true
+#
+ignore_missing_imports = true

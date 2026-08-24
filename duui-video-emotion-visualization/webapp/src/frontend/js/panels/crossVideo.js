@@ -34,7 +34,7 @@ export function renderCrossVideoPanel(data) {
   const rows = [];
   for (const person of data.persons) {
     const cluster = clusters.find((c) =>
-      c.members.some((m) => isSamePerson(m, person, videoId))
+      c.members.some((m) => isSamePerson(m, person, videoId)),
     );
     if (!cluster) continue;
     const others = cluster.members.filter((m) => !isSamePerson(m, person, videoId));
@@ -70,9 +70,14 @@ export function renderCrossVideoPanel(data) {
             ? `Cross-video match confidence: ${odText} -- cosine distance (0 = identical, 2 = opposite) between this person's embedding centroid and their nearest lookalike in another video, from the global-identity job. Lower is a more confident match; this is not the import pipeline's confidence score.`
             : "";
         return html`<span class="cross-video"
-          >${o.video_filename} (${o.clip_label || "person " + o.person_id})${odText != ""
-            ? html`<span class="cross-video-distance" title="${odTitle}">${odText}</span>`
-            : ""}</span
+          >${o.video_filename}
+          (${o.clip_label || "person " + o.person_id})${
+            odText != ""
+              ? html`<span class="cross-video-distance" title="${odTitle}"
+                  >${odText}</span
+                >`
+              : ""
+          }</span
         >`;
       });
       // The name is wrapped, unlike in the two single-line person
@@ -81,10 +86,19 @@ export function renderCrossVideoPanel(data) {
       const gpId = cluster && cluster.global_person_id;
       const gpName = cluster && cluster.real_name;
       return html`<li>
-        <span class="person-swatch" style="background:${personColorFor(person.person_id)}"></span>
-        <span class="person-name">${name}${gpId != null
-          ? html`<span class="person-global-id">(global #${gpId}${gpName ? ` · ${gpName}` : ""})</span>`
-          : ""}</span>
+        <span
+          class="person-swatch"
+          style="background:${personColorFor(person.person_id)}"
+        ></span>
+        <span class="person-name"
+          >${name}${
+            gpId != null
+              ? html`<span class="person-global-id"
+                  >(global #${gpId}${gpName ? ` · ${gpName}` : ""})</span
+                >`
+              : ""
+          }</span
+        >
         <span class="person-meta">${otherList}</span>
       </li>`;
     })

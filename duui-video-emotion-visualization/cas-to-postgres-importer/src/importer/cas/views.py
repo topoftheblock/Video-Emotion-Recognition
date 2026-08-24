@@ -12,7 +12,7 @@ every view explicitly, which is what `select_across_views` does.
 
 from cassis.typesystem import TypeNotFoundError
 
-_warned_missing_types = set()
+_warned_missing_types: set[str] = set()
 
 
 def select_across_views(cas, type_name):

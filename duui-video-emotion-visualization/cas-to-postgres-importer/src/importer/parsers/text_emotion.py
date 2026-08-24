@@ -21,9 +21,9 @@ Person linkage isn't available on this type in the source CAS (no
 reference back to a speaker/segment), so person_id is left NULL here.
 """
 
-from ..cas.views import select_across_views
 from ..cas.types import TYPES
 from ..cas.typesystem import as_list, get_xmi_id
+from ..cas.views import select_across_views
 
 
 def _dominant_label_from_comments(comments):
@@ -37,7 +37,7 @@ def _dominant_label_from_comments(comments):
             continue
         try:
             numeric_score = float(raw_score)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             continue
         if best_score is None or numeric_score > best_score:
             best_score = numeric_score
@@ -60,7 +60,15 @@ def _insert_text_emotion(cursor, entry, emotion_id, video_id, dominant_label):
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (video_id, emotion_id) DO NOTHING
         """,
-        (emotion_id, video_id, "text", "sentence", entry.begin, entry.end, dominant_label),
+        (
+            emotion_id,
+            video_id,
+            "text",
+            "sentence",
+            entry.begin,
+            entry.end,
+            dominant_label,
+        ),
     )
 
 
@@ -73,7 +81,7 @@ def _insert_text_emotion_scores(cursor, comments, emotion_id, video_id):
         raw_score = getattr(comment, "value", None)
         try:
             score = float(raw_score) if raw_score is not None else None
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             score = None
 
         cursor.execute(

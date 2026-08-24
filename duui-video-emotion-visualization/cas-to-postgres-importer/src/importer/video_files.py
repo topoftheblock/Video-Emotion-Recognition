@@ -12,6 +12,7 @@ from pathlib import Path
 
 from .config import VIDEO_MEDIA_DIR
 
+
 def place_video_file(video_filename, source_dir):
     """
     Copy `<source_dir>/<video_filename>` to `<VIDEO_MEDIA_DIR>/<video_filename>`

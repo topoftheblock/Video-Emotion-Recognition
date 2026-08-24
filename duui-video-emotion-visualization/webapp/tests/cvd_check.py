@@ -27,7 +27,9 @@ import math
 import re
 from pathlib import Path
 
-STATE_JS = Path(__file__).resolve().parent.parent / "src" / "frontend" / "js" / "state.js"
+STATE_JS = (
+    Path(__file__).resolve().parent.parent / "src" / "frontend" / "js" / "state.js"
+)
 
 # Machado et al. (2009), severity 1.0. Row-major, operating on linear RGB.
 CVD_MATRICES = {
@@ -71,7 +73,7 @@ def _to_srgb(c):
 
 def parse_hex(value):
     v = value.lstrip("#")
-    return tuple(int(v[i:i + 2], 16) for i in (0, 2, 4))
+    return tuple(int(v[i : i + 2], 16) for i in (0, 2, 4))
 
 
 def to_hex(rgb):
@@ -115,7 +117,7 @@ def ciede2000(lab1, lab2):
     c2 = math.hypot(a2, b2)
     avg_c = (c1 + c2) / 2
 
-    g = 0.5 * (1 - math.sqrt(avg_c ** 7 / (avg_c ** 7 + 25 ** 7))) if avg_c else 0.0
+    g = 0.5 * (1 - math.sqrt(avg_c**7 / (avg_c**7 + 25**7))) if avg_c else 0.0
     a1p, a2p = a1 * (1 + g), a2 * (1 + g)
     c1p, c2p = math.hypot(a1p, b1), math.hypot(a2p, b2)
     avg_cp = (c1p + c2p) / 2
@@ -162,10 +164,14 @@ def ciede2000(lab1, lab2):
     sc = 1 + 0.045 * avg_cp
     sh = 1 + 0.015 * avg_cp * t
     rt = (
-        -2
-        * math.sqrt(avg_cp ** 7 / (avg_cp ** 7 + 25 ** 7))
-        * math.sin(math.radians(60 * math.exp(-(((avg_hp - 275) / 25) ** 2))))
-    ) if avg_cp else 0.0
+        (
+            -2
+            * math.sqrt(avg_cp**7 / (avg_cp**7 + 25**7))
+            * math.sin(math.radians(60 * math.exp(-(((avg_hp - 275) / 25) ** 2))))
+        )
+        if avg_cp
+        else 0.0
+    )
 
     return math.sqrt(
         (dlp / sl) ** 2
@@ -198,13 +204,15 @@ def separations(palette=None):
     rows = []
     for kind in ("normal",) + tuple(CVD_MATRICES):
         for i, first in enumerate(palette):
-            for second in palette[i + 1:]:
+            for second in palette[i + 1 :]:
                 if kind == "normal":
                     sim_a, sim_b = parse_hex(first), parse_hex(second)
                 else:
                     sim_a = simulate(parse_hex(first), kind)
                     sim_b = simulate(parse_hex(second), kind)
-                rows.append((kind, first, second, ciede2000(to_lab(sim_a), to_lab(sim_b))))
+                rows.append(
+                    (kind, first, second, ciede2000(to_lab(sim_a), to_lab(sim_b)))
+                )
     return sorted(rows, key=lambda r: r[3])
 
 
@@ -219,8 +227,18 @@ def _main():
     for kind in ("normal",) + tuple(CVD_MATRICES):
         print(f"-- {kind} " + "-" * (58 - len(kind)))
         if kind != "normal":
-            print("   " + "  ".join(f"{c}->{to_hex(simulate(parse_hex(c), kind))}" for c in palette[:4]))
-            print("   " + "  ".join(f"{c}->{to_hex(simulate(parse_hex(c), kind))}" for c in palette[4:]))
+            print(
+                "   "
+                + "  ".join(
+                    f"{c}->{to_hex(simulate(parse_hex(c), kind))}" for c in palette[:4]
+                )
+            )
+            print(
+                "   "
+                + "  ".join(
+                    f"{c}->{to_hex(simulate(parse_hex(c), kind))}" for c in palette[4:]
+                )
+            )
         rows = [r for r in separations(palette) if r[0] == kind][:6]
         for _, a, b, de in rows:
             flag = "  <-- CONVERGES" if de < MIN_SEPARATION else ""

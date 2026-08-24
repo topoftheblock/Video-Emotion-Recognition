@@ -1,8 +1,8 @@
 """Parses Segment rows: video Shots and audio SpeakerSentences."""
 
-from ..cas.views import select_across_views
 from ..cas.types import TYPES
 from ..cas.typesystem import get_xmi_id
+from ..cas.views import select_across_views
 
 
 def _parse_shots(cas, cursor, video_id):

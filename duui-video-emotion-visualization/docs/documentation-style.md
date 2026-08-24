@@ -3,7 +3,9 @@
 The single style every file in this project follows: Python, JavaScript, CSS,
 SQL, Dockerfiles, Compose, Markdown, and user-facing output.
 
-Three rules override everything else here.
+## The three rules
+
+These override everything else here.
 
 ### 1. Write only what you can verify
 
@@ -81,13 +83,13 @@ for step in PARSE_STEPS:          # the code says this
 
 ```python
 # Increment the counter
-count += 1                        # the code says this
+count += 1  # the code says this
 ```
 
 ```python
 def get_db_connection():
     """Open a new psycopg2 connection using DB_CONFIG."""
-    return psycopg2.connect(**DB_CONFIG)     # the signature says this
+    return psycopg2.connect(**DB_CONFIG)  # the signature says this
 ```
 
 Also delete: commented-out code, `# TODO` with no owner or date, changelog

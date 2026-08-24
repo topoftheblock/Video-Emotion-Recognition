@@ -206,19 +206,21 @@ INJECTED_FALLBACK_TYPES = {
 #
 # Nothing outside this set is silenced. A type that goes missing because
 # a typesystem file was dropped or renamed still warns loudly.
-IGNORED_ABSENT_TYPES = frozenset({
-    # DKPro text layer -- tokens/POS/NER on the transcript sofa.
-    "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Sentence",
-    "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Token",
-    "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma",
-    "de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS",
-    "de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.morph.MorphologicalFeatures",
-    "de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency",
-    "de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.ROOT",
-    "de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity",
-    # TTLab provenance -- who annotated what, with which tool version.
-    "org.texttechnologylab.duui.ReproducibleAnnotation",
-    "org.texttechnologylab.annotation.DocumentModification",
-    "org.texttechnologylab.annotation.AnnotatorMetaData",
-    "org.texttechnologylab.annotation.SpacyAnnotatorMetaData",
-})
+IGNORED_ABSENT_TYPES = frozenset(
+    {
+        # DKPro text layer -- tokens/POS/NER on the transcript sofa.
+        "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Sentence",
+        "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Token",
+        "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma",
+        "de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS",
+        "de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.morph.MorphologicalFeatures",
+        "de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency",
+        "de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.ROOT",
+        "de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity",
+        # TTLab provenance -- who annotated what, with which tool version.
+        "org.texttechnologylab.duui.ReproducibleAnnotation",
+        "org.texttechnologylab.annotation.DocumentModification",
+        "org.texttechnologylab.annotation.AnnotatorMetaData",
+        "org.texttechnologylab.annotation.SpacyAnnotatorMetaData",
+    }
+)

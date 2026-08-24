@@ -24,10 +24,10 @@ parser steps (which run after this one -- see parsers/__init__.py)
 can use them via person_resolution.py.
 """
 
-from ..cas.views import select_across_views
-from ..cas.types import TYPES
 from ..cas.person_resolution import parse_person_label
+from ..cas.types import TYPES
 from ..cas.typesystem import get_xmi_id
+from ..cas.views import select_across_views
 
 
 def _parse_persons(cas, cursor, video_id, context):
@@ -43,10 +43,10 @@ def _parse_persons(cas, cursor, video_id, context):
         # Prefer an explicit clip_label; otherwise the human-readable
         # personId ("person_1"); otherwise fall back to the raw
         # encoded label string.
-        clip_label = getattr(
-            person, "clip_label", getattr(person, "personId", label)
+        clip_label = getattr(person, "clip_label", getattr(person, "personId", label))
+        audio_video_match_score = getattr(
+            person, "match_score", label_parts.get("score")
         )
-        audio_video_match_score = getattr(person, "match_score", label_parts.get("score"))
 
         cursor.execute(
             """

@@ -54,6 +54,7 @@ Phase 2 did.
 Verified findings. Every entry names where it is resolved.
 
 ### D1 — the design specifies emotion fusion that does not exist
+
 **Closed 2026-08-22: ignore.** Verified that `FusedEmotion` /
 `EmotionFusionReference` appear **only** in `data_schema_with_types.md` — not in
 `schema.sql`, not in the typesystems, not in any code. Since that file is being
@@ -71,11 +72,13 @@ them. Either the fusion layer was planned and never built, or it was dropped and
 the spec was not updated. Needs a decision: implement, or record as unbuilt.
 
 ### D2 — the design document is written in mixed German and English
+
 **Phase 7.** Headings and many column descriptions are German
 ("Metadaten & Video Layer", "Fortlaufender Index des Segments", `'shot'` oder
 `'sentence'`), the rest English. Phase 1 settled on US English throughout.
 
 ### D3 — `data_schema_with_types.md`'s stated divergences are accurate
+
 **No action.** Recorded because it is evidence, not a problem. Checked against
 `schema.sql`: `begin`/`end` → `begin_offset`/`end_offset` (reserved word);
 `Detection` split into `face_detections` and `person_detections`; `segments` also
@@ -87,6 +90,7 @@ really are `(video_id, <id>)`, but the ids do not "restart at 1" per document.
 See D7.
 
 ### D4 — no `connect_timeout` in any application code
+
 **Phase 2 → Phase 5 or a bug fix.** Carried from
 [Phase 0 §0.2](phase-0-baseline.md). `webapp/src/backend/db.py`,
 `identity/db.py` and the importer all call `psycopg2.connect()` with no timeout.
@@ -94,16 +98,19 @@ Against a host that blackholes packets, `create_app()` hangs at startup with no
 diagnostic. Compose masks it; a wrong or firewalled database IP triggers it.
 
 ### D5 — the importer announces work it then skips
+
 **Phase 5.** Carried from Phase 0 §0.5. `pipeline.py:207` prints
 `Loading CAS data from <file>...` before the already-imported check at `:227`;
 the actual load is at `:253`.
 
 ### D6 — emotion labels are model-native and differ by modality
+
 **No action; already in the glossary.** Carried from Phase 1. Video uses eight
 capitalized labels, text lowercase GoEmotions-style ones, audio its own set, plus
 `<unk>` and empty `dominant_label` values.
 
 ### D7 — a rationale comment's illustration is contradicted by the data
+
 **Phase 5.** `linking.py`'s header explains the composite `(video_id, person_id)`
 key by asserting that "two videos routinely both have a 'person 1'."
 
@@ -139,6 +146,7 @@ Two corrections to this entry follow:
   database. Nothing for Phase 6 to add.
 
 ### D8 — `--on-existing replace` does not preserve `video_id`
+
 **Phase 5 (document), Phase 7 (operations).** Verified by observation during
 Phase 0: `first2.mp4` was `video_id 1` before an `--on-existing replace` run and
 is `video_id 47` after it. Replace deletes the row and inserts a new one, so the
@@ -153,6 +161,7 @@ Not a bug: delete-and-insert behaving as delete-and-insert. But it is undocument
 and it is the kind of thing a user discovers the hard way.
 
 ### D9 — `/api/stats` is served and tested but has no consumer
+
 **Open, deliberately.** Decided 2026-08-22: **keep the code as it is**, and keep
 this entry registered rather than closing it. Not a defect — the endpoint works
 correctly; it simply has no caller. Registered so it stays visible and does not
@@ -170,12 +179,14 @@ Decision needed: remove the route and its queries, or keep them as a documented
 API for external use. Not a bug either way.
 
 ### D10 — `accessibility.md` uses retired terminology
+
 **Phase 5/7, small.** `webapp/docs/accessibility.md` is factually correct — the
 one pre-existing document that is — but it says "viewer" twice, which Phase 1
 retired in favor of "webapp", and its heading and prose style predate the style
 guide. Content keeps; terminology and style get a pass.
 
 ### D11 — `a11y-baseline/` is sound, contrary to first impressions
+
 **No action.** Checked because it was suspected of being stale. It is a
 **deliberately historical snapshot** — "Captured 2026-08-20, before any
 remediation work" — so describing a state that no longer exists is its purpose,
@@ -184,6 +195,7 @@ not a defect. Its reproduction instructions were checked too: `../../../` from
 as written.
 
 ### D12 — 17 code references point at documentation that has moved or been replaced
+
 **Phase 5, across 15 files.** Quarantining the root `README.md` and the design
 document (§2.7) invalidated every in-code pointer to them. Verified count: **17
 references in 15 files**, split three ways.
@@ -204,6 +216,80 @@ references in 15 files**, split three ways.
 
 Left broken deliberately: Phase 2 changes no source, and Phase 5 rewrites all of
 these comments anyway. Recorded at this precision so none is missed.
+
+### D13 — the test database vanished without explanation
+
+**Phase 6.** `duui_baseline_test` — the empty schema-applied database the suite's
+green baseline depends on — was created during Phase 3 step 10 and confirmed
+working (150/150). It was **gone by Phase 4**, while `duui_video_emotion` in the
+same volume kept all 375,205 rows. The volume was never recreated; the
+`pgvector-db` container was, after an image rebuild.
+
+**Cause established 2026-08-22:** the project owner rebuilt the stack, because
+the containers had become orphaned from their images. A rebuild recreates the
+volume, and `duui_baseline_test` does not survive one — it is created by hand,
+not by `schema.sql`, so nothing recreates it. The corpus looked untouched only
+because Phase 3 proved the import is deterministic: the same nine files produce
+the same 375,205 rows every time.
+
+Recreating the database restored 150/150 immediately.
+
+Whatever the cause, it makes the point Phase 6 already decided: the green
+baseline currently depends on a hand-created database that nothing recreates,
+nothing documents, and nothing notices the loss of — the run just quietly
+reports 121 passed, 29 skipped. Testcontainers removes the whole class of
+problem.
+
+### D14 — a NameError I introduced in Phase 3, found by the linter in Phase 4
+
+**Fixed 2026-08-22.** `pipeline.py:89` reads `xmi_file = xmi_file or XMI_FILE`,
+but the Phase 3 split of `pipeline.py` into `inputs.py` removed `XMI_FILE` from
+the `from .config import …` line, because the new module needed it. Calling
+`run()` with no argument therefore raised:
+
+```text
+NameError: name 'XMI_FILE' is not defined
+```
+
+**Why nothing caught it for a whole phase.** `run()` is only ever reached
+through `run_many()`, which always passes an explicit path. The `or XMI_FILE`
+fallback exists for the documented single-file workflow — `DUUI_XMI_FILE` — and
+nothing in the suite exercises it. A green 150/150, a working importer, a full
+corpus rebuild and an end-to-end browser check all passed over it.
+
+Found by `ruff`'s F821 the first time the linter was pointed at the repository,
+before it had been run even once in anger. Fixed by restoring the import; `run()`
+now raises the `ValueError` it was always supposed to.
+
+Two things worth keeping from this:
+
+- **Static analysis found in seconds what four phases of testing missed.** It is
+  the strongest available argument for step 9's CI job.
+- **The gap is a test gap too.** Nothing covers `run()`'s no-argument path,
+  which is a documented entry point. Phase 6 should decide whether to cover it
+  or to remove the fallback.
+
+### D15 — three user-facing surfaces give three different project names
+**Needs a decision; not a defect.** Found during Phase 4's final verification.
+
+| Surface | Says |
+| --- | --- |
+| `index.html` `<title>` — the browser tab | `DUUI Emotion Visualization` |
+| `index.html` `<h1 class="topbar-title">` | `Emotion Visualization` |
+| `app.py` `FastAPI(title=…)` — the OpenAPI document | `DUUI Video Emotion Visualization` |
+
+**Why Phase 3 missed two of them.** That phase swept for `bundestag`, and only
+the FastAPI title contained it (`DUUI Bundestag Video Viewer`). The other two
+never held the dead name, so nothing brought them into the sweep — a search for
+the *wrong* name cannot find a name that is merely inconsistent.
+
+Nothing is broken; three surfaces simply disagree. The glossary settles what the
+project is called, so the `<title>` and the OpenAPI title should match it. The
+`<h1>` is a visible design element and dropping "DUUI" there may well be
+deliberate, so it is not obviously the same question.
+
+Left for a decision rather than changed here: these are strings a person sees,
+and Phase 4 is a tooling phase.
 
 <!-- New entries append here as each sub-project is read. -->
 

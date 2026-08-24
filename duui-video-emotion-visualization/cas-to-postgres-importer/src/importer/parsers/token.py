@@ -6,9 +6,9 @@ under `.word`, others (confirmed in the real Bundestag CAS) under
 -- when absent they're simply left NULL rather than causing an error.
 """
 
-from ..cas.views import select_across_views
 from ..cas.types import TYPES
 from ..cas.typesystem import get_xmi_id
+from ..cas.views import select_across_views
 
 
 def _resolve_word(token):

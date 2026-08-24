@@ -5,7 +5,7 @@
    width -- these fire at any size.
 
    Imported last so its overrides land on top of everything else.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 /* ---- Reduced motion ----
    Every transition in the app is decorative (colour fades on hover,
@@ -15,7 +15,10 @@
    backed by #askStatus announcing "Thinking…", so losing it costs
    nothing. Moved here from responsive.css, which is about width. */
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 /* ---- Forced colours (Windows High Contrast and friends) ----
@@ -67,18 +70,32 @@
      guaranteed to differ from Canvas and from each other. */
   .emo-track {
     border: 1px solid CanvasText;
+
     /* The border eats into the 6px height; keep the groove itself the
        size it was so the fill inside stays legible. */
     height: 8px;
   }
 
-  .emo-fill { background: Highlight; }
-  .emo-avg-mark { background: CanvasText; }
-  .emo-track-signed::before { background: CanvasText; }
+  .emo-fill {
+    background: Highlight;
+  }
+
+  .emo-avg-mark {
+    background: CanvasText;
+  }
+
+  .emo-track-signed::before {
+    background: CanvasText;
+  }
 
   /* Same shape of problem in the job banner's progress bar. */
-  .job-bar { border: 1px solid CanvasText; }
-  .job-bar-fill { background: Highlight; }
+  .job-bar {
+    border: 1px solid CanvasText;
+  }
+
+  .job-bar-fill {
+    background: Highlight;
+  }
 
   /* Person swatches are the one place the *specific* colour is the
      information: it is what ties a name in the sidebar to a stroked box
@@ -95,7 +112,9 @@
   /* Panel dots are decorative and labelled (see tokens.css); letting
      them take a system colour is correct. They lose their halo with
      every other box-shadow, which costs nothing. */
-  .panel-dot { background: CanvasText; }
+  .panel-dot {
+    background: CanvasText;
+  }
 
   /* Selected/pressed states are conveyed by a background fill that
      would otherwise be stripped, leaving no way to tell which person
@@ -141,14 +160,18 @@
   :root {
     /* 5.54:1 on the card, 4.95:1 on the page floor -> 14.8 and 13.2. */
     --text-dim: var(--surface-500);
+
     /* Placeholders: 5.2:1 on the recessed fill -> 12.0:1. */
     --text-placeholder: var(--surface-500);
+
     /* Decorative hairlines, but they are what separates one panel from
        the next at a glance: 1.65:1 -> 2.35:1. */
     --border: var(--surface-300);
+
     /* Field boundaries: 5.54:1 on the card -> 14.8:1, and 4.48:1
        against their own fill -> 12.0:1. */
     --border-input: var(--surface-500);
+
     /* The signed tracks' zero reference rides on --border-input above,
        and the swatch ring with it. */
   }

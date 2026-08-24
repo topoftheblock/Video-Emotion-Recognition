@@ -1,0 +1,34 @@
+# The test runner: every suite, against the same interpreter the images use.
+#
+# Exists because the project's Python cannot be installed on every development
+# machine, so the container is the only place the suite can run against the real
+# runtime. It is dev-only and ships nothing.
+FROM python:3.14-slim
+
+WORKDIR /app
+
+# All four requirement sets: the runner needs every sub-project's dependencies
+# at once, unlike the images, which each carry only their own.
+COPY cas-to-postgres-importer/requirements.txt /tmp/importer.txt
+COPY webapp/requirements.txt /tmp/webapp.txt
+COPY global-identity-linker/requirements.txt /tmp/identity.txt
+COPY requirements-dev.txt /tmp/dev.txt
+RUN pip install --no-cache-dir \
+      -r /tmp/importer.txt -r /tmp/webapp.txt -r /tmp/identity.txt -r /tmp/dev.txt
+
+# Source is mounted at run time, not copied, so a change does not need a rebuild.
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Not root, and this is load-bearing rather than hygiene. One test chmods a
+# directory to 0o000 and expects a permission error; root bypasses directory
+# permissions, so as root that test skips itself and the suite reports 149
+# passed and 1 skipped instead of 150.
+#
+# Which non-root user does not matter -- verified at uid 1000 and 1234. The
+# mounted source is world-readable and pytest degrades gracefully when it cannot
+# write its cache. Compose can still override `user:` if a run needs to write
+# into the mount.
+RUN useradd --create-home --uid 1000 runner
+USER runner
+
+ENTRYPOINT ["/app/tests/run-tests.sh"]

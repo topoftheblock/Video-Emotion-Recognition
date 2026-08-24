@@ -43,11 +43,19 @@ importer looks for input.
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest
+docker compose run --rm tests
 ```
 
-Tests that need a database skip without one. They currently expect an empty
-database and report failures against a populated one.
+Anything after `tests` is passed straight to pytest:
+
+```bash
+docker compose run --rm tests webapp/tests -k contrast
+```
+
+This is the only supported way to run the suite. The project targets a Python
+version that is not installable everywhere, so the runner is a container; it
+creates its own empty test database, applies the schema, and fails rather than
+skipping if the database is unreachable.
 
 ## Documentation
 

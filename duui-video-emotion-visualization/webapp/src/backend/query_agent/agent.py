@@ -39,7 +39,9 @@ OVERLAY_CHOICES = [
     "text_emotion",
 ]
 
-_SYSTEM_PROMPT = SCHEMA_CONTEXT + """
+_SYSTEM_PROMPT = (
+    SCHEMA_CONTEXT
+    + """
 
 ## How to work
 
@@ -73,6 +75,7 @@ If `run_sql` returns an error, read it, fix the query, and try again.
 Never call `submit_answer` with a query you haven't successfully run
 via `run_sql` at least once.
 """
+)
 
 _TOOLS = [
     {
@@ -88,7 +91,10 @@ _TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "sql": {"type": "string", "description": "A single SELECT (or WITH ... SELECT) statement."}
+                    "sql": {
+                        "type": "string",
+                        "description": "A single SELECT (or WITH ... SELECT) statement.",
+                    }
                 },
                 "required": ["sql"],
             },
@@ -102,8 +108,14 @@ _TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "sql": {"type": "string", "description": "The final SELECT/WITH query, following the output contract."},
-                    "explanation": {"type": "string", "description": "One or two sentences describing what the query answers, in plain language."},
+                    "sql": {
+                        "type": "string",
+                        "description": "The final SELECT/WITH query, following the output contract.",
+                    },
+                    "explanation": {
+                        "type": "string",
+                        "description": "One or two sentences describing what the query answers, in plain language.",
+                    },
                     "overlays": {
                         "type": "array",
                         "items": {"type": "string", "enum": OVERLAY_CHOICES},
@@ -151,9 +163,7 @@ def answer_question(question: str) -> dict:
     submitted an answer, final SQL invalid, etc).
     """
     if not QUERY_AGENT_API_KEY:
-        raise QueryAgentError(
-            "DUUI_QUERY_API_KEY is not configured (set it in .env)."
-        )
+        raise QueryAgentError("DUUI_QUERY_API_KEY is not configured (set it in .env).")
 
     client = openai.OpenAI(api_key=QUERY_AGENT_API_KEY, base_url=QUERY_AGENT_BASE_URL)
     messages = [

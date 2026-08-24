@@ -3,7 +3,7 @@
    class="border-b border-color">: flat fill, one hairline underneath,
    no shadow and no blur. It reads as a bar against the page only
    because the page behind it carries the gradient wash.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 .topbar {
   display: flex;
@@ -17,7 +17,11 @@
   z-index: 20;
 }
 
-.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 /* Stands in for DUUIWeb's Logo.svg. variant-filled-primary: flat
    primary-500, on-primary white, rounded-base. */
@@ -72,6 +76,7 @@
 .video-combobox-input {
   background: var(--surface-alt);
   color: var(--text);
+
   /* See .ask-input in ask.css -- same field, same reason. */
   border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
@@ -81,12 +86,18 @@
   font-weight: 500;
   width: 24ch;
   cursor: text;
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 
-.video-combobox-input::placeholder { color: var(--text-placeholder); }
+.video-combobox-input::placeholder {
+  color: var(--text-placeholder);
+}
 
-.video-combobox-input:hover { border-color: var(--signal); }
+.video-combobox-input:hover {
+  border-color: var(--signal);
+}
 
 .video-combobox-input:focus {
   outline: none;
@@ -108,6 +119,7 @@
   max-height: 320px;
   overflow-y: auto;
   background: var(--surface);
+
   /* A popup edge over page content: the only thing separating the list
      from whatever it is floating above, so it carries the same 3:1
      requirement the fields do. */
@@ -116,7 +128,9 @@
   box-shadow: var(--shadow-md);
 }
 
-.video-combobox-list[hidden] { display: none; }
+.video-combobox-list[hidden] {
+  display: none;
+}
 
 .video-combo-item {
   display: flex;

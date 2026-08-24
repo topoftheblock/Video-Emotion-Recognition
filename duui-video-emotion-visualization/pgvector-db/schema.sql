@@ -114,7 +114,7 @@ CREATE TABLE face_embeddings (
     person_id BIGINT,
     -- Single-column FK: models are corpus-global, not per video.
     model_id BIGINT REFERENCES models(model_id) ON DELETE SET NULL,
-    embedding vector(512),
+    embedding VECTOR(512),
     PRIMARY KEY (video_id, embedding_id),
     FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
         ON DELETE CASCADE
@@ -125,7 +125,7 @@ CREATE TABLE voice_embeddings (
     embedding_id BIGINT NOT NULL,
     person_id BIGINT,
     model_id BIGINT REFERENCES models(model_id) ON DELETE SET NULL,
-    embedding vector(192),
+    embedding VECTOR(192),
     PRIMARY KEY (video_id, embedding_id),
     FOREIGN KEY (video_id, person_id) REFERENCES persons(video_id, person_id)
         ON DELETE CASCADE
@@ -298,8 +298,8 @@ CREATE TABLE IF NOT EXISTS job_runs (
     progress_current INT,
     progress_total INT,
     message TEXT,
-    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     finished_at TIMESTAMPTZ
 ) WITH (fillfactor = 70);
 

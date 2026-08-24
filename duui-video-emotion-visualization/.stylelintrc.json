@@ -1,0 +1,12 @@
+{
+  "extends": "stylelint-config-standard",
+  "ignoreFiles": ["docs/legacy/**", "node_modules/**"],
+  "rules": {
+    "media-feature-range-notation": "prefix",
+    "color-function-notation": "legacy",
+    "color-function-alias-notation": null,
+    "alpha-value-notation": "number",
+    "import-notation": "string",
+    "no-descending-specificity": null
+  }
+}

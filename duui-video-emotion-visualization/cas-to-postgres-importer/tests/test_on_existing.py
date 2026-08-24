@@ -13,17 +13,15 @@ import base64
 import pytest
 from lxml import etree
 
-from importer.cas import sofas
 from importer.__main__ import _split_args
+from importer.cas import sofas
 from importer.config import ON_EXISTING_CHOICES
 
 
 def _document(*, multimedia=None, document_title=None):
     parts = []
     if multimedia is not None:
-        parts.append(
-            f'<type2:MultimediaElement xmi:id="4" filename="{multimedia}"/>'
-        )
+        parts.append(f'<type2:MultimediaElement xmi:id="4" filename="{multimedia}"/>')
     if document_title is not None:
         parts.append(
             f'<type3:DocumentMetaData xmi:id="3" documentTitle="{document_title}"/>'
@@ -34,7 +32,7 @@ def _document(*, multimedia=None, document_title=None):
         'xmlns:type2="http:///org/texttechnologylab/annotation/type.ecore" '
         'xmlns:type3="http:///de/tudarmstadt/ukp/dkpro/core/api/metadata/type.ecore" '
         'xmi:version="2.0">'
-        f'{"".join(parts)}'
+        f"{''.join(parts)}"
         '<cas:Sofa xmi:id="1" sofaID="_InitialView" mimeType="video/mp4" '
         f'sofaString="{base64.b64encode(b"video bytes").decode("ascii")}"/>'
         "</xmi:XMI>".encode("utf-8")
@@ -70,12 +68,15 @@ def test_reading_the_filename_does_not_disturb_the_media_sofa():
     assert payload.data() == b"video bytes"
 
 
-@pytest.mark.parametrize("argv,expected", [
-    (["cas/"], (["cas/"], None)),
-    (["cas/", "--on-existing", "replace"], (["cas/"], "replace")),
-    (["--on-existing=skip", "a.xmi", "b.xmi"], (["a.xmi", "b.xmi"], "skip")),
-    ([], ([], None)),
-])
+@pytest.mark.parametrize(
+    "argv,expected",
+    [
+        (["cas/"], (["cas/"], None)),
+        (["cas/", "--on-existing", "replace"], (["cas/"], "replace")),
+        (["--on-existing=skip", "a.xmi", "b.xmi"], (["a.xmi", "b.xmi"], "skip")),
+        ([], ([], None)),
+    ],
+)
 def test_split_args(argv, expected):
     assert _split_args(argv) == expected
 

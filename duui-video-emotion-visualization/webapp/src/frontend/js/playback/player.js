@@ -41,7 +41,7 @@ export function seekOnceLoaded(seconds) {
     () => {
       el.player.currentTime = seconds;
     },
-    { once: true }
+    { once: true },
   );
 }
 

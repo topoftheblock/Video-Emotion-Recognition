@@ -73,8 +73,12 @@ class _Reader(HTMLParser):
         self._order = 0
 
     def handle_starttag(self, tag, attrs):
-        element = Element(tag, {k: (v if v is not None else "") for k, v in attrs},
-                          self._order, tuple(self._stack))
+        element = Element(
+            tag,
+            {k: (v if v is not None else "") for k, v in attrs},
+            self._order,
+            tuple(self._stack),
+        )
         self._order += 1
         self.elements.append(element)
         # Void elements never close, so they must not go on the stack.
@@ -82,8 +86,12 @@ class _Reader(HTMLParser):
             self._stack.append(element)
 
     def handle_startendtag(self, tag, attrs):
-        element = Element(tag, {k: (v if v is not None else "") for k, v in attrs},
-                          self._order, tuple(self._stack))
+        element = Element(
+            tag,
+            {k: (v if v is not None else "") for k, v in attrs},
+            self._order,
+            tuple(self._stack),
+        )
         self._order += 1
         self.elements.append(element)
 

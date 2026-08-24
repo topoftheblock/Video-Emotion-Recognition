@@ -55,7 +55,7 @@ def test_video_dir_is_independent_when_set(monkeypatch):
 def test_directory_expands_to_its_xmi_files(tmp_path):
     (tmp_path / "b.xmi").touch()
     (tmp_path / "a.xmi").touch()
-    (tmp_path / "video.mp4").touch()          # companion video, not an input
+    (tmp_path / "video.mp4").touch()  # companion video, not an input
     (tmp_path / "notes.txt").touch()
 
     result = resolve_xmi_paths([tmp_path])
@@ -109,6 +109,7 @@ def test_empty_directory_yields_nothing(tmp_path):
 
 # describe_missing_inputs -- the three causes that all look identical
 # to resolve_xmi_paths must come back as distinguishable reasons.
+
 
 def test_missing_path_is_reported_as_nonexistent(tmp_path):
     (reason,) = describe_missing_inputs([tmp_path / "nope"])

@@ -14,6 +14,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+
   /* A grid item's default floor is its own min-content width, so this
      column would rather widen the page than let anything inside it
      reflow. The binding item is .transport: at a 200% root its play
@@ -51,7 +52,13 @@
 }
 
 @keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

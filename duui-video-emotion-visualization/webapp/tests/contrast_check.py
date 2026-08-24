@@ -84,7 +84,9 @@ def composite(fg, alpha, bg):
 # ---------------- parsing the committed sources ----------------
 
 _HEX = re.compile(r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
-_RGB = re.compile(r"^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)\s*(?:[,/]\s*([\d.]+)\s*)?\)$")
+_RGB = re.compile(
+    r"^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)\s*(?:[,/]\s*([\d.]+)\s*)?\)$"
+)
 _VAR = re.compile(r"^var\(\s*(--[\w-]+)\s*\)$")
 # Only whole-value declarations are colours we can use. A shadow
 # ("0 1px 2px rgba(...)"), a font stack or a length lands here too and is
@@ -101,12 +103,14 @@ def _parse_rgba(text):
         digits = hex_match.group(1)
         if len(digits) == 3:
             digits = "".join(c * 2 for c in digits)
-        return tuple(int(digits[i:i + 2], 16) for i in (0, 2, 4)), 1.0
+        return tuple(int(digits[i : i + 2], 16) for i in (0, 2, 4)), 1.0
 
     rgb_match = _RGB.match(text)
     if rgb_match:
         r, g, b, a = rgb_match.groups()
-        return (round(float(r)), round(float(g)), round(float(b))), float(a) if a else 1.0
+        return (round(float(r)), round(float(g)), round(float(b))), float(
+            a
+        ) if a else 1.0
 
     return None
 
@@ -188,17 +192,24 @@ def _readable_text_color_impl(path=STATE_JS):
     """
     source = path.read_text(encoding="utf-8")
     body = re.search(
-        r"export function readableTextColor\s*\([^)]*\)\s*\{(.*?)\n\}", source, re.DOTALL
+        r"export function readableTextColor\s*\([^)]*\)\s*\{(.*?)\n\}",
+        source,
+        re.DOTALL,
     )
     body = body.group(1) if body else ""
 
     candidates = re.findall(r'"(#[0-9a-fA-F]{6})"', body)
     threshold = re.search(
-        r'return\s+L\s*>\s*([\d.]+)\s*\?\s*"(#[0-9a-fA-F]{6})"\s*:\s*"(#[0-9a-fA-F]{6})"', body
+        r'return\s+L\s*>\s*([\d.]+)\s*\?\s*"(#[0-9a-fA-F]{6})"\s*:\s*"(#[0-9a-fA-F]{6})"',
+        body,
     )
 
     if threshold:
-        cut, dark, light = float(threshold.group(1)), threshold.group(2), threshold.group(3)
+        cut, dark, light = (
+            float(threshold.group(1)),
+            threshold.group(2),
+            threshold.group(3),
+        )
 
         def pick(rgb):
             return dark if luminance(rgb) > cut else light
@@ -209,7 +220,9 @@ def _readable_text_color_impl(path=STATE_JS):
     options = candidates or ["#0b0e14", "#ffffff"]
 
     def pick(rgb):
-        return max(options, key=lambda hex_value: contrast(_parse_rgba(hex_value)[0], rgb))
+        return max(
+            options, key=lambda hex_value: contrast(_parse_rgba(hex_value)[0], rgb)
+        )
 
     pick.description = "max contrast of " + ", ".join(options)
     return pick
@@ -266,111 +279,347 @@ def _static_pairs():
         P("base", "--text on page floor", Layer("--text"), Layer("--bg"), TEXT),
         P("base", "--text-dim on card", Layer("--text-dim"), Layer("--surface"), TEXT),
         P("base", "--text-dim on page floor", Layer("--text-dim"), Layer("--bg"), TEXT),
-        P("base", "--text-strong on card", Layer("--text-strong"), Layer("--surface"), TEXT),
-        P("base", "--text-strong on --surface-50", Layer("--text-strong"), Layer("--surface-50"), TEXT),
-        P("base", "::selection text on --signal-soft", Layer("--signal-strong"), Layer("--signal-soft"), TEXT),
-
+        P(
+            "base",
+            "--text-strong on card",
+            Layer("--text-strong"),
+            Layer("--surface"),
+            TEXT,
+        ),
+        P(
+            "base",
+            "--text-strong on --surface-50",
+            Layer("--text-strong"),
+            Layer("--surface-50"),
+            TEXT,
+        ),
+        P(
+            "base",
+            "::selection text on --signal-soft",
+            Layer("--signal-strong"),
+            Layer("--signal-soft"),
+            TEXT,
+        ),
         # ---- text inputs (Ask + video combobox) ----
         # The fill is recessed, so the placeholder's backdrop is
         # --surface-alt and not the card behind it.
-        P("input", "placeholder on input fill", Layer("--text-placeholder"), Layer("--surface-alt"), TEXT),
-        P("input", "typed text on input fill", Layer("--text"), Layer("--surface-alt"), TEXT),
-        P("input", "resting border vs card", Layer("--border-input"), Layer("--surface"), UI),
-        P("input", "resting border vs own fill", Layer("--border-input"), Layer("--surface-alt"), UI),
+        P(
+            "input",
+            "placeholder on input fill",
+            Layer("--text-placeholder"),
+            Layer("--surface-alt"),
+            TEXT,
+        ),
+        P(
+            "input",
+            "typed text on input fill",
+            Layer("--text"),
+            Layer("--surface-alt"),
+            TEXT,
+        ),
+        P(
+            "input",
+            "resting border vs card",
+            Layer("--border-input"),
+            Layer("--surface"),
+            UI,
+        ),
+        P(
+            "input",
+            "resting border vs own fill",
+            Layer("--border-input"),
+            Layer("--surface-alt"),
+            UI,
+        ),
         # The fill stopped having to carry the boundary the moment the
         # border above started to. Kept as INFO because it is the reason
         # that border exists, not because it is still a requirement.
-        P("input", "input fill vs card", Layer("--surface-alt"), Layer("--surface"), INFO),
+        P(
+            "input",
+            "input fill vs card",
+            Layer("--surface-alt"),
+            Layer("--surface"),
+            INFO,
+        ),
         P("input", "focus ring on card", Layer("--signal"), Layer("--surface"), UI),
-        P("input", "dropdown border vs card", Layer("--border-input"), Layer("--surface"), UI),
-
+        P(
+            "input",
+            "dropdown border vs card",
+            Layer("--border-input"),
+            Layer("--surface"),
+            UI,
+        ),
         # ---- buttons and chips ----
-        P("button", "primary button label", Layer("#ffffff"), Layer("--gradient-brand"), TEXT),
-        P("button", "primary button hover label", Layer("#ffffff"), Layer("--signal-hover"), TEXT),
-        P("button", "neutral button label at rest", Layer("--text-dim"), Layer("--surface"), TEXT),
+        P(
+            "button",
+            "primary button label",
+            Layer("#ffffff"),
+            Layer("--gradient-brand"),
+            TEXT,
+        ),
+        P(
+            "button",
+            "primary button hover label",
+            Layer("#ffffff"),
+            Layer("--signal-hover"),
+            TEXT,
+        ),
+        P(
+            "button",
+            "neutral button label at rest",
+            Layer("--text-dim"),
+            Layer("--surface"),
+            TEXT,
+        ),
         P("button", "focus ring on card", Layer("--signal"), Layer("--surface"), UI),
         # .person-row:focus-visible sits on a selected (--signal) row, but
         # outline-offset: 2px lifts the ring clear onto the panel behind
         # it. That offset is load-bearing: without it the ring would be
         # --signal on --signal.
-        P("button", "focus ring clear of selected row", Layer("--signal"), Layer("--surface"), UI),
-        P("chip", "overlay tag / filter chip text", Layer("--signal-strong"), Layer("--signal-soft"), TEXT),
-
+        P(
+            "button",
+            "focus ring clear of selected row",
+            Layer("--signal"),
+            Layer("--surface"),
+            UI,
+        ),
+        P(
+            "chip",
+            "overlay tag / filter chip text",
+            Layer("--signal-strong"),
+            Layer("--signal-soft"),
+            TEXT,
+        ),
         # ---- sidebar person lists ----
         P("sidebar", "panel title", Layer("--text-dim"), Layer("--surface"), TEXT),
-        P("sidebar", "person name on row fill", Layer("--text"), Layer("--surface-50"), TEXT),
-        P("sidebar", "person name on hover row", Layer("--signal-strong"), Layer("--signal-soft"), TEXT),
-        P("sidebar", "person name on selected row", Layer("#ffffff"), Layer("--signal"), TEXT),
+        P(
+            "sidebar",
+            "person name on row fill",
+            Layer("--text"),
+            Layer("--surface-50"),
+            TEXT,
+        ),
+        P(
+            "sidebar",
+            "person name on hover row",
+            Layer("--signal-strong"),
+            Layer("--signal-soft"),
+            TEXT,
+        ),
+        P(
+            "sidebar",
+            "person name on selected row",
+            Layer("#ffffff"),
+            Layer("--signal"),
+            TEXT,
+        ),
         # Was the audit's 3.99:1 finding; 0.85 since Phase 3.2. The alpha
         # is duplicated from css/sidebar.css rather than read from it --
         # the one literal in this file that can drift from the stylesheet
         # it describes, so the two have to move together.
-        P("sidebar", "score on selected row", Layer("--signal", "rgba(255,255,255,0.85)"), Layer("--signal"), TEXT),
-        P("sidebar", "cross-video detail text", Layer("--surface-500"), Layer("--surface-50"), TEXT),
+        P(
+            "sidebar",
+            "score on selected row",
+            Layer("--signal", "rgba(255,255,255,0.85)"),
+            Layer("--signal"),
+            TEXT,
+        ),
+        P(
+            "sidebar",
+            "cross-video detail text",
+            Layer("--surface-500"),
+            Layer("--surface-50"),
+            TEXT,
+        ),
         P("sidebar", "empty hint", Layer("--text-dim"), Layer("--surface"), TEXT),
-
         # ---- emotion panels ----
-        P("emotions", "dominant emotion label", Layer("--emotion"), Layer("--surface"), TEXT),
+        P(
+            "emotions",
+            "dominant emotion label",
+            Layer("--emotion"),
+            Layer("--surface"),
+            TEXT,
+        ),
         P("emotions", "row label", Layer("--text-strong"), Layer("--surface"), TEXT),
         P("emotions", "legend header", Layer("--text-dim"), Layer("--surface"), TEXT),
         P("emotions", "live value", Layer("--text"), Layer("--surface"), TEXT),
         P("emotions", "average value", Layer("--text-dim"), Layer("--surface"), TEXT),
-        P("emotions", "track fill vs groove", Layer("--emotion-fill"), Layer("--surface-alt"), UI),
-        P("emotions", "average marker vs groove", Layer("--text-dim"), Layer("--surface-alt"), UI),
+        P(
+            "emotions",
+            "track fill vs groove",
+            Layer("--emotion-fill"),
+            Layer("--surface-alt"),
+            UI,
+        ),
+        P(
+            "emotions",
+            "average marker vs groove",
+            Layer("--text-dim"),
+            Layer("--surface-alt"),
+            UI,
+        ),
         # The signed tracks' zero reference -- a value is read relative to
         # it, so it is not decoration. Its backdrop is the groove fill,
         # not the card (css/emotions.css:119).
-        P("emotions", "signed zero marker vs groove", Layer("--border-input"), Layer("--surface-alt"), UI),
+        P(
+            "emotions",
+            "signed zero marker vs groove",
+            Layer("--border-input"),
+            Layer("--surface-alt"),
+            UI,
+        ),
         # Exempt, and deliberately so -- see the comment on .emo-track in
         # css/emotions.css. Every row prints its live value and average as
         # text beside the bar, so the track is a second reading of a
         # number already written down rather than a graphic required to
         # understand anything. Recorded rather than deleted so the
         # decision stays visible.
-        P("emotions", "groove vs card", Layer("--surface-alt"), Layer("--surface"), INFO),
-
+        P(
+            "emotions",
+            "groove vs card",
+            Layer("--surface-alt"),
+            Layer("--surface"),
+            INFO,
+        ),
         # ---- the video stage ----
         # Subtitles sit on rgba(0,0,0,0.85) over whatever the video is
         # showing. White footage is the worst case for the box, so that
         # is what is checked -- anything darker only helps.
-        P("stage", "subtitle text over palest video", Layer("#ffffff", "rgba(0,0,0,0.85)", "#ffffff"),
-          Layer("#ffffff", "rgba(0,0,0,0.85)"), LARGE),
-        P("stage", "subtitle emotion over palest video", Layer("#ffffff", "rgba(0,0,0,0.85)", "--emotion-on-dark"),
-          Layer("#ffffff", "rgba(0,0,0,0.85)"), TEXT),
-        P("stage", "empty state title", Layer("#ffffff"), Layer("--surface-700"), LARGE),
-        P("stage", "empty state detail", Layer("--surface-700", "rgba(255,255,255,0.72)"), Layer("--surface-700"), TEXT),
-        P("stage", "empty state command", Layer("#ffffff"), Layer("--surface-700", "rgba(255,255,255,0.1)"), TEXT),
-        P("stage", "transport time read-out", Layer("--text-dim"), Layer("--surface"), TEXT),
+        P(
+            "stage",
+            "subtitle text over palest video",
+            Layer("#ffffff", "rgba(0,0,0,0.85)", "#ffffff"),
+            Layer("#ffffff", "rgba(0,0,0,0.85)"),
+            LARGE,
+        ),
+        P(
+            "stage",
+            "subtitle emotion over palest video",
+            Layer("#ffffff", "rgba(0,0,0,0.85)", "--emotion-on-dark"),
+            Layer("#ffffff", "rgba(0,0,0,0.85)"),
+            TEXT,
+        ),
+        P(
+            "stage",
+            "empty state title",
+            Layer("#ffffff"),
+            Layer("--surface-700"),
+            LARGE,
+        ),
+        P(
+            "stage",
+            "empty state detail",
+            Layer("--surface-700", "rgba(255,255,255,0.72)"),
+            Layer("--surface-700"),
+            TEXT,
+        ),
+        P(
+            "stage",
+            "empty state command",
+            Layer("#ffffff"),
+            Layer("--surface-700", "rgba(255,255,255,0.1)"),
+            TEXT,
+        ),
+        P(
+            "stage",
+            "transport time read-out",
+            Layer("--text-dim"),
+            Layer("--surface"),
+            TEXT,
+        ),
         P("stage", "CC toggle at rest", Layer("--text-dim"), Layer("--surface"), TEXT),
         P("stage", "CC toggle when on", Layer("#ffffff"), Layer("--signal"), TEXT),
-
         # ---- status and jobs ----
         P("status", "ask error text", Layer("--danger-text"), Layer("--surface"), TEXT),
-        P("status", "stale job elapsed on banner", Layer("--error-800"), Layer("--danger-soft"), TEXT),
-        P("status", "job detail text", Layer("--text-strong"), Layer("--surface"), TEXT),
+        P(
+            "status",
+            "stale job elapsed on banner",
+            Layer("--error-800"),
+            Layer("--danger-soft"),
+            TEXT,
+        ),
+        P(
+            "status",
+            "job detail text",
+            Layer("--text-strong"),
+            Layer("--surface"),
+            TEXT,
+        ),
         P("status", "job title text", Layer("--text"), Layer("--surface"), TEXT),
-        P("status", "job progress fill vs groove", Layer("--gradient-brand"), Layer("--surface-alt"), UI),
-
+        P(
+            "status",
+            "job progress fill vs groove",
+            Layer("--gradient-brand"),
+            Layer("--surface-alt"),
+            UI,
+        ),
         # ---- topbar ----
-        P("topbar", "brand mark label", Layer("#ffffff"), Layer("--gradient-brand"), TEXT),
+        P(
+            "topbar",
+            "brand mark label",
+            Layer("#ffffff"),
+            Layer("--gradient-brand"),
+            TEXT,
+        ),
         P("topbar", "brand title", Layer("--text"), Layer("--surface-50"), TEXT),
         P("topbar", "picker label", Layer("--text-dim"), Layer("--surface-50"), TEXT),
         P("topbar", "dropdown option text", Layer("--text"), Layer("--surface"), TEXT),
-        P("topbar", "highlighted option text", Layer("--signal-strong"), Layer("--signal-soft"), TEXT),
+        P(
+            "topbar",
+            "highlighted option text",
+            Layer("--signal-strong"),
+            Layer("--signal-soft"),
+            TEXT,
+        ),
         P("topbar", "missing-file note", Layer("--text-dim"), Layer("--surface"), TEXT),
-
         # ---- decorative, recorded but not asserted ----
         # Panel dots each sit beside a text label naming the same panel,
         # so colour is not the sole channel and 1.4.11 does not apply.
         # Recorded so the exemption is visible rather than assumed.
-        P("decorative", "dot-emotion on card", Layer("--accent-emotion"), Layer("--surface"), INFO),
-        P("decorative", "dot-people on card", Layer("--accent-people"), Layer("--surface"), INFO),
-        P("decorative", "dot-live on card", Layer("--accent-live"), Layer("--surface"), INFO),
-        P("decorative", "dot-cross on card", Layer("--accent-cross"), Layer("--surface"), INFO),
+        P(
+            "decorative",
+            "dot-emotion on card",
+            Layer("--accent-emotion"),
+            Layer("--surface"),
+            INFO,
+        ),
+        P(
+            "decorative",
+            "dot-people on card",
+            Layer("--accent-people"),
+            Layer("--surface"),
+            INFO,
+        ),
+        P(
+            "decorative",
+            "dot-live on card",
+            Layer("--accent-live"),
+            Layer("--surface"),
+            INFO,
+        ),
+        P(
+            "decorative",
+            "dot-cross on card",
+            Layer("--accent-cross"),
+            Layer("--surface"),
+            INFO,
+        ),
         # Panel and topbar hairlines separate regions that are already
         # separated by spacing and fill -- purely decorative under 1.4.11.
-        P("decorative", "panel border on card", Layer("--border"), Layer("--surface"), INFO),
-        P("decorative", "topbar hairline", Layer("--border"), Layer("--surface-50"), INFO),
+        P(
+            "decorative",
+            "panel border on card",
+            Layer("--border"),
+            Layer("--surface"),
+            INFO,
+        ),
+        P(
+            "decorative",
+            "topbar hairline",
+            Layer("--border"),
+            Layer("--surface-50"),
+            INFO,
+        ),
     ]
 
 
@@ -393,20 +642,56 @@ def _person_pairs(palette, pick_text):
     is tests/cvd_check.py's job.
     """
     pairs = [
-        Pair("person", "swatch ring on row fill", Layer("--border-input"), Layer("--surface-50"), UI),
-        Pair("person", "swatch ring on card", Layer("--border-input"), Layer("--surface"), UI),
-        Pair("person", "swatch ring on hovered row", Layer("--border-input"), Layer("--signal-soft"), UI),
+        Pair(
+            "person",
+            "swatch ring on row fill",
+            Layer("--border-input"),
+            Layer("--surface-50"),
+            UI,
+        ),
+        Pair(
+            "person",
+            "swatch ring on card",
+            Layer("--border-input"),
+            Layer("--surface"),
+            UI,
+        ),
+        Pair(
+            "person",
+            "swatch ring on hovered row",
+            Layer("--border-input"),
+            Layer("--signal-soft"),
+            UI,
+        ),
         # White, because --border-input against --signal is 1.05:1.
-        Pair("person", "swatch ring on selected row", Layer("#ffffff"), Layer("--signal"), UI),
+        Pair(
+            "person",
+            "swatch ring on selected row",
+            Layer("#ffffff"),
+            Layer("--signal"),
+            UI,
+        ),
     ]
     for colour in palette:
         pairs.append(
-            Pair("person", f"swatch {colour} on row fill (ringed)", Layer(colour), Layer("--surface-50"), INFO)
+            Pair(
+                "person",
+                f"swatch {colour} on row fill (ringed)",
+                Layer(colour),
+                Layer("--surface-50"),
+                INFO,
+            )
         )
     for colour in palette:
         rgb = _parse_rgba(colour)[0]
         pairs.append(
-            Pair("person", f"filter chip text on {colour}", Layer(pick_text(rgb)), Layer(colour), TEXT)
+            Pair(
+                "person",
+                f"filter chip text on {colour}",
+                Layer(pick_text(rgb)),
+                Layer(colour),
+                TEXT,
+            )
         )
     return pairs
 
@@ -428,7 +713,11 @@ class Result:
         return "PASS" if self.ratio >= self.pair.requirement else "FAIL"
 
     def __str__(self):
-        need = "     -" if self.pair.requirement is None else f"{self.pair.requirement:6.1f}"
+        need = (
+            "     -"
+            if self.pair.requirement is None
+            else f"{self.pair.requirement:6.1f}"
+        )
         return (
             f"{self.status:4}  {self.ratio:6.2f}  need {need}  "
             f"{self.pair.area:10}  {self.pair.label}"
@@ -445,7 +734,9 @@ def check():
     for pair in _static_pairs() + _person_pairs(palette, pick_text):
         background = pair.background.flatten(tokens)
         foreground = pair.foreground.flatten(tokens, base=background)
-        results.append(Result(pair, contrast(foreground, background), foreground, background))
+        results.append(
+            Result(pair, contrast(foreground, background), foreground, background)
+        )
     return results
 
 
@@ -473,7 +764,9 @@ def _main():
     bad = [r for r in results if r.status == "FAIL"]
     info = [r for r in results if r.status == "INFO"]
     print()
-    print(f"{len(results)} pairs checked, {len(bad)} failing, {len(info)} recorded without assertion")
+    print(
+        f"{len(results)} pairs checked, {len(bad)} failing, {len(info)} recorded without assertion"
+    )
     for result in bad:
         print(
             f"  FAIL  {result.pair.area}/{result.pair.label}: "

@@ -37,7 +37,10 @@ def _strip_comments(text):
 def sheets():
     """{name: source with comments removed}. Comments discuss px sizes and
     token names constantly; matching on them would be all false positives."""
-    return {p.name: _strip_comments(p.read_text(encoding="utf-8")) for p in sorted(CSS_DIR.glob("*.css"))}
+    return {
+        p.name: _strip_comments(p.read_text(encoding="utf-8"))
+        for p in sorted(CSS_DIR.glob("*.css"))
+    }
 
 
 @pytest.fixture(scope="module")
@@ -49,7 +52,9 @@ def all_css(sheets):
 
 
 def test_scale_tokens_exist_and_are_relative(sheets):
-    tokens = re.findall(r"(--text-(?:2xs|xs|sm|base|lg|xl))\s*:\s*([^;]+);", sheets["tokens.css"])
+    tokens = re.findall(
+        r"(--text-(?:2xs|xs|sm|base|lg|xl))\s*:\s*([^;]+);", sheets["tokens.css"]
+    )
     found = {name: value.strip() for name, value in tokens}
     assert len(found) == 6, f"expected six scale steps, found {sorted(found)}"
     for name, value in found.items():
@@ -106,7 +111,9 @@ def test_every_font_size_comes_from_the_scale(sheets):
         for value in FONT_SIZE.findall(source)
         if not _drawn_from_the_scale(value)
     ]
-    assert not offenders, "font-sizes not drawn from the scale:\n  " + "\n  ".join(offenders)
+    assert not offenders, "font-sizes not drawn from the scale:\n  " + "\n  ".join(
+        offenders
+    )
 
 
 def test_nothing_sets_a_font_size_on_the_root(all_css):
@@ -141,14 +148,19 @@ def test_the_colour_scheme_is_declared(all_css):
     """The palette is light-only. Without saying so, UA widgets -- the
     range input, the text fields, the scrollbars -- may render dark on a
     system set to dark."""
-    assert re.search(r"color-scheme\s*:\s*light", all_css), "color-scheme: light is not declared"
+    assert re.search(r"color-scheme\s*:\s*light", all_css), (
+        "color-scheme: light is not declared"
+    )
 
 
-@pytest.mark.parametrize("query", [
-    "(prefers-reduced-motion: reduce)",
-    "(forced-colors: active)",
-    "(prefers-contrast: more)",
-])
+@pytest.mark.parametrize(
+    "query",
+    [
+        "(prefers-reduced-motion: reduce)",
+        "(forced-colors: active)",
+        "(prefers-contrast: more)",
+    ],
+)
 def test_the_preference_queries_are_present(all_css, query):
     assert f"@media {query}" in all_css, f"no @media {query} block"
 
@@ -162,12 +174,23 @@ def test_forced_colours_covers_everything_whose_background_is_data(all_css):
     to notice. Each selector below carries meaning in a background or a
     box-shadow and has to be restated in system colours or opted out.
     """
-    block = re.search(r"@media\s*\(forced-colors:\s*active\)\s*\{(.*?)\n\}", all_css, re.DOTALL)
+    block = re.search(
+        r"@media\s*\(forced-colors:\s*active\)\s*\{(.*?)\n\}", all_css, re.DOTALL
+    )
     assert block, "no forced-colors block"
     body = block.group(1)
-    for selector in (".emo-fill", ".emo-avg-mark", ".emo-track", ".person-swatch",
-                     ".job-bar-fill", ".person-row.is-selected", ".video-combo-item"):
-        assert selector in body, f"{selector} carries meaning in a background but is not handled"
+    for selector in (
+        ".emo-fill",
+        ".emo-avg-mark",
+        ".emo-track",
+        ".person-swatch",
+        ".job-bar-fill",
+        ".person-row.is-selected",
+        ".video-combo-item",
+    ):
+        assert selector in body, (
+            f"{selector} carries meaning in a background but is not handled"
+        )
 
 
 def test_suppressed_outlines_have_a_forced_colours_fallback(sheets, all_css):
@@ -183,15 +206,20 @@ def test_suppressed_outlines_have_a_forced_colours_fallback(sheets, all_css):
             continue
         for selector, body in re.findall(r"([^{}]+)\{([^}]*)\}", source):
             if re.search(r"outline\s*:\s*none", body):
-                suppressed.update(s.strip() for s in selector.split(",") if ":focus" in s)
+                suppressed.update(
+                    s.strip() for s in selector.split(",") if ":focus" in s
+                )
 
-    block = re.search(r"@media\s*\(forced-colors:\s*active\)\s*\{(.*?)\n\}", all_css, re.DOTALL)
+    block = re.search(
+        r"@media\s*\(forced-colors:\s*active\)\s*\{(.*?)\n\}", all_css, re.DOTALL
+    )
     assert block, "no forced-colors block"
     body = block.group(1)
 
     missing = [s for s in suppressed if s.split(":")[0].strip() not in body]
     assert not missing, (
-        "these suppress their outline but have no forced-colours fallback: " + str(sorted(missing))
+        "these suppress their outline but have no forced-colours fallback: "
+        + str(sorted(missing))
     )
 
 
@@ -204,7 +232,9 @@ def test_more_contrast_only_repoints_tokens(all_css):
     an exception here. The block staying token-only is the evidence the
     token layer is still doing its job.
     """
-    block = re.search(r"@media\s*\(prefers-contrast:\s*more\)\s*\{(.*?)\n\}", all_css, re.DOTALL)
+    block = re.search(
+        r"@media\s*\(prefers-contrast:\s*more\)\s*\{(.*?)\n\}", all_css, re.DOTALL
+    )
     assert block, "no prefers-contrast block"
     selectors = [s.strip() for s in re.findall(r"([^{}]+)\{", block.group(1))]
     assert selectors, "the prefers-contrast block is empty"

@@ -9,7 +9,7 @@
                a side bar but panels still pair up on a line
      <= 560px  phone shape: one panel per line, and the controls that
                do not fit on a single row break onto a second one
---------------------------------------------------------------------*/
+-------------------------------------------------------------------- */
 
 @media (max-width: 860px) {
   /* One column: the stage -- player, transport, then the three emotion
@@ -18,22 +18,54 @@
      reordering here; the sidebar just stops being a side bar. It keeps
      wrapping as a row so two person panels can still share a line on a
      tablet rather than each taking a full-width strip. */
-  .layout { grid-template-columns: 1fr; padding: 16px; }
-  .sidebar { flex-direction: row; flex-wrap: wrap; }
-  .sidebar .panel { flex: 1 1 240px; }
-  .ask-panel-inner { padding: 16px; }
-  .ask-card { padding: 16px; }
-  .ask-form { flex-wrap: wrap; }
-  .topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
-  .video-combobox-input { max-width: 60vw; }
+  .layout {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .sidebar {
+    flex-flow: row wrap;
+  }
+
+  .sidebar .panel {
+    flex: 1 1 240px;
+  }
+
+  .ask-panel-inner {
+    padding: 16px;
+  }
+
+  .ask-card {
+    padding: 16px;
+  }
+
+  .ask-form {
+    flex-wrap: wrap;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .video-combobox-input {
+    max-width: 60vw;
+  }
 }
 
 @media (max-width: 560px) {
   /* Gutters. 12px rather than the tablet 16: at 320px every pixel
      given back to the panels shows up in the emotion tracks, which are
      the narrowest thing on the page. */
-  .layout { padding: 12px 12px 32px; gap: 16px; }
-  .ask-panel-inner { padding: 12px 12px 0; }
+  .layout {
+    padding: 12px 12px 32px;
+    gap: 16px;
+  }
+
+  .ask-panel-inner {
+    padding: 12px 12px 0;
+  }
 
   /* The question gets a line to itself, with both buttons beneath it.
      Sharing one row at this width leaves the field about as wide as the
@@ -52,20 +84,30 @@
      it: at a large root font size "Reset view" is wider than half this
      row, and a flex item will widen the page rather than wrap its own
      label unless told it may shrink. */
-  .ask-form { gap: 10px 8px; }
-  .ask-input { flex: 1 0 100%; }
+  .ask-form {
+    gap: 10px 8px;
+  }
+
+  .ask-input {
+    flex: 1 0 100%;
+  }
 
   .ask-submit,
   .ask-reset {
     flex: 1;
     min-width: 0;
   }
-  .job-banner { padding: 10px 12px 0; }
+
+  .job-banner {
+    padding: 10px 12px 0;
+  }
 
   /* One panel per line. The 240px basis above lets two share a line on
      a tablet; at phone width two would each be ~140px, which is
      narrower than a single .emo-row's own minimum. */
-  .sidebar .panel { flex: 1 1 100%; }
+  .sidebar .panel {
+    flex: 1 1 100%;
+  }
 
   /* The transport is the one row that genuinely cannot fit: the range
      input alone has a 129px intrinsic minimum, and play + CC + the
@@ -79,15 +121,34 @@
      what forces the wrap rather than merely allowing it. `min-width: 0`
      defeats the flex item's content-based floor, which is that same
      129px. */
-  .transport { flex-wrap: wrap; gap: 10px 12px; padding: 12px 14px; }
-  .scrub { flex: 1 0 100%; min-width: 0; order: 3; }
-  .time-readout { margin-left: auto; }
+  .transport {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 12px 14px;
+  }
+
+  .scrub {
+    flex: 1 0 100%;
+    min-width: 0;
+    order: 3;
+  }
+
+  .time-readout {
+    margin-left: auto;
+  }
 
   /* Comfortable enough to hit with a thumb. Not the full 44px the
      touch guidelines ask for -- these are dense read-out rows, and 44
      would change what the panels are; 36-40 is the compromise. */
-  .transport-toggle { height: 36px; padding: 0 13px; }
-  .person-row, .active-list li:not(.empty-hint) { padding: 10px; }
+  .transport-toggle {
+    height: 36px;
+    padding: 0 13px;
+  }
+
+  .person-row,
+  .active-list li:not(.empty-hint) {
+    padding: 10px;
+  }
 
   /* The legend is absolutely positioned into the title's row, which
      works only while the title has somewhere to sit beside it. At
@@ -95,7 +156,9 @@
      it fits, but by five pixels. Drop it onto its own line instead,
      where neither has to shrink. It sits between the title and the
      list in source order, so no reordering is needed. */
-  .panel:has(> .person-legend) .panel-title { padding-right: 0; }
+  .panel:has(> .person-legend) .panel-title {
+    padding-right: 0;
+  }
 
   /* The emotion rows keep both value columns at full width (they hold
      "-1.00", which does not shrink) and take the space out of the
@@ -110,7 +173,11 @@
      has set their font size to. Stated as a ratio rather than as the
      63px it happens to be at a 16px root, because that number stopped
      being fixed when the type scale moved to rem. */
-  .emo-row, .emo-legend { grid-template-columns: 4.5em 1fr 2.75em 2.75em; gap: 6px; }
+  .emo-row,
+  .emo-legend {
+    grid-template-columns: 4.5em 1fr 2.75em 2.75em;
+    gap: 6px;
+  }
 
   /* A 16:9 frame is only ~166px tall at 320px wide, which is less than
      the empty state's own title + explanation + command need -- and
@@ -129,14 +196,20 @@
     min-height: 280px;
   }
 
-  .empty-state-detail { font-size: var(--text-sm); }
+  .empty-state-detail {
+    font-size: var(--text-sm);
+  }
 
   /* Captions are sized off the viewport, but the frame they sit in is
      the thing that got small: at 320px the shipped floors put a
      three-line caption at ~89px inside a 166px-tall video, over half
      the picture. Lower floors and tighter padding bring that back to
      roughly a third. */
-  .subtitle-box { padding: 5px 10px; gap: 1px; }
+  .subtitle-box {
+    padding: 5px 10px;
+    gap: 1px;
+  }
+
   /* Re-pointed on :root rather than restated on the two rules, so the
      caption sizes stay in one place (see tokens.css). Lower floors and
      a tighter ramp than the default pair. */
@@ -144,7 +217,10 @@
     --text-subtitle: clamp(0.6875rem, 3.4vw, var(--text-sm));
     --text-subtitle-emotion: clamp(var(--text-2xs), 2.8vw, var(--text-xs));
   }
-  .subtitle-text { line-height: 1.25; }
+
+  .subtitle-text {
+    line-height: 1.25;
+  }
 }
 
 @media (max-width: 330px) {

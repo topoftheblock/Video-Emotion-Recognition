@@ -40,7 +40,7 @@ def _xmi(*sofas, extra=""):
         '<xmi:XMI xmlns:xmi="http://www.omg.org/XMI" '
         'xmlns:cas="http:///uima/cas.ecore" '
         'xmlns:tcas="http:///uima/tcas.ecore" xmi:version="2.0">'
-        f'{"".join(parts)}{extra}'
+        f"{''.join(parts)}{extra}"
         '<cas:View sofa="1" members="99"/>'
         "</xmi:XMI>".encode("utf-8")
     ).getroottree()
@@ -114,7 +114,9 @@ def test_extract_video_payload_writes_sofa_bytes(tmp_path, monkeypatch):
     dest_dir = tmp_path / "dest"
     monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
 
-    result = video_files.extract_video_payload(_payload(_video_xmi(b"fake mp4 bytes")), "clip.mp4")
+    result = video_files.extract_video_payload(
+        _payload(_video_xmi(b"fake mp4 bytes")), "clip.mp4"
+    )
 
     assert result == dest_dir / "clip.mp4"
     assert (dest_dir / "clip.mp4").read_bytes() == b"fake mp4 bytes"
@@ -144,7 +146,9 @@ def test_no_video_sofa_means_nothing_to_extract(tmp_path, monkeypatch):
     monkeypatch.setattr(video_files, "VIDEO_MEDIA_DIR", str(dest_dir))
     # A transcript-only CAS (the shipped demo looks like this): an empty
     # _InitialView plus a text sofa, no video payload to recover.
-    tree = _xmi(("_InitialView", None, None), ("transcriptView", "text/plain", b"Vielen Dank."))
+    tree = _xmi(
+        ("_InitialView", None, None), ("transcriptView", "text/plain", b"Vielen Dank.")
+    )
 
     assert video_files.extract_video_payload(_payload(tree), "clip.mp4") is None
     assert not dest_dir.exists() or not (dest_dir / "clip.mp4").exists()
@@ -235,7 +239,7 @@ def test_stripping_keeps_the_payload_readable(monkeypatch):
     # The whole ordering the import depends on: captured before the
     # blanking, still extractable afterwards.
     assert payload.data() == b"a video"
-    assert b"sofaString=\"\"" in etree.tostring(tree)
+    assert b'sofaString=""' in etree.tostring(tree)
 
 
 def test_cas_source_is_a_readable_stream(monkeypatch):
@@ -289,7 +293,9 @@ def test_ensure_video_available_does_not_decode_an_already_placed_video(
     # is reached at all, this fails.
     payload.data = lambda: (_ for _ in ()).throw(AssertionError("payload was decoded"))
 
-    result = video_files.ensure_video_available("clip.mp4", tmp_path / "source", payload)
+    result = video_files.ensure_video_available(
+        "clip.mp4", tmp_path / "source", payload
+    )
 
     assert result == dest_dir / "clip.mp4"
     assert (dest_dir / "clip.mp4").read_bytes() == b"already here"

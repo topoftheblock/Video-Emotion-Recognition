@@ -79,7 +79,7 @@ export function renderBoundingBoxes(data, t) {
  * that's the join key back to a label for this box. */
 function findEmotionLabelForFrame(data, box) {
   const match = data.emotions.video.find(
-    (e) => e.person_id === box.person_id && e.frame_index === box.frame_index
+    (e) => e.person_id === box.person_id && e.frame_index === box.frame_index,
   );
   return match ? match.dominant_label : null;
 }

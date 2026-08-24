@@ -3,7 +3,7 @@
    border, shadow-md, flat surface fill. Static -- panels are read, not
    clicked, so they do not respond to the cursor at all. The rows inside
    them still do.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 /* --- Panel shell ------------------------------------------------------------ */
 
@@ -23,15 +23,28 @@
 .panel::before {
   content: "";
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 2px;
   background: var(--panel-accent, var(--signal));
 }
 
-.panel:has(.dot-emotion)::before { --panel-accent: var(--accent-emotion); }
-.panel:has(.dot-people)::before { --panel-accent: var(--accent-people); }
-.panel:has(.dot-live)::before { --panel-accent: var(--accent-live); }
-.panel:has(.dot-cross)::before { --panel-accent: var(--accent-cross); }
+.panel:has(.dot-emotion)::before {
+  --panel-accent: var(--accent-emotion);
+}
+
+.panel:has(.dot-people)::before {
+  --panel-accent: var(--accent-people);
+}
+
+.panel:has(.dot-live)::before {
+  --panel-accent: var(--accent-live);
+}
+
+.panel:has(.dot-cross)::before {
+  --panel-accent: var(--accent-cross);
+}
 
 .panel-title {
   position: relative;
@@ -51,15 +64,30 @@
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentcolor 18%, transparent);
 }
 
 /* All three emotion panels share one accent (see tokens.css); their
    titles tell them apart. */
-.dot-emotion { background: var(--accent-emotion); color: var(--accent-emotion); }
-.dot-people { background: var(--accent-people); color: var(--accent-people); }
-.dot-live { background: var(--accent-live); color: var(--accent-live); }
-.dot-cross { background: var(--accent-cross); color: var(--accent-cross); }
+.dot-emotion {
+  background: var(--accent-emotion);
+  color: var(--accent-emotion);
+}
+
+.dot-people {
+  background: var(--accent-people);
+  color: var(--accent-people);
+}
+
+.dot-live {
+  background: var(--accent-live);
+  color: var(--accent-live);
+}
+
+.dot-cross {
+  background: var(--accent-cross);
+  color: var(--accent-cross);
+}
 
 /* --- Match-confidence legend ------------------------------------------------ */
 
@@ -107,7 +135,10 @@
   cursor: help;
 }
 
-.person-legend-toggle:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.person-legend-toggle:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 /* What the toggle opens. A sibling of .person-legend rather than a
    child: the legend is absolutely positioned into the title's row, so
@@ -117,6 +148,7 @@
   margin: 0 0 10px;
   font-size: var(--text-xs);
   line-height: 1.45;
+
   /* --text-strong, not --text-dim: small text that is read through
      rather than glanced at, the same call .emo-label and .job-detail
      make. */
@@ -159,7 +191,8 @@
 
 /* --- Person lists and rows -------------------------------------------------- */
 
-.person-list, .active-list {
+.person-list,
+.active-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -171,7 +204,8 @@
 /* The People rows are buttons (they filter the emotion panels), the
    "on screen now" rows are not -- so the row styling lives on the
    button there and on the li here. */
-.person-row, .active-list li {
+.person-row,
+.active-list li {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -180,25 +214,31 @@
   padding: 7px 10px;
   border-radius: var(--radius-sm);
   border: var(--theme-border-base) solid transparent;
+
   /* surface-50, not the surface-100 that inputs and track grooves take:
      still visibly recessed against the panel, but light enough to keep
      the dimmed .person-meta above 4.5:1. On surface-100 it lands at
      4.48 -- close enough to look fine and still be a fail. */
   background: var(--surface-50);
-  transition: background-color var(--transition), border-color var(--transition),
+  transition:
+    background-color var(--transition),
+    border-color var(--transition),
     color var(--transition);
 }
 
 /* variant-soft-primary on hover, variant-filled-primary when selected
    -- the Gateway's two states for the same control, so a row that is
    merely under the cursor never reads as the active filter. */
-.person-row:hover, .active-list li:not(.empty-hint):hover {
+.person-row:hover,
+.active-list li:not(.empty-hint):hover {
   background: var(--signal-soft);
   border-color: var(--primary-200);
   color: var(--signal-strong);
 }
 
-.person-list li { display: block; }
+.person-list li {
+  display: block;
+}
 
 .person-row {
   width: 100%;
@@ -219,9 +259,14 @@
 
 /* 0.85, not the 0.75 this used to be: over --signal that composited to
    #bfdae5 and 3.99:1, which is a fail at 12px. */
-.person-row.is-selected .person-meta { color: rgba(255, 255, 255, 0.85); }
+.person-row.is-selected .person-meta {
+  color: rgba(255, 255, 255, 0.85);
+}
 
-.person-row:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.person-row:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 /* --- Selected-person filter chip -------------------------------------------- */
 
@@ -261,6 +306,7 @@
 }
 
 /* --- "Also appears in" rows ------------------------------------------------- */
+
 /*
    The other two person lists fit on one line, so they are flex rows
    with the meta pushed right. These carry a comma-joined list of other
@@ -274,15 +320,17 @@
 .cross-list li {
   display: grid;
   grid-template-columns: auto 1fr;
-  column-gap: 9px;
-  row-gap: 3px;
+  gap: 3px 9px;
   align-items: center;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   background: var(--surface-50);
 }
 
-.cross-list .person-swatch { grid-column: 1; grid-row: 1; }
+.cross-list .person-swatch {
+  grid-column: 1;
+  grid-row: 1;
+}
 
 .cross-list .person-name {
   grid-column: 2;
@@ -336,6 +384,7 @@
   grid-column: 2;
   grid-row: 2;
   margin-left: 0;
+
   /* One appearance per line -- see crossVideo.js. A column rather than
      plain block elements so the gap between entries is separate from
      the line-height inside a single wrapped one. */
@@ -372,7 +421,7 @@
   flex-shrink: 0;
   box-shadow:
     0 0 0 1px var(--border-input),
-    0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+    0 0 0 3px color-mix(in srgb, currentcolor 16%, transparent);
 }
 
 /* --border-input against --signal is 1.05:1 -- all but the same colour.

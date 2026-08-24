@@ -8,16 +8,12 @@ loads and patches the typesystem exactly once for the entire batch
 rather than per file, which dominates startup time otherwise.
 """
 
-import os
 from collections import Counter
 from pathlib import Path
 
 from cassis import load_cas_from_xmi
 from lxml import etree
 
-from .config import INPUT_VIDEO_DIR, ON_EXISTING, ON_EXISTING_CHOICES
-from .db import delete_video, find_video_by_filename, get_db_connection
-from .job_runs import JobRun
 from .cas.sofas import (
     cas_source,
     find_media_sofas,
@@ -25,10 +21,13 @@ from .cas.sofas import (
     select_video_sofa,
     strip_media_sofas,
 )
-from .video_files import ensure_video_available
-from .inputs import default_input_paths, describe_missing_inputs, resolve_xmi_paths
-from .parsers import PARSE_STEPS
 from .cas.typesystem import load_merged_typesystem, loading_cas_quietly
+from .config import INPUT_VIDEO_DIR, ON_EXISTING, ON_EXISTING_CHOICES, XMI_FILE
+from .db import delete_video, find_video_by_filename, get_db_connection
+from .inputs import default_input_paths, describe_missing_inputs, resolve_xmi_paths
+from .job_runs import JobRun
+from .parsers import PARSE_STEPS
+from .video_files import ensure_video_available
 
 
 def parse_and_insert(cas, cursor, on_step=None, context=None):
@@ -54,7 +53,6 @@ def parse_and_insert(cas, cursor, on_step=None, context=None):
             on_step(step.__name__.rsplit(".", 1)[-1], index, len(PARSE_STEPS))
         step.parse(cas, cursor, context)
     return context
-
 
 
 def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
@@ -164,6 +162,7 @@ def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+
         # The step counter goes in the phase text, not in
         # progress_current: that pair counts files for the whole run,
         # and a bar that switched scale halfway through a batch would
@@ -199,7 +198,9 @@ def run(xmi_file=None, typesystem=None, job=None, on_existing=None):
     # not interpreted.
     if job is not None:
         job.update(phase=f"placing video for {Path(xmi_file).name}")
-    ensure_video_available(context.get("video_filename"), INPUT_VIDEO_DIR, video_payload)
+    ensure_video_available(
+        context.get("video_filename"), INPUT_VIDEO_DIR, video_payload
+    )
 
     print(f"Finished {xmi_file}")
     return "replaced" if replaced else "imported"
@@ -260,14 +261,13 @@ def run_many(paths=None, on_existing=None):
                 failed.append((xmi_file, exc))
 
         outcomes["failed"] = len(failed)
-        summary = ", ".join(
-            f"{count} {name}" for name, count in outcomes.items() if count
-        ) or "nothing to do"
+        summary = (
+            ", ".join(f"{count} {name}" for name, count in outcomes.items() if count)
+            or "nothing to do"
+        )
         job.update(current=len(xmi_files), message=summary, force=True)
 
-    print(
-        f"\nDone: {summary} (of {len(xmi_files)} file(s))."
-    )
-    for xmi_file, exc in failed:
-        print(f"  FAILED {xmi_file}: {exc}")
+    print(f"\nDone: {summary} (of {len(xmi_files)} file(s)).")
+    for xmi_file, error in failed:
+        print(f"  FAILED {xmi_file}: {error}")
     return succeeded, failed

@@ -52,10 +52,15 @@ export function renderPersonList(persons) {
     return;
   }
   // Alphabetical by display name, not import order.
-  const sorted = [...persons].sort((a, b) => compareNames(personName(a), personName(b)));
+  const sorted = [...persons].sort((a, b) =>
+    compareNames(personName(a), personName(b)),
+  );
   el.personList.innerHTML = sorted
     .map((p) => {
-      const score = p.audio_video_match_score != null ? `${Math.round(p.audio_video_match_score * 100)}%` : "";
+      const score =
+        p.audio_video_match_score != null
+          ? `${Math.round(p.audio_video_match_score * 100)}%`
+          : "";
       // Repeats the legend's title on the number itself, so the
       // explanation is reachable by hovering either the column header
       // once or any one row -- no need to remember which row you
@@ -76,14 +81,20 @@ export function renderPersonList(persons) {
           class="person-row${selected ? " is-selected" : ""}"
           data-person-id="${p.person_id}"
           aria-pressed="${selected ? "true" : "false"}"
-          title="${selected
-            ? "Show every person's emotions again"
-            : "Show only this person's emotions"}"
+          title="${
+            selected
+              ? "Show every person's emotions again"
+              : "Show only this person's emotions"
+          }"
         >
-          <span class="person-swatch" style="background:${personColorFor(p.person_id)}"></span>
+          <span
+            class="person-swatch"
+            style="background:${personColorFor(p.person_id)}"
+          ></span>
           ${personName(p)}
-          <span class="person-meta" aria-label="${scoreLabel}"
-                title="${scoreTitle}">${score}</span>
+          <span class="person-meta" aria-label="${scoreLabel}" title="${scoreTitle}"
+            >${score}</span
+          >
         </button>
       </li>`;
     })
@@ -92,18 +103,20 @@ export function renderPersonList(persons) {
 
 export function renderActiveList(labels) {
   if (!labels.length) {
-    el.activeList.innerHTML = '<li class="empty-hint">No one detected at this frame.</li>';
+    el.activeList.innerHTML =
+      '<li class="empty-hint">No one detected at this frame.</li>';
     return;
   }
   // Alphabetical by display name, same as the other two person lists.
   const sorted = [...labels].sort((a, b) => compareNames(a.name, b.name));
   el.activeList.innerHTML = sorted
     .map(
-      (l) => html`<li>
-        <span class="person-swatch" style="background:${l.color}"></span>
-        ${l.name}
-        <span class="person-meta">${l.emotion || ""}</span>
-      </li>`
+      (l) =>
+        html`<li>
+          <span class="person-swatch" style="background:${l.color}"></span>
+          ${l.name}
+          <span class="person-meta">${l.emotion || ""}</span>
+        </li>`,
     )
     .join("");
 }

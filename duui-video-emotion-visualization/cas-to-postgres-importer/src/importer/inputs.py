@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .config import INPUT_XMI_DIR, XMI_FILE
 
+
 def default_input_paths():
     """
     What to import when no path is passed on the command line: the

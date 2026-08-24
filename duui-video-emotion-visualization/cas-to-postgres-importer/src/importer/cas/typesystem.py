@@ -24,18 +24,42 @@ except ImportError:
     # the auto-stub scan working (just slightly more conservative)
     # rather than crashing on import.
     KNOWN_BUILTIN_TYPES = {
-        "uima.cas.TOP", "uima.tcas.Annotation", "uima.cas.AnnotationBase",
-        "uima.cas.String", "uima.cas.Integer", "uima.cas.Double", "uima.cas.Float",
-        "uima.cas.Boolean", "uima.cas.Byte", "uima.cas.Short", "uima.cas.Long",
-        "uima.cas.FSArray", "uima.cas.StringArray", "uima.cas.IntegerArray",
-        "uima.cas.DoubleArray", "uima.cas.FloatArray", "uima.cas.BooleanArray",
-        "uima.cas.ByteArray", "uima.cas.ShortArray", "uima.cas.LongArray",
-        "uima.cas.ArrayBase", "uima.cas.FSList", "uima.cas.StringList",
-        "uima.cas.IntegerList", "uima.cas.FloatList", "uima.cas.ListBase",
-        "uima.cas.EmptyFSList", "uima.cas.EmptyStringList", "uima.cas.EmptyIntegerList",
-        "uima.cas.EmptyFloatList", "uima.cas.NonEmptyFSList", "uima.cas.NonEmptyStringList",
-        "uima.cas.NonEmptyIntegerList", "uima.cas.NonEmptyFloatList",
-        "uima.cas.Sofa", "uima.cas.NULL",
+        "uima.cas.TOP",
+        "uima.tcas.Annotation",
+        "uima.cas.AnnotationBase",
+        "uima.cas.String",
+        "uima.cas.Integer",
+        "uima.cas.Double",
+        "uima.cas.Float",
+        "uima.cas.Boolean",
+        "uima.cas.Byte",
+        "uima.cas.Short",
+        "uima.cas.Long",
+        "uima.cas.FSArray",
+        "uima.cas.StringArray",
+        "uima.cas.IntegerArray",
+        "uima.cas.DoubleArray",
+        "uima.cas.FloatArray",
+        "uima.cas.BooleanArray",
+        "uima.cas.ByteArray",
+        "uima.cas.ShortArray",
+        "uima.cas.LongArray",
+        "uima.cas.ArrayBase",
+        "uima.cas.FSList",
+        "uima.cas.StringList",
+        "uima.cas.IntegerList",
+        "uima.cas.FloatList",
+        "uima.cas.ListBase",
+        "uima.cas.EmptyFSList",
+        "uima.cas.EmptyStringList",
+        "uima.cas.EmptyIntegerList",
+        "uima.cas.EmptyFloatList",
+        "uima.cas.NonEmptyFSList",
+        "uima.cas.NonEmptyStringList",
+        "uima.cas.NonEmptyIntegerList",
+        "uima.cas.NonEmptyFloatList",
+        "uima.cas.Sofa",
+        "uima.cas.NULL",
     }
 
 from ..config import TYPESYSTEM_FILES
@@ -146,7 +170,9 @@ def _load_type_descriptions(filepath):
             f"Could not find a <types> element in {filepath!r} -- "
             "is this a valid UIMA typeSystemDescription XML file?"
         )
-    return [_strip_namespace(td) for td in types_elem if _local_tag(td) == "typeDescription"]
+    return [
+        _strip_namespace(td) for td in types_elem if _local_tag(td) == "typeDescription"
+    ]
 
 
 def _collect_type_descriptions():

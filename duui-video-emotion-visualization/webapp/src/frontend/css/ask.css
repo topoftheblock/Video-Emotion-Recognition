@@ -3,7 +3,7 @@
    itself with a gradient border sheen; the Gateway has no such thing,
    so it is now an ordinary .section-wrapper card and lets the filled
    primary button carry the emphasis instead.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 .ask-panel {
   position: relative;
@@ -45,7 +45,10 @@
   justify-content: center;
 }
 
-.ask-icon svg { width: 18px; height: 18px; }
+.ask-icon svg {
+  width: 18px;
+  height: 18px;
+}
 
 /* Matches .h4 (Skeleton's card-title class, e.g. PipelineCard's own
    name heading) at its mobile-first step, text-lg. */
@@ -71,6 +74,7 @@
    primary ring on focus. */
 .ask-input {
   flex: 1;
+
   /* A flex item's floor is its intrinsic width, and an <input> carries
      a default `size` of 20 characters -- so this refuses to shrink below
      roughly twenty characters' worth of its own font. At the default
@@ -82,6 +86,7 @@
   min-width: 0;
   background: var(--surface-alt);
   color: var(--text);
+
   /* --border-input, not --border-soft: at 1.31:1 the old edge and the
      1.24:1 fill left nothing marking this as a field until it was
      focused. See the token's comment in tokens.css. */
@@ -90,10 +95,14 @@
   padding: 11px 14px;
   font-family: var(--font-ui);
   font-size: var(--text-base);
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 
-.ask-input::placeholder { color: var(--text-placeholder); }
+.ask-input::placeholder {
+  color: var(--text-placeholder);
+}
 
 .ask-input:focus {
   outline: none;
@@ -101,7 +110,8 @@
   box-shadow: 0 0 0 2px var(--signal);
 }
 
-.ask-submit, .ask-reset {
+.ask-submit,
+.ask-reset {
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -109,8 +119,10 @@
   padding: 11px 22px;
   cursor: pointer;
   border: var(--theme-border-base) solid transparent;
-  transition: background-color var(--transition), color var(--transition),
-  border-color var(--transition);
+  transition:
+    background-color var(--transition),
+    color var(--transition),
+    border-color var(--transition);
 }
 
 /* .button-primary */
@@ -120,8 +132,14 @@
   position: relative;
 }
 
-.ask-submit:hover:not([aria-disabled="true"]) { background: var(--signal-hover); }
-.ask-submit:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.ask-submit:hover:not([aria-disabled="true"]) {
+  background: var(--signal-hover);
+}
+
+.ask-submit:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 /* Keyed off aria-disabled rather than :disabled, because the button is
    never really disabled while a question is out -- see the comment on
@@ -136,8 +154,10 @@
 .ask-submit[aria-disabled="true"]::after {
   content: "";
   position: absolute;
-  top: 50%; left: 50%;
-  width: 14px; height: 14px;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
   margin: -7px 0 0 -7px;
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-top-color: #fff;
@@ -145,7 +165,11 @@
   animation: spin 0.7s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* .button-neutral: soft border at rest, fills solid primary on hover.
    The Gateway's default for any control that is not the primary
@@ -162,7 +186,10 @@
   color: #fff;
 }
 
-.ask-reset:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.ask-reset:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 .ask-status {
   font-family: var(--font-mono);
@@ -171,7 +198,9 @@
   min-height: 16px;
 }
 
-.ask-status.error { color: var(--danger-text); }
+.ask-status.error {
+  color: var(--danger-text);
+}
 
 .ask-results {
   display: flex;
@@ -180,7 +209,10 @@
   animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.ask-results:empty { display: none; animation: none; }
+.ask-results:empty {
+  display: none;
+  animation: none;
+}
 
 /* Matches PipelineCard's own description paragraph -- no size override
    there, which inherits Tailwind's text-base default. */
@@ -204,7 +236,11 @@
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   white-space: pre-wrap;
-  word-break: break-word;
+
+  /* overflow-wrap, not `word-break: break-word` -- that spelling is a
+     non-standard WebKit alias for exactly this and is deprecated. Same
+     behaviour: break a long token only when it would otherwise overflow. */
+  overflow-wrap: break-word;
 }
 
 .ask-overlays {
@@ -261,7 +297,9 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  transition: background-color var(--transition), border-color var(--transition);
+  transition:
+    background-color var(--transition),
+    border-color var(--transition);
 }
 
 .ask-segment-list button:hover {
@@ -269,7 +307,10 @@
   background: var(--signal-soft);
 }
 
-.ask-segment-list button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.ask-segment-list button:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 .ask-segment-time {
   font-family: var(--font-mono);
@@ -307,12 +348,19 @@
   font-size: var(--text-sm);
 }
 
-.ask-table th, .ask-table td {
+.ask-table th,
+.ask-table td {
   border-bottom: var(--theme-border-base) solid var(--border);
   padding: 7px 10px;
   text-align: left;
   color: var(--text-dim);
 }
 
-.ask-table th { color: var(--text); font-weight: 600; }
-.ask-table tr:hover td { background: var(--surface-50); }
+.ask-table th {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ask-table tr:hover td {
+  background: var(--surface-50);
+}
