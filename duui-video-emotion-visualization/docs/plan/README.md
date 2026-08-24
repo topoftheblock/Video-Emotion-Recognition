@@ -592,6 +592,14 @@ out — phases marked done, decision records archived.
   word, except where behaviour genuinely differs — and there, the difference is
   stated explicitly. The pairs get diffed as a check, not just as a starting
   point.
+- **Upgrade steps go in the plan, not in the documentation.** Where a phase
+  changes something an existing deployment would have to fix by hand — a volume
+  that needs chowning, a database that needs recreating — record it in that
+  phase's file and nowhere else. **Nobody but the project owner runs this
+  software until the whole plan is finished**, so a migration note in `docs/` is
+  addressed to a reader who does not exist, and would have to be re-checked
+  against the finished state anyway. Phase 7 decides what, if anything, survives
+  into `docs/operations.md`.
 - **`docs/todo.md` is not part of this cleanup.** It collects work to do
   *afterwards*, and nothing in it is in scope for any phase here. Entries are
   added **only when the project owner asks for one** — never from a passing

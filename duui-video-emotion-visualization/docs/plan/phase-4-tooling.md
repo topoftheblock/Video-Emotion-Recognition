@@ -543,8 +543,11 @@ forever, so the non-root importer could not write to it:
 touch: cannot touch '/data/videos/.probe': Permission denied
 ```
 
-One-off fix, and **this is an upgrade step real users will hit** — it belongs in
-`docs/operations.md` in Phase 7:
+One-off fix. Recorded here and nowhere else, per the rule in
+[§5 of the plan](README.md#5-cross-cutting-rules): nobody but the project owner
+runs this software until the plan is finished, so a migration note in `docs/`
+would address a reader who does not exist. Phase 7 decides whether any of it
+survives into `docs/operations.md`.
 
 ```bash
 docker run --rm -v <project>_video_media:/v alpine chown -R 1000:1000 /v
