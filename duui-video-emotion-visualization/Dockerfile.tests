@@ -1,0 +1,22 @@
+# The test runner: every suite, against the same interpreter the images use.
+#
+# Exists because the project's Python cannot be installed on every development
+# machine, so the container is the only place the suite can run against the real
+# runtime. It is dev-only and ships nothing.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# All four requirement sets: the runner needs every sub-project's dependencies
+# at once, unlike the images, which each carry only their own.
+COPY cas-to-postgres-importer/requirements.txt /tmp/importer.txt
+COPY webapp/requirements.txt /tmp/webapp.txt
+COPY global-identity-linker/requirements.txt /tmp/identity.txt
+COPY requirements-dev.txt /tmp/dev.txt
+RUN pip install --no-cache-dir \
+      -r /tmp/importer.txt -r /tmp/webapp.txt -r /tmp/identity.txt -r /tmp/dev.txt
+
+# Source is mounted at run time, not copied, so a change does not need a rebuild.
+ENV PYTHONDONTWRITEBYTECODE=1
+
+ENTRYPOINT ["/app/tools/run-tests.sh"]

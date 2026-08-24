@@ -284,6 +284,53 @@ Two things follow. A rebuild stops silently degrading the suite from 150 passed
 to 121 passed and 29 skipped, and the green baseline stops depending on a
 manual step nobody has written down.
 
+## 4.4c The test service, as built
+
+`docker compose run --rm tests` — profiled under `test`, so `up` never starts it.
+Anything after `tests` is passed through to pytest:
+
+```bash
+docker compose run --rm tests
+```
+
+```bash
+docker compose run --rm tests webapp/tests -k contrast
+```
+
+Four properties, each verified rather than assumed:
+
+| Property | Check |
+| --- | --- |
+| Reproduces the baseline | **150 passed, 0 skipped** |
+| Provisions its own database | First run created `duui_video_emotion_test` and applied `schema.sql` |
+| Idempotent | Second run: `already exists` |
+| **Fails loudly with no database** | `OperationalError`, **exit 1** — not 29 quiet skips |
+
+That last row is the D13 fix. Provisioning lives in the runner, not in a pytest
+fixture, so a test run never issues `CREATE DATABASE` against whatever
+`DUUI_DB_NAME` happens to point at.
+
+### It runs as non-root, and that recovered a test
+
+The first working version reported **149 passed, 1 skipped**, against 150 on the
+host. The skip was honest and self-declaring:
+
+```
+test_inputs.py:135: root bypasses directory permissions
+```
+
+`test_unreadable_directory_is_reported_as_a_permission_problem` chmods a
+directory to `0o000` and expects a permission error. Root ignores that, so the
+test skips rather than passing vacuously.
+
+Setting `user:` on the service fixed it — **150 passed, 0 skipped**. Worth
+noting where this leads: it is the first concrete cost of the "all four
+Dockerfiles run as root" finding from the linter roster. A container running as
+root did not fail, it silently tested one thing less.
+
+The uid is `${DUUI_TEST_UID:-1000}`, overridable, because the mounted source is
+owned by the host user.
+
 ## 4.5 The type-checking ratchet
 
 7 of 140 functions carry a return annotation today. Phase 5 adds the rest as it
@@ -324,7 +371,7 @@ Each step is one commit; suite green before each.
 
 | # | Step | Risk |
 | --- | --- | --- |
-| 0a | **Add the Docker test service first** (§4.4b), on the current 3.12 images, and confirm it reproduces 150/150 | None — this is the safety net for everything after |
+| 0a | ~~Add the Docker test service first~~ — **done**, §4.4c | — |
 | 0b | **`docker compose down -v`** — only once 0a passes, since pg18 cannot reuse the pg16 volume (§4.2 Q2) | Destroys the corpus, by design |
 | 1 | Declare `lxml`, `starlette` and `uvicorn`; set `requires-python = ">=3.14"`; review `requirements-dev.txt` against actual imports | None |
 | 2 | ~~Answer Q1/Q2 by experiment~~ — **done**, §4.3 | — |
