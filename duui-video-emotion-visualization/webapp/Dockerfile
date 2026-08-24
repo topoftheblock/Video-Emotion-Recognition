@@ -30,6 +30,20 @@ ENV DUUI_VIDEO_DIR=/data/videos
 
 # Always 8000 inside the container; map it to whatever host port you
 # like (compose defaults to 8010).
+
+# Not root. A container running as root does not fail loudly; it silently does
+# more than it should -- and in this project it already cost an assertion, since
+# a test that expects a permission error cannot get one as root (see
+# docs/plan/phase-4-tooling.md). uid 1000 matches the other images.
+#
+# create_app() calls VIDEO_DIR.mkdir(parents=True, exist_ok=True) before the
+# mounts are registered. The store arrives read-only, so the directory must
+# already exist and be owned by the runner or that call raises on a fresh volume.
+RUN useradd --create-home --uid 1000 runner \
+    && mkdir -p /data/videos \
+    && chown -R runner:runner /data/videos
+USER runner
+
 EXPOSE 8000
 
 # --factory because backend.app exposes create_app() rather than a

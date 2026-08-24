@@ -522,6 +522,49 @@ unrelated breakage.
    `hadolint` produced `-rwx--x--x`, executable but unreadable, which fails as
    `/proc/self/exe`. `chmod 755`.
 
+## 4.4e Step 7b: the other three images run as non-root
+
+All three now create a `runner` user at uid 1000 and switch to it, matching the
+test and lint images.
+
+| Image | Writes | What it needed |
+| --- | --- | --- |
+| `global-identity-linker` | nothing on disk | just the user |
+| `webapp` | mounts the store **read-only**, but `create_app()` calls `VIDEO_DIR.mkdir(exist_ok=True)` before the mounts register | the directory pre-created and owned |
+| `cas-to-postgres-importer` | copies and extracts video files into the store | the directory pre-created and owned |
+
+### The existing volume had to be migrated by hand
+
+Named volumes take their ownership from the image directory **the first time they
+are mounted**. A volume created while the image ran as root stays root-owned
+forever, so the non-root importer could not write to it:
+
+```
+touch: cannot touch '/data/videos/.probe': Permission denied
+```
+
+One-off fix, and **this is an upgrade step real users will hit** — it belongs in
+`docs/operations.md` in Phase 7:
+
+```bash
+docker run --rm -v <project>_video_media:/v alpine chown -R 1000:1000 /v
+```
+
+**New deployments need nothing.** Verified by mounting a brand-new empty volume
+over `/data/videos` in the importer image: it came up `drwxr-xr-x runner runner`
+and was writable immediately, because Docker copies the image directory's
+ownership into an empty volume.
+
+### Verified, not assumed
+
+- Importer **wrote** a video: a file was deleted from the store and re-imported,
+  landing as `1000:1000`. A permission probe alone would not have proved this,
+  since the importer skips a video that is already present.
+- Linker ran a full recompute: 21 of 23 persons into 8 global identities.
+- Webapp healthy, `/healthz` and `/api/videos` 200, and `/media/first2.mp4`
+  served 200 — the read path across the ownership change.
+- Suite 150 passed; lint all checks passed.
+
 ### `hadolint` does not catch the root-user problem
 
 It passes on all six Dockerfiles, including the three that run as root, because
@@ -608,7 +651,7 @@ Each step is one commit; suite green before each.
 | 5 | Add `ruff` config + `pyproject` tool sections; **do not run the formatter yet** | None |
 | 6 | **Run the formatter — its own commit, nothing else in it** | Touches ~182 lines across 74 files |
 | 7 | Add the lint service: `mypy` lenient, `sqlfluff`, `hadolint`, `yamllint` (§4.4d). `actionlint` waits for step 9, which creates the workflow it checks; `markdownlint` and the link checker move to step 8 with the rest of the Node tooling | Low |
-| 7b | Add `USER` to the other three Dockerfiles, verifying each still writes what it must (§4.4c) | Medium — they write to the video store and the database |
+| 7b | ~~Add `USER` to the other three Dockerfiles~~ — **done**, §4.4e | — |
 | 8 | Add `package.json` and the JS/CSS/HTML/Markdown tooling; run `prettier` in **its own commit** | Touches most JS and CSS |
 | 9 | Write the CI workflow; verify it fires on a change inside the project and stays silent on one outside | Low |
 | 10 | Add the pre-commit hook for `ruff format --check` and `ruff check` (§4.9b) | Low |

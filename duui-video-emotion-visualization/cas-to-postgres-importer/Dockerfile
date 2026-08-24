@@ -35,4 +35,18 @@ ENV DUUI_VIDEO_DIR=/data/videos
 
 # Args are paths (files and/or directories); no args = import everything
 # in DUUI_INPUT_XMI_DIR.
+
+# Not root. A container running as root does not fail loudly; it silently does
+# more than it should -- and in this project it already cost an assertion, since
+# a test that expects a permission error cannot get one as root (see
+# docs/plan/phase-4-tooling.md). uid 1000 matches the other images.
+#
+# /data/videos is created here and owned by the runner, so that a *new* named
+# volume mounted over it inherits that ownership from the image -- which is what
+# lets a non-root importer write the videos it extracts.
+RUN useradd --create-home --uid 1000 runner \
+    && mkdir -p /data/videos \
+    && chown -R runner:runner /data/videos
+USER runner
+
 ENTRYPOINT ["python", "-m", "importer"]

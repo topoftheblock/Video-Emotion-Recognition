@@ -29,4 +29,14 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 
 # Takes no arguments: the corpus in the database is the entire input.
+
+# Not root. A container running as root does not fail loudly; it silently does
+# more than it should -- and in this project it already cost an assertion, since
+# a test that expects a permission error cannot get one as root (see
+# docs/plan/phase-4-tooling.md). uid 1000 matches the other images.
+# This job writes nothing to disk at all -- the database is its whole input and
+# output -- so it needs no directory prepared.
+RUN useradd --create-home --uid 1000 runner
+USER runner
+
 ENTRYPOINT ["python", "-m", "identity"]
