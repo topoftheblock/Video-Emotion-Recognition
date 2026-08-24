@@ -268,6 +268,6 @@ def run_many(paths=None, on_existing=None):
         job.update(current=len(xmi_files), message=summary, force=True)
 
     print(f"\nDone: {summary} (of {len(xmi_files)} file(s)).")
-    for xmi_file, exc in failed:
-        print(f"  FAILED {xmi_file}: {exc}")
+    for xmi_file, error in failed:
+        print(f"  FAILED {xmi_file}: {error}")
     return succeeded, failed

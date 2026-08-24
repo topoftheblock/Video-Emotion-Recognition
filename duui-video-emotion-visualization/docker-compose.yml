@@ -37,7 +37,8 @@
 # you end up debugging one while running the other).
 name: duui-video-emotion-visualization
 
-# Shared by `cas-to-postgres-importer` (profile "import") and anything else that needs to
+# Shared by `cas-to-postgres-importer` (profile "import") and anything
+# else that needs to
 # run the cas-to-postgres-importer job, so the two can never drift apart.
 x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
   build:
@@ -130,7 +131,9 @@ services:
       # you already run Postgres locally on 5432.
       - "${DUUI_DB_HOST_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DUUI_DB_USER:-duui} -d ${DUUI_DB_NAME:-duui_video_emotion}"]
+      test:
+        - "CMD-SHELL"
+        - "pg_isready -U ${DUUI_DB_USER:-duui} -d ${DUUI_DB_NAME:-duui_video_emotion}"
       interval: 5s
       timeout: 5s
       retries: 10
@@ -142,7 +145,9 @@ services:
   # paths -- the .xmi directory is /data/input/xmi in here, whatever it
   # is on the host):
   #   docker compose run --rm cas-to-postgres-importer                # whole xmi dir
-  #   docker compose run --rm cas-to-postgres-importer /data/input/xmi/one_file.xmi   # a single file
+  #   # a single file:
+  #   docker compose run --rm cas-to-postgres-importer \
+  #       /data/input/xmi/one_file.xmi
   #
   # Importing is idempotent (rows are upserted, already-placed videos
   # are left alone), so re-running is harmless. It is not a dependency of
@@ -176,7 +181,7 @@ services:
   #      to run it is after a batch of imports, not during one.
   #
   # The "identity" profile keeps it out of `up`; `run` starts it anyway:
-#   docker compose run --rm global-identity-linker
+  #   docker compose run --rm global-identity-linker
   #
   # It takes no arguments, and its own thresholds are the only tuning
   # (see .env.example / README "Cross-video person identity"). Re-running
@@ -199,8 +204,26 @@ services:
       # Cosine distance, lower = stricter. See README before changing.
       DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD: ${DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD:-0.30}
       DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD: ${DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD:-0.35}
-    # No volumes at all: this job never touches the .xmi input or the
-    # video store. The database is its entire input and output.
+      # No volumes at all: this job never touches the .xmi input or the
+      # video store. The database is its entire input and output.
+
+  # --- Lint ---------------------------------------------------------------
+  # Every checker in one pass:
+  #
+  #     docker compose run --rm lint
+  #
+  # Read-only -- nothing here rewrites a file, so it is safe in CI and safe to
+  # run mid-edit. Needs no database and no application dependencies, which is
+  # what keeps it fast and stops an unrelated dependency break from masking a
+  # lint failure.
+  lint:
+    profiles: ["lint"]
+    build:
+      context: .
+      dockerfile: Dockerfile.lint
+    image: duui-video-emotion-visualization/lint:latest
+    volumes:
+      - ./:/app:ro
 
   # --- Tests ------------------------------------------------------------
   # Runs every suite against the same interpreter the images use. Profiled, so
@@ -269,7 +292,13 @@ services:
     ports:
       - "${DUUI_WEBAPP_HOST_PORT:-8010}:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=3)"]
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://localhost:8000/healthz', timeout=3)
       interval: 10s
       timeout: 5s
       retries: 5

@@ -476,6 +476,71 @@ three images write to the video store and the database and need their
 permissions checked rather than assumed — unlike the test runner, which writes
 nothing.
 
+## 4.4d The lint service, as built
+
+`docker compose run --rm lint` — a sibling of the test service, same reasoning.
+Read-only mount, so a checker can never rewrite what it is checking; no database
+and no application dependencies, so it is fast and cannot be masked by an
+unrelated breakage.
+
+| Tool | State | Notes |
+| --- | --- | --- |
+| `ruff format --check` | passes | |
+| `ruff check` | **48 E501** | Prose lines; owned by Phase 5 — see below |
+| `mypy` | passes | 51 files, lenient |
+| `sqlfluff` | passes | |
+| `yamllint` | passes | |
+| `hadolint` | passes | |
+
+### Findings fixed while wiring it up
+
+- **Four type-lies** that annotation exposed: `encoded: str = None` and
+  `byte_array: str = None` in `cas/sofas.py`, `row_limit: int = None` in
+  `sql_guard.py` — all now `| None`. Plus a missing `set[str]` annotation.
+- **A shadowed exception name** in `pipeline.py`: `for xmi_file, exc in failed:`
+  reused the name bound by `except … as exc` above it. Not a runtime fault, since
+  the loop rebinds it, but confusing enough that mypy objects. Renamed.
+- **Four capitalisation inconsistencies in `schema.sql`** — `vector(…)` and
+  `now()` lowercase where every other type and keyword is uppercase. Verified by
+  applying the schema to a scratch database: 14 tables, and Postgres normalises
+  the type back to `vector(512)`, so the change is cosmetic in source only.
+- **Two long YAML comments and two healthchecks.** The healthchecks were single
+  lines of 104 and 129 characters; rewriting them as sequences was the one
+  change here with real risk, so both services were recreated afterwards and
+  confirmed healthy.
+- **A comment I had un-indented myself** in an earlier wrap, caught by yamllint.
+
+### Three configuration lessons worth keeping
+
+1. **`per-file-ignores` governs lint rules, not the formatter.** `cas/types.py`
+   is exempt from E501 and still gets reformatted.
+2. **A read-only mount breaks any tool that caches.** `mypy` reported an
+   INTERNAL ERROR and `ruff` an `os error 30`; both wanted to write beside the
+   source. Fixed by pointing their caches at `/tmp`, which is better anyway —
+   nothing a checker does should land in the tree.
+3. **`ADD` does not make a binary readable.** `chmod +x` on the downloaded
+   `hadolint` produced `-rwx--x--x`, executable but unreadable, which fails as
+   `/proc/self/exe`. `chmod 755`.
+
+### `hadolint` does not catch the root-user problem
+
+It passes on all six Dockerfiles, including the three that run as root, because
+it has no rule requiring a `USER` directive. **Step 7b is therefore real work,
+not something the linter will do**, and the argument for it stays the one from
+§4.4c: as root, the suite silently makes one fewer assertion.
+
+### Open: what CI does about the 48 E501
+
+All 48 are prose — comments and docstrings — and the style guide puts prose at 72
+columns, well inside the limit, so **Phase 5 clears them as a side effect of
+rewriting them.** Rewrapping them now would be work thrown away.
+
+That leaves a real question for step 9: a CI job that is red from its first day
+gets ignored, but splitting the rule set between local and CI breaks the
+property that makes one command trustworthy. **Decide in step 9**, with the
+options being: gate on everything, gate on everything except E501 until Phase 5
+closes, or land the CI job after Phase 5.
+
 ## 4.5 The type-checking ratchet
 
 7 of 140 functions carry a return annotation today. Phase 5 adds the rest as it
@@ -525,7 +590,7 @@ Each step is one commit; suite green before each.
 | 4 | Apply the pinning strategy from Q3 | Low |
 | 5 | Add `ruff` config + `pyproject` tool sections; **do not run the formatter yet** | None |
 | 6 | **Run the formatter — its own commit, nothing else in it** | Touches ~182 lines across 74 files |
-| 7 | Add the remaining Python-side linters (`mypy` lenient, `sqlfluff`, `hadolint`, `yamllint`, `actionlint`, `markdownlint`, link checker) | Low |
+| 7 | Add the lint service: `mypy` lenient, `sqlfluff`, `hadolint`, `yamllint` (§4.4d). `actionlint` waits for step 9, which creates the workflow it checks; `markdownlint` and the link checker move to step 8 with the rest of the Node tooling | Low |
 | 7b | Add `USER` to the other three Dockerfiles, verifying each still writes what it must (§4.4c) | Medium — they write to the video store and the database |
 | 8 | Add `package.json` and the JS/CSS/HTML/Markdown tooling; run `prettier` in **its own commit** | Touches most JS and CSS |
 | 9 | Write the CI workflow; verify it fires on a change inside the project and stays silent on one outside | Low |

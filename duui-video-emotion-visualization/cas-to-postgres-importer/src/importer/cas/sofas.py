@@ -45,8 +45,8 @@ class SofaPayload:
 
     sofa_id: str
     mime: str
-    encoded: str = None
-    byte_array: str = None
+    encoded: str | None = None
+    byte_array: str | None = None
     # The elements this payload came from, so it can be blanked in
     # place. Excluded from repr/eq: they are plumbing, and printing a
     # 169 MB attribute by accident is exactly the kind of thing this

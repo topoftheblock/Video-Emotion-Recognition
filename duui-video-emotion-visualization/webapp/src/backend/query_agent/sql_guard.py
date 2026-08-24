@@ -60,7 +60,7 @@ def validate_select_only(sql: str) -> str:
     return stripped
 
 
-def run_read_only(sql: str, row_limit: int = None):
+def run_read_only(sql: str, row_limit: int | None = None):
     """
     Validate and execute `sql` as a read-only, row-capped query.
 

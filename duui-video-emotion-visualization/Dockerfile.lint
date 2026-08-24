@@ -1,0 +1,31 @@
+# Every linter and checker, in one image.
+#
+# A sibling of Dockerfile.tests and for the same reason: the tools have to run
+# somewhere reproducible, and installing eight of them on each machine is not a
+# habit anyone keeps. CI runs this identical image, so a clean run here means a
+# clean run there.
+FROM python:3.14-slim
+
+# hadolint and actionlint ship as static binaries rather than on PyPI.
+ARG HADOLINT_VERSION=2.12.0
+ARG ACTIONLINT_VERSION=1.7.7
+ADD https://github.com/hadolint/hadolint/releases/download/v${HADOLINT_VERSION}/hadolint-Linux-x86_64 /usr/local/bin/hadolint
+ADD https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz /tmp/actionlint.tar.gz
+RUN chmod 755 /usr/local/bin/hadolint \
+    && tar -xzf /tmp/actionlint.tar.gz -C /usr/local/bin actionlint \
+    && rm /tmp/actionlint.tar.gz
+
+# Pinned like every other dependency in this project: floor at the tested
+# version, ceiling at the next major.
+RUN pip install --no-cache-dir \
+      "ruff>=0.14,<1.0" \
+      "mypy>=1.18,<2" \
+      "sqlfluff>=3.4,<4" \
+      "yamllint>=1.37,<2"
+
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1
+RUN useradd --create-home --uid 1000 linter
+USER linter
+
+ENTRYPOINT ["/app/tests/run-lint.sh"]

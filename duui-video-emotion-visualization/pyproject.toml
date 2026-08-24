@@ -59,3 +59,20 @@ known-first-party = ["importer", "backend", "identity"]
 # written for code would corrupt data. It is a data file that happens to end
 # in .py.
 "cas-to-postgres-importer/src/importer/cas/types.py" = ["E501"]
+
+[tool.mypy]
+# The runtime, not whatever interpreter runs mypy.
+python_version = "3.14"
+
+# Lenient on purpose. 7 of 140 functions carry a return annotation today; Phase 5
+# adds the rest as it rewrites each file, and tightens this per sub-project as it
+# finishes one. Turning strictness on now would report the absence of work that
+# has not been scheduled yet.
+#
+# To tighten one sub-project when Phase 5 finishes it, add:
+#
+#     [[tool.mypy.overrides]]
+#     module = ["identity.*"]
+#     disallow_untyped_defs = true
+#
+ignore_missing_imports = true
