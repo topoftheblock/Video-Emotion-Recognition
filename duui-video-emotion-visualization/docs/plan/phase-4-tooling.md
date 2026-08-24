@@ -150,6 +150,36 @@ Three options, in increasing strictness:
 **Decided 2026-08-22: floors and ceilings.** Upper bounds solve the observed
 `openai` risk immediately; Phase 9 adds the lockfile on top.
 
+**Applied in step 4.** The floor is what the project is actually built and
+tested against, not the oldest version someone once guessed would work; the
+ceiling is the next major.
+
+| Package | Was | Now |
+| --- | --- | --- |
+| `openai` | `>=1.50.0` | `>=3.3,<4` |
+| `fastapi` | `>=0.110` | `>=0.141,<1.0` |
+| `starlette` | `>=0.46` | `>=1.6,<2` |
+| `uvicorn[standard]` | `>=0.29` | `>=0.52,<1.0` |
+| `pydantic` | `>=2.0` | `>=2.13,<3` |
+| `dkpro-cassis` | `>=0.9.0` | `>=0.11,<1.0` |
+| `lxml` | `>=6.1` | `>=6.1,<7` |
+| `python-dotenv` | `>=1.0` | `>=1.2,<2` |
+| `psycopg2-binary` | `>=2.9` | `>=2.9,<3` |
+| `pytest` | `>=8.0` | `>=9.0,<10` |
+| `httpx` | `>=0.27` | `>=0.28,<1.0` |
+
+**`starlette` had already crossed a major boundary without anyone noticing.** It
+is at **1.6.0**, and the floor declared the day before was `>=0.46` — written
+from the version FastAPI's metadata requires rather than from the version
+installed. A range that spans a major version is not a constraint.
+
+Raising floors to the tested version costs nothing here and removes an
+unverified claim: the old floors asserted that `fastapi` 0.110 and `openai`
+1.50 work, and nothing has ever run them.
+
+Verified by rebuilding all five images with `--no-cache`, so every range
+re-resolved from scratch: **150 passed**, stack healthy, webapp serving.
+
 ### Q4 — Does the linter gate anything? — **decided: a hook for the fast checks**
 
 A pre-commit hook runs **`ruff format --check` and `ruff check` only**. The type

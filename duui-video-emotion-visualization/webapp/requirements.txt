@@ -4,12 +4,17 @@
 # cas-to-postgres-importer/requirements.txt).
 # Keeping the two requirement sets apart keeps this image small and
 # free of a UIMA library it never touches.
-fastapi>=0.110
+#
+# Version ranges are floor-and-ceiling. The floor is the version this project is
+# actually built and tested against; the ceiling is the next major, so a new
+# major cannot arrive silently and change the program under us. Phase 9 adds a
+# lockfile on top for exact reproducibility.
+fastapi>=0.141,<1.0
 # app.py imports starlette.responses directly. FastAPI is built on starlette and
 # requires it, so this too was resolving by luck rather than by declaration.
-starlette>=0.46
-uvicorn[standard]>=0.29
-psycopg2-binary>=2.9
-python-dotenv>=1.0
-openai>=1.50.0
-pydantic>=2.0
+starlette>=1.6,<2
+uvicorn[standard]>=0.52,<1.0
+psycopg2-binary>=2.9,<3
+python-dotenv>=1.2,<2
+openai>=3.3,<4
+pydantic>=2.13,<3

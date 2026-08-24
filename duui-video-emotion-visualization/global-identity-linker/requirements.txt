@@ -2,5 +2,10 @@
 # include dkpro-cassis: this job never opens a CAS. Its entire input and
 # output is the database, which is why it needs nothing but a Postgres
 # driver (the vector maths all happens server-side in pgvector).
-psycopg2-binary>=2.9
-python-dotenv>=1.0
+#
+# Version ranges are floor-and-ceiling. The floor is the version this project is
+# actually built and tested against; the ceiling is the next major, so a new
+# major cannot arrive silently and change the program under us. Phase 9 adds a
+# lockfile on top for exact reproducibility.
+psycopg2-binary>=2.9,<3
+python-dotenv>=1.2,<2
