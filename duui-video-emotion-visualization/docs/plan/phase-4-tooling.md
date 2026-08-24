@@ -529,17 +529,34 @@ it has no rule requiring a `USER` directive. **Step 7b is therefore real work,
 not something the linter will do**, and the argument for it stays the one from
 §4.4c: as root, the suite silently makes one fewer assertion.
 
-### Open: what CI does about the 48 E501
+### E501 is reported but not gated, until Phase 5
 
-All 48 are prose — comments and docstrings — and the style guide puts prose at 72
-columns, well inside the limit, so **Phase 5 clears them as a side effect of
-rewriting them.** Rewrapping them now would be work thrown away.
+**Decided 2026-08-22: gate on everything except E501.**
 
-That leaves a real question for step 9: a CI job that is red from its first day
-gets ignored, but splitting the rule set between local and CI breaks the
-property that makes one command trustworthy. **Decide in step 9**, with the
-options being: gate on everything, gate on everything except E501 until Phase 5
-closes, or land the CI job after Phase 5.
+All 48 findings are prose — comments and docstrings written wider than the style
+guide's 72 columns for prose. Phase 5 rewrites every one, so they clear as a side
+effect; rewrapping them now would be work thrown away.
+
+They stay **in the run and out of the gate**, rather than being switched off. A
+check that is red on its first day stops being read, and then it cannot report
+the next real failure either — but a finding that is never printed cannot be
+acted on when the time comes. So the service prints:
+
+```
+--- ruff line length (reported, not gated) ---
+48	E501	line-too-long
+```
+
+and still exits 0. Everything else — undefined names, unused imports, type
+errors, malformed Dockerfiles — fails the build.
+
+**The exemption is marked for removal.** `tests/run-lint.sh` carries an explicit
+`REMOVE THIS EXEMPTION WHEN PHASE 5 CLOSES` above the two lines that implement
+it, because a temporary exclusion with no trigger becomes a permanent one.
+
+**Verified that the gate still bites.** A deliberate undefined name was added to
+`identity/db.py`; the service caught it as F821 and exited 1. Reverting returned
+it to 0. A gate that cannot fail is not a gate.
 
 ## 4.5 The type-checking ratchet
 
