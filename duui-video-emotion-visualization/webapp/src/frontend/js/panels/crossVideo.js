@@ -92,12 +92,12 @@ export function renderCrossVideoPanel(data) {
         ></span>
         <span class="person-name"
           >${name}${
-          gpId != null
-            ? html`<span class="person-global-id"
-                >(global #${gpId}${gpName ? ` · ${gpName}` : ""})</span
-              >`
-            : ""
-        }</span
+            gpId != null
+              ? html`<span class="person-global-id"
+                  >(global #${gpId}${gpName ? ` · ${gpName}` : ""})</span
+                >`
+              : ""
+          }</span
         >
         <span class="person-meta">${otherList}</span>
       </li>`;

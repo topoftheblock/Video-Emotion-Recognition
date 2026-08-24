@@ -33,6 +33,7 @@
   object-fit: contain;
   background: var(--surface-900);
 }
+
 #overlay {
   pointer-events: none;
 }
@@ -68,6 +69,7 @@
   text-align: center;
   background: linear-gradient(160deg, var(--surface-700), var(--surface-900));
   color: #fff;
+
   /* Last resort. .stage-frame.is-empty (below) gives this cover room
      to lay out at phone widths, so this should not trigger there --
      but the frame is `overflow: hidden`, and silently clipping the
@@ -158,6 +160,7 @@
 .subtitle-text:empty {
   display: none;
 }
+
 .subtitle-emotion:empty {
   display: none;
 }
@@ -206,6 +209,7 @@
 .transport-btn:hover {
   background: var(--signal-hover);
 }
+
 .transport-btn:focus-visible {
   outline: 2px solid var(--signal);
   outline-offset: 2px;

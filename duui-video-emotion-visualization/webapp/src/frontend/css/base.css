@@ -2,7 +2,7 @@
    Element defaults plus the page backdrop. Mirrors the Gateway's
    app.postcss: Oxanium everywhere, and the soft two-stop `.gradient`
    wash behind the whole page.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 /* Every self-hosted family lives in its own fonts/<family>/ folder,
    next to that family's own licence file -- fonts/oxanium/OFL.txt,
@@ -18,7 +18,7 @@
    600/700 render as drawn glyphs instead. Same typeface, just not
    faked. */
 @font-face {
-  font-family: "Oxanium";
+  font-family: Oxanium;
   src: url("../fonts/oxanium/Oxanium.ttf") format("truetype-variations");
   font-weight: 200 800;
   font-style: normal;
@@ -91,7 +91,7 @@
    face. Nothing here currently sets font-style: italic, but the second
    file is 42KB and keeps the family complete rather than half-shipped. */
 @font-face {
-  font-family: "Roboto";
+  font-family: Roboto;
   src: url("../fonts/roboto/Roboto-VariableFont_wdth,wght.ttf")
     format("truetype-variations");
   font-weight: 100 900;
@@ -100,7 +100,7 @@
 }
 
 @font-face {
-  font-family: "Roboto";
+  font-family: Roboto;
   src: url("../fonts/roboto/Roboto-Italic-VariableFont_wdth,wght.ttf")
     format("truetype-variations");
   font-weight: 100 900;
@@ -114,6 +114,7 @@
 
 html {
   background: var(--bg);
+
   /* tokens.css resolves every ramp at its light-mode value and says so
      -- but nothing had told the browser, which leaves the UA free to
      render its own widgets dark on a system set to dark: the range
@@ -217,7 +218,6 @@ h6 {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-
   background: var(--surface);
   color: var(--signal-strong);
   border-radius: var(--radius-sm);
@@ -248,15 +248,18 @@ h6 {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--signal);
   border-radius: var(--radius-sm);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--signal-strong);
   background-clip: padding-box;

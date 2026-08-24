@@ -3,7 +3,7 @@
    itself with a gradient border sheen; the Gateway has no such thing,
    so it is now an ordinary .section-wrapper card and lets the filled
    primary button carry the emphasis instead.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 .ask-panel {
   position: relative;
@@ -74,6 +74,7 @@
    primary ring on focus. */
 .ask-input {
   flex: 1;
+
   /* A flex item's floor is its intrinsic width, and an <input> carries
      a default `size` of 20 characters -- so this refuses to shrink below
      roughly twenty characters' worth of its own font. At the default
@@ -85,6 +86,7 @@
   min-width: 0;
   background: var(--surface-alt);
   color: var(--text);
+
   /* --border-input, not --border-soft: at 1.31:1 the old edge and the
      1.24:1 fill left nothing marking this as a field until it was
      focused. See the token's comment in tokens.css. */
@@ -133,6 +135,7 @@
 .ask-submit:hover:not([aria-disabled="true"]) {
   background: var(--signal-hover);
 }
+
 .ask-submit:focus-visible {
   outline: 2px solid var(--signal);
   outline-offset: 2px;
@@ -233,7 +236,11 @@
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   white-space: pre-wrap;
-  word-break: break-word;
+
+  /* overflow-wrap, not `word-break: break-word` -- that spelling is a
+     non-standard WebKit alias for exactly this and is deprecated. Same
+     behaviour: break a long token only when it would otherwise overflow. */
+  overflow-wrap: break-word;
 }
 
 .ask-overlays {
@@ -353,6 +360,7 @@
   color: var(--text);
   font-weight: 600;
 }
+
 .ask-table tr:hover td {
   background: var(--surface-50);
 }

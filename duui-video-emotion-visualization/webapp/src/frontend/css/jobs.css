@@ -9,7 +9,7 @@
    .toast-info in primary and .toast-error in error). It keeps the white
    card fill rather than the toast's surface-100, since unlike a toast
    it sits on the page rather than floating over it.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 .job-banner {
   display: flex;
@@ -141,6 +141,7 @@
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(285%);
   }
@@ -150,6 +151,7 @@
   .job-banner {
     padding: 10px 16px 0;
   }
+
   .job-detail {
     white-space: normal;
   }

@@ -24,10 +24,7 @@ import {
   readableTextColor,
   state,
 } from "../state.js";
-import { coveredBy } from "../playback/subtitles.js";
 import {
-  DISPLAY_LABELS,
-  SAMPLE_TOLERANCE,
   clamp01,
   clampSigned,
   currentReadings,

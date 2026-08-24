@@ -47,6 +47,12 @@ run "mypy"         mypy --cache-dir=/tmp/mypy-cache cas-to-postgres-importer/src
 run "sqlfluff"     sqlfluff lint --dialect postgres pgvector-db/schema.sql
 run "yamllint"     yamllint docker-compose.yml webapp/docs/a11y-ci.yml
 run "hadolint"     hadolint cas-to-postgres-importer/Dockerfile webapp/Dockerfile global-identity-linker/Dockerfile pgvector-db/Dockerfile Dockerfile.tests Dockerfile.lint
+run "eslint"       eslint .
+run "prettier"     prettier --check .
+run "stylelint"    stylelint "webapp/src/frontend/css/*.css"
+run "html-validate" html-validate webapp/src/frontend/index.html
+run "markdownlint" markdownlint-cli2
+run "links"        python /app/tests/check_links.py
 
 printf '\n'
 [ "$status" -eq 0 ] && echo "all checks passed" || echo "one or more checks failed"

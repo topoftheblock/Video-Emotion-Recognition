@@ -17,7 +17,7 @@
         Every name here predates the port and is referenced across
         base/topbar/sidebar/stage/ask/jobs/emotions.css, which is why
         they kept their names: re-pointing them was the whole migration.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 :root {
   /* ============ 1. theme-blue ramps (verbatim) ============ */
@@ -94,10 +94,11 @@
      --surface is every card, panel and bar; --surface-alt is anything
      recessed into one -- track grooves, input fills, table row hovers. */
   --bg: var(--surface-50);
-  --surface: #ffffff;
+  --surface: #fff;
   --surface-alt: var(--surface-100);
   --border: var(--surface-200);
   --border-strong: var(--surface-300);
+
   /* The edge of a text input, and of anything else whose boundary is
      the only thing announcing that a control is there.
 
@@ -109,6 +110,7 @@
      not a matter of taste. surface-400 clears it at 5.54:1; surface-300
      would only reach 2.35 and is not enough. */
   --border-input: var(--surface-400);
+
   /* The Gateway's .bordered-soft -- surface-400 at 20%. Used where a
      border should register as an edge without drawing a line. */
   --border-soft: rgba(102, 104, 114, 0.2);
@@ -126,7 +128,7 @@
      failure -- and had exactly one caller (.time-sep). Retired rather
      than fixed in place: a token that light has no safe use as text on
      this palette. */
-  --text: #000000;
+  --text: #000;
   --text-dim: var(--surface-400);
   --text-strong: var(--surface-600);
 
@@ -165,6 +167,7 @@
      blue, so only position distinguishes them. */
   --emotion: var(--primary-700);
   --emotion-fill: var(--primary-500);
+
   /* Sits on the video, not on white -- needs to go lighter, not darker. */
   --emotion-on-dark: var(--primary-300);
 
@@ -228,6 +231,7 @@
      Chrome on Linux -- so they matched nothing here and only decided
      which fallback won on other machines. With a self-hosted face the
      fallback is a network-failure path, not the normal one. */
+
   /* ---- Type scale ----
 
      rem, not px, and that is the whole point: a `px` font-size ignores
@@ -258,7 +262,6 @@
      breakpoint instead of restating the rules. */
   --text-subtitle: clamp(0.875rem, 1.5vw, 1.125rem);
   --text-subtitle-emotion: clamp(0.75rem, 1.3vw, 1rem);
-
   --font-ui: "Oxanium", system-ui, sans-serif;
   --font-mono: "Ubuntu Mono", monospace;
 

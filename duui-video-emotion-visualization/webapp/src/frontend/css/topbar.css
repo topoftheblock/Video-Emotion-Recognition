@@ -3,7 +3,7 @@
    class="border-b border-color">: flat fill, one hairline underneath,
    no shadow and no blur. It reads as a bar against the page only
    because the page behind it carries the gradient wash.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 .topbar {
   display: flex;
@@ -76,6 +76,7 @@
 .video-combobox-input {
   background: var(--surface-alt);
   color: var(--text);
+
   /* See .ask-input in ask.css -- same field, same reason. */
   border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
@@ -118,6 +119,7 @@
   max-height: 320px;
   overflow-y: auto;
   background: var(--surface);
+
   /* A popup edge over page content: the only thing separating the list
      from whatever it is floating above, so it carries the same 3:1
      requirement the fields do. */

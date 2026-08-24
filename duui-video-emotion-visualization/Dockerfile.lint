@@ -38,6 +38,9 @@ WORKDIR /opt/tooling
 COPY package.json ./
 RUN npm install --no-audit --no-fund && npm cache clean --force
 ENV PATH="/opt/tooling/node_modules/.bin:${PATH}"
+# require() in eslint.config.cjs resolves through this: the config lives in the
+# read-only source mount, the modules do not.
+ENV NODE_PATH=/opt/tooling/node_modules
 
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1

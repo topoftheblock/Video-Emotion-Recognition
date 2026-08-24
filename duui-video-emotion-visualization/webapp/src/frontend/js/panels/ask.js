@@ -76,17 +76,17 @@ function renderAskResults(result) {
     parts.push(
       html`<ul class="ask-segment-list">
         ${result.segments.map(
-            (seg, i) =>
-              html`<li>
-                <button type="button" data-index="${i}">
-                  <span class="ask-segment-time"
-                    >video #${seg.video_id} ·
-                    ${formatTime(seg.start_time)}–${formatTime(seg.end_time)}</span
-                  >
-                  <span class="ask-segment-meta">${formatMeta(seg.meta || {})}</span>
-                </button>
-              </li>`,
-          )}
+          (seg, i) =>
+            html`<li>
+              <button type="button" data-index="${i}">
+                <span class="ask-segment-time"
+                  >video #${seg.video_id} ·
+                  ${formatTime(seg.start_time)}–${formatTime(seg.end_time)}</span
+                >
+                <span class="ask-segment-meta">${formatMeta(seg.meta || {})}</span>
+              </button>
+            </li>`,
+        )}
       </ul>`,
     );
   } else if (result.rows && result.rows.length) {
@@ -101,11 +101,11 @@ function renderAskResults(result) {
           </thead>
           <tbody>
             ${result.rows.map(
-            (row) =>
-              html`<tr>
-                ${cols.map((c) => html`<td>${row[c] ?? ""}</td>`)}
-              </tr>`,
-          )}
+              (row) =>
+                html`<tr>
+                  ${cols.map((c) => html`<td>${row[c] ?? ""}</td>`)}
+                </tr>`,
+            )}
           </tbody>
         </table>
       </div>`,

@@ -9,7 +9,7 @@
                a side bar but panels still pair up on a line
      <= 560px  phone shape: one panel per line, and the controls that
                do not fit on a single row break onto a second one
---------------------------------------------------------------------*/
+-------------------------------------------------------------------- */
 
 @media (max-width: 860px) {
   /* One column: the stage -- player, transport, then the three emotion
@@ -22,27 +22,33 @@
     grid-template-columns: 1fr;
     padding: 16px;
   }
+
   .sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-flow: row wrap;
   }
+
   .sidebar .panel {
     flex: 1 1 240px;
   }
+
   .ask-panel-inner {
     padding: 16px;
   }
+
   .ask-card {
     padding: 16px;
   }
+
   .ask-form {
     flex-wrap: wrap;
   }
+
   .topbar {
     padding: 12px 16px;
     flex-wrap: wrap;
     gap: 10px;
   }
+
   .video-combobox-input {
     max-width: 60vw;
   }
@@ -56,6 +62,7 @@
     padding: 12px 12px 32px;
     gap: 16px;
   }
+
   .ask-panel-inner {
     padding: 12px 12px 0;
   }
@@ -80,6 +87,7 @@
   .ask-form {
     gap: 10px 8px;
   }
+
   .ask-input {
     flex: 1 0 100%;
   }
@@ -89,6 +97,7 @@
     flex: 1;
     min-width: 0;
   }
+
   .job-banner {
     padding: 10px 12px 0;
   }
@@ -117,11 +126,13 @@
     gap: 10px 12px;
     padding: 12px 14px;
   }
+
   .scrub {
     flex: 1 0 100%;
     min-width: 0;
     order: 3;
   }
+
   .time-readout {
     margin-left: auto;
   }
@@ -133,6 +144,7 @@
     height: 36px;
     padding: 0 13px;
   }
+
   .person-row,
   .active-list li:not(.empty-hint) {
     padding: 10px;
@@ -197,6 +209,7 @@
     padding: 5px 10px;
     gap: 1px;
   }
+
   /* Re-pointed on :root rather than restated on the two rules, so the
      caption sizes stay in one place (see tokens.css). Lower floors and
      a tighter ramp than the default pair. */
@@ -204,6 +217,7 @@
     --text-subtitle: clamp(0.6875rem, 3.4vw, var(--text-sm));
     --text-subtitle-emotion: clamp(var(--text-2xs), 2.8vw, var(--text-xs));
   }
+
   .subtitle-text {
     line-height: 1.25;
   }

@@ -6,7 +6,7 @@
 
    Colour comes entirely from the theme's primary ramp -- flat fills,
    no gradients, matching the Gateway's treatment of its accents.
----------------------------------------------------------------*/
+--------------------------------------------------------------- */
 
 .emo-body {
   display: flex;
@@ -51,6 +51,7 @@
    pulls it back down to the badge/chip size instead, so header and
    data keep their size hierarchy even though both now clear the
    12px floor. */
+
 /* Columns widened from the pre-resize 62px/34px/34px, tuned for 11px
    mono: at 14px the longest label ("Happiness", "disgusted",
    "dominance" -- 9 characters) and the widest value ("-1.00"/"+1.00",
@@ -59,6 +60,7 @@
 .emo-row,
 .emo-legend {
   display: grid;
+
   /* em, not px: every one of these columns is sized by the text it
      holds, so they have to grow with it. In px they held at the default
      root size and clipped the moment a reader raised it -- at 200% the
@@ -90,6 +92,7 @@
   grid-column: 3;
   text-align: right;
 }
+
 .emo-legend span + span {
   grid-column: 4;
 }
@@ -143,6 +146,7 @@
 
 /* Signed values grow from the centre, so the centre gets a hairline to
    grow away from. */
+
 /* --border-input, not --border-strong. This is the line a signed value
    is read as growing away from, so it is meaningful rather than
    decorative -- and against the groove it sits on, --border-strong was
@@ -194,6 +198,7 @@
   color: var(--text);
   font-weight: 500;
 }
+
 .emo-avg {
   color: var(--text-dim);
 }

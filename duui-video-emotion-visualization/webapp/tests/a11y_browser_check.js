@@ -212,7 +212,7 @@ function a11ySweep() {
           .accessibleTextVirtual(window.axe.utils.getNodeFromTree(n))
           .replace(/\s+/g, " ")
           .trim();
-      } catch (e) {
+      } catch {
         name = "(accname failed)";
       }
     }
