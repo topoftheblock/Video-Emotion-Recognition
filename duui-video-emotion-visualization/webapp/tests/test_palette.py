@@ -13,7 +13,6 @@ roughly one man in twelve. That is a property worth pinning down rather
 than re-deriving by eye whenever someone likes a different blue.
 """
 
-import itertools
 
 import cvd_check
 

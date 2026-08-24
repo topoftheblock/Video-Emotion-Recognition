@@ -8,14 +8,13 @@ loads and patches the typesystem exactly once for the entire batch
 rather than per file, which dominates startup time otherwise.
 """
 
-import os
 from collections import Counter
 from pathlib import Path
 
 from cassis import load_cas_from_xmi
 from lxml import etree
 
-from .config import INPUT_VIDEO_DIR, ON_EXISTING, ON_EXISTING_CHOICES
+from .config import INPUT_VIDEO_DIR, ON_EXISTING, ON_EXISTING_CHOICES, XMI_FILE
 from .db import delete_video, find_video_by_filename, get_db_connection
 from .job_runs import JobRun
 from .cas.sofas import (

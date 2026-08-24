@@ -227,6 +227,34 @@ nothing documents, and nothing notices the loss of — the run just quietly
 reports 121 passed, 29 skipped. Testcontainers removes the whole class of
 problem.
 
+### D14 — a NameError I introduced in Phase 3, found by the linter in Phase 4
+**Fixed 2026-08-22.** `pipeline.py:89` reads `xmi_file = xmi_file or XMI_FILE`,
+but the Phase 3 split of `pipeline.py` into `inputs.py` removed `XMI_FILE` from
+the `from .config import …` line, because the new module needed it. Calling
+`run()` with no argument therefore raised:
+
+```
+NameError: name 'XMI_FILE' is not defined
+```
+
+**Why nothing caught it for a whole phase.** `run()` is only ever reached
+through `run_many()`, which always passes an explicit path. The `or XMI_FILE`
+fallback exists for the documented single-file workflow — `DUUI_XMI_FILE` — and
+nothing in the suite exercises it. A green 150/150, a working importer, a full
+corpus rebuild and an end-to-end browser check all passed over it.
+
+Found by `ruff`'s F821 the first time the linter was pointed at the repository,
+before it had been run even once in anger. Fixed by restoring the import; `run()`
+now raises the `ValueError` it was always supposed to.
+
+Two things worth keeping from this:
+
+- **Static analysis found in seconds what four phases of testing missed.** It is
+  the strongest available argument for step 9's CI job.
+- **The gap is a test gap too.** Nothing covers `run()`'s no-argument path,
+  which is a documented entry point. Phase 6 should decide whether to cover it
+  or to remove the fallback.
+
 <!-- New entries append here as each sub-project is read. -->
 
 ## 2.4 Shared contracts
