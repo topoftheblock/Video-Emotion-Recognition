@@ -15,7 +15,10 @@
    backed by #askStatus announcing "Thinking…", so losing it costs
    nothing. Moved here from responsive.css, which is about width. */
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 /* ---- Forced colours (Windows High Contrast and friends) ----
@@ -72,13 +75,23 @@
     height: 8px;
   }
 
-  .emo-fill { background: Highlight; }
-  .emo-avg-mark { background: CanvasText; }
-  .emo-track-signed::before { background: CanvasText; }
+  .emo-fill {
+    background: Highlight;
+  }
+  .emo-avg-mark {
+    background: CanvasText;
+  }
+  .emo-track-signed::before {
+    background: CanvasText;
+  }
 
   /* Same shape of problem in the job banner's progress bar. */
-  .job-bar { border: 1px solid CanvasText; }
-  .job-bar-fill { background: Highlight; }
+  .job-bar {
+    border: 1px solid CanvasText;
+  }
+  .job-bar-fill {
+    background: Highlight;
+  }
 
   /* Person swatches are the one place the *specific* colour is the
      information: it is what ties a name in the sidebar to a stroked box
@@ -95,7 +108,9 @@
   /* Panel dots are decorative and labelled (see tokens.css); letting
      them take a system colour is correct. They lose their halo with
      every other box-shadow, which costs nothing. */
-  .panel-dot { background: CanvasText; }
+  .panel-dot {
+    background: CanvasText;
+  }
 
   /* Selected/pressed states are conveyed by a background fill that
      would otherwise be stripped, leaving no way to tell which person

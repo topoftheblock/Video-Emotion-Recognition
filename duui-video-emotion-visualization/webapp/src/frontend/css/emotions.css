@@ -8,7 +8,11 @@
    no gradients, matching the Gateway's treatment of its accents.
 ---------------------------------------------------------------*/
 
-.emo-body { display: flex; flex-direction: column; gap: 5px; }
+.emo-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 
 .emo-meta {
   display: flex;
@@ -52,7 +56,8 @@
    "dominance" -- 9 characters) and the widest value ("-1.00"/"+1.00",
    5 characters) need the extra room, checked against the model
    vocabularies in PANELS above and formatSigned()'s output. */
-.emo-row, .emo-legend {
+.emo-row,
+.emo-legend {
   display: grid;
   /* em, not px: every one of these columns is sized by the text it
      holds, so they have to grow with it. In px they held at the default
@@ -81,8 +86,13 @@
 
 /* Columns 1 and 2 are empty in the legend -- the two spans are the
    value columns. */
-.emo-legend span { grid-column: 3; text-align: right; }
-.emo-legend span + span { grid-column: 4; }
+.emo-legend span {
+  grid-column: 3;
+  text-align: right;
+}
+.emo-legend span + span {
+  grid-column: 4;
+}
 
 /* --text-strong (surface-600), not --text-dim: read continuously while
    scrubbing, same reasoning as .job-detail. Size comes from .emo-row
@@ -98,7 +108,9 @@
 /* Valence/arousal/dominance read as a different kind of quantity from
    the label scores; they sit at the top of the panel under a hairline
    divider (see .emo-divider) rather than inline with the label scores. */
-.emo-row-dim .emo-label { font-style: italic; }
+.emo-row-dim .emo-label {
+  font-style: italic;
+}
 
 /* The hairline between the dimensional readings and the label scores.
    Same treatment as the page's other section edges (.topbar, .ask
@@ -139,36 +151,49 @@
 .emo-track-signed::before {
   content: "";
   position: absolute;
-  top: 0; bottom: 0; left: 50%;
+  top: 0;
+  bottom: 0;
+  left: 50%;
   width: 1px;
   background: var(--border-input);
 }
 
 .emo-fill {
   position: absolute;
-  top: 0; bottom: 0; left: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
   width: 0%;
   background: var(--emotion-fill);
   border-radius: 3px;
-  transition: left 0.1s linear, width 0.1s linear;
+  transition:
+    left 0.1s linear,
+    width 0.1s linear;
 }
 
 /* The whole-video average, on the same track as the live value. */
 .emo-avg-mark {
   position: absolute;
-  top: -1px; bottom: -1px;
+  top: -1px;
+  bottom: -1px;
   width: 2px;
   margin-left: -1px;
   background: var(--text-dim);
   border-radius: 1px;
 }
 
-.emo-now, .emo-avg {
+.emo-now,
+.emo-avg {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   text-align: right;
   white-space: nowrap;
 }
 
-.emo-now { color: var(--text); font-weight: 500; }
-.emo-avg { color: var(--text-dim); }
+.emo-now {
+  color: var(--text);
+  font-weight: 500;
+}
+.emo-avg {
+  color: var(--text-dim);
+}

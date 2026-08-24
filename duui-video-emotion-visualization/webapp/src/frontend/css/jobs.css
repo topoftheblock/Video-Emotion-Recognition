@@ -57,7 +57,9 @@
 }
 
 @keyframes job-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .job-text {
@@ -85,7 +87,9 @@
    4.4:1 on the same pink. */
 .job-row-stale .job-text strong,
 .job-row-stale .job-detail,
-.job-row-stale .job-elapsed { color: var(--error-800); }
+.job-row-stale .job-elapsed {
+  color: var(--error-800);
+}
 
 /* --text-strong (surface-600), not --text-dim: this is read
    continuously while a job runs, and --text-dim's 5.5:1 reads as weak
@@ -102,7 +106,11 @@
   white-space: nowrap;
 }
 
-.job-elapsed { margin-left: auto; color: var(--text-dim); flex-shrink: 0; }
+.job-elapsed {
+  margin-left: auto;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
 
 .job-bar {
   position: relative;
@@ -130,11 +138,19 @@
 }
 
 @keyframes job-sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(285%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(285%);
+  }
 }
 
 @media (max-width: 860px) {
-  .job-banner { padding: 10px 16px 0; }
-  .job-detail { white-space: normal; }
+  .job-banner {
+    padding: 10px 16px 0;
+  }
+  .job-detail {
+    white-space: normal;
+  }
 }

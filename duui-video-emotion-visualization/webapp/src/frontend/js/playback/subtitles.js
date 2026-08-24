@@ -9,7 +9,11 @@ import { overlayEnabled, state } from "../state.js";
 /** Rows whose [start_time, end_time] window covers `t`. */
 export function coveredBy(rows, t) {
   return rows.filter(
-    (r) => r.start_time != null && r.end_time != null && r.start_time <= t && t <= r.end_time
+    (r) =>
+      r.start_time != null &&
+      r.end_time != null &&
+      r.start_time <= t &&
+      t <= r.end_time,
   );
 }
 

@@ -41,9 +41,9 @@ export async function loadVideoList() {
   } catch (err) {
     console.error("Could not load the video list", err);
     showEmptyState(
-        "Could not reach the viewer's API",
-        "The page loaded, but /api/videos did not answer. The container is probably up without a working database connection — check its log:",
-        LOGS_COMMAND
+      "Could not reach the viewer's API",
+      "The page loaded, but /api/videos did not answer. The container is probably up without a working database connection — check its log:",
+      LOGS_COMMAND,
     );
     return;
   }
@@ -53,9 +53,9 @@ export async function loadVideoList() {
   // broken app. Say what is actually the case, and what to run.
   if (!videos.length) {
     showEmptyState(
-        "No videos imported yet",
-        "The viewer and the database are running fine — the database is simply empty. Run the import job, then reload this page:",
-        IMPORT_COMMAND
+      "No videos imported yet",
+      "The viewer and the database are running fine — the database is simply empty. Run the import job, then reload this page:",
+      IMPORT_COMMAND,
     );
     return;
   }
@@ -112,11 +112,11 @@ function initVideoCombobox() {
   el.videoComboInput.addEventListener("input", openCombo);
   el.videoComboInput.addEventListener("keydown", onComboKeydown);
   el.videoComboInput.addEventListener("blur", () =>
-      setTimeout(() => {
-        closeCombo();
-        const current = state.videos.find((v) => v.video_id === selectedVideoId);
-        el.videoComboInput.value = current ? current.filename : "";
-      }, 120)
+    setTimeout(() => {
+      closeCombo();
+      const current = state.videos.find((v) => v.video_id === selectedVideoId);
+      el.videoComboInput.value = current ? current.filename : "";
+    }, 120),
   );
   el.videoComboList.addEventListener("mousedown", (e) => {
     const item = e.target.closest("[data-video-id]");
@@ -129,7 +129,8 @@ function initVideoCombobox() {
 
 /** Select a video, update the input, and optionally fire `change`. */
 function applySelection(videoId, dispatch) {
-  const video = videoId == null ? null : state.videos.find((v) => v.video_id === videoId);
+  const video =
+    videoId == null ? null : state.videos.find((v) => v.video_id === videoId);
   selectedVideoId = video ? video.video_id : null;
   el.videoComboInput.value = video ? video.filename : "";
   closeCombo();
@@ -164,22 +165,27 @@ function closeCombo() {
 export function renderVideoOptions() {
   const query = el.videoComboInput.value.trim().toLowerCase();
   const matches = state.videos
-      .filter((v) => v.filename.toLowerCase().includes(query))
-      .sort((a, b) => a.filename.localeCompare(b.filename));
+    .filter((v) => v.filename.toLowerCase().includes(query))
+    .sort((a, b) => a.filename.localeCompare(b.filename));
 
   // The id is what aria-activedescendant points at: an option that
   // cannot be referenced cannot be announced, which is why arrowing
   // through this list used to be silent.
   el.videoComboList.innerHTML = matches
-      .map(
-          (v) => html`<li class="video-combo-item" role="option"
-              id="videoComboOpt-${v.video_id}" aria-selected="false"
-              data-video-id="${v.video_id}">
-            <span class="video-combo-name">${v.filename}</span>
-            ${v.video_file_available ? "" : html`<span class="video-combo-missing">— file missing</span>`}
-          </li>`
-      )
-      .join("");
+    .map(
+      (v) =>
+        html`<li
+          class="video-combo-item"
+          role="option"
+          id="videoComboOpt-${v.video_id}"
+          aria-selected="false"
+          data-video-id="${v.video_id}"
+        >
+          <span class="video-combo-name">${v.filename}</span>
+          ${v.video_file_available ? "" : html`<span class="video-combo-missing">— file missing</span>`}
+        </li>`,
+    )
+    .join("");
 
   // The rows just changed, so any previous index is meaningless -- it
   // would point at whatever now happens to sit at that position.
@@ -252,9 +258,9 @@ export async function loadVideo(videoId) {
   } catch (err) {
     console.error(`Could not load video ${videoId}`, err);
     showEmptyState(
-        "Could not load this video's data",
-        `The viewer asked for video #${videoId} and the request failed, so there is nothing to render. Check the viewer's log:`,
-        LOGS_COMMAND
+      "Could not load this video's data",
+      `The viewer asked for video #${videoId} and the request failed, so there is nothing to render. Check the viewer's log:`,
+      LOGS_COMMAND,
     );
     return;
   }
@@ -274,9 +280,9 @@ export async function loadVideo(videoId) {
   const listed = state.videos.find((v) => v.video_id === videoId);
   if (listed && listed.video_file_available === false) {
     showEmptyState(
-        "Video file missing",
-        `The database has data for "${data.video.filename}", but that file is not in the video store, so there is nothing to play. Re-run the import job with the video next to its .xmi, then reload:`,
-        IMPORT_COMMAND
+      "Video file missing",
+      `The database has data for "${data.video.filename}", but that file is not in the video store, so there is nothing to play. Re-run the import job with the video next to its .xmi, then reload:`,
+      IMPORT_COMMAND,
     );
   } else {
     hideEmptyState();

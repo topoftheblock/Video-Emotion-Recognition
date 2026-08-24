@@ -20,15 +20,22 @@
   pointer-events: none;
 }
 
-#player, #overlay {
+#player,
+#overlay {
   position: absolute;
-  top: 0; left: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
 
-#player { object-fit: contain; background: var(--surface-900); }
-#overlay { pointer-events: none; }
+#player {
+  object-fit: contain;
+  background: var(--surface-900);
+}
+#overlay {
+  pointer-events: none;
+}
 
 /* Positioning layer only -- pulled down to 2% so the box sits close to
    the bottom edge, the way a streaming player's captions do, rather
@@ -148,8 +155,12 @@
    video wherever the playhead has no caption -- collapses an empty
    line's own box so it doesn't hold the shared gap open when the other
    line is the only one with something to show. */
-.subtitle-text:empty { display: none; }
-.subtitle-emotion:empty { display: none; }
+.subtitle-text:empty {
+  display: none;
+}
+.subtitle-emotion:empty {
+  display: none;
+}
 
 /* ---------------- Transport ---------------- */
 
@@ -192,8 +203,13 @@
   display: block;
 }
 
-.transport-btn:hover { background: var(--signal-hover); }
-.transport-btn:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.transport-btn:hover {
+  background: var(--signal-hover);
+}
+.transport-btn:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 /* CC switch, built as the Gateway's .button-neutral: soft border while
    off, filling solid primary on hover. On is the filled state outright,
@@ -211,8 +227,10 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   cursor: pointer;
-  transition: background-color var(--transition), color var(--transition),
-  border-color var(--transition);
+  transition:
+    background-color var(--transition),
+    color var(--transition),
+    border-color var(--transition);
 }
 
 .transport-toggle:hover {
@@ -227,7 +245,10 @@
   color: #fff;
 }
 
-.transport-toggle.is-on:hover { background: var(--signal-hover); border-color: var(--signal-hover); }
+.transport-toggle.is-on:hover {
+  background: var(--signal-hover);
+  border-color: var(--signal-hover);
+}
 
 .transport-toggle:focus-visible {
   outline: 2px solid var(--signal);
@@ -245,7 +266,10 @@
 /* Was --text-faint (surface-300, #a7a9ae) -- 2.35:1 on white, an
    outright AA failure. --text-dim is what the rest of the transport
    already uses. */
-.time-sep { color: var(--text-dim); margin: 0 1px; }
+.time-sep {
+  color: var(--text-dim);
+  margin: 0 1px;
+}
 
 .scrub {
   flex: 1;

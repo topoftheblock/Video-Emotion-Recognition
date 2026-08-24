@@ -244,12 +244,12 @@
 
      Nothing may set font-size on :root or html; every value below is
      relative to it. */
-  --text-2xs: 0.625rem;    /* 10 */
-  --text-xs: 0.75rem;      /* 12 */
-  --text-sm: 0.875rem;     /* 14 */
-  --text-base: 1rem;       /* 16 */
-  --text-lg: 1.125rem;     /* 18 */
-  --text-xl: 1.3125rem;    /* 21 */
+  --text-2xs: 0.625rem; /* 10 */
+  --text-xs: 0.75rem; /* 12 */
+  --text-sm: 0.875rem; /* 14 */
+  --text-base: 1rem; /* 16 */
+  --text-lg: 1.125rem; /* 18 */
+  --text-xl: 1.3125rem; /* 21 */
 
   /* The caption track sizes itself off the viewport rather than off the
      scale -- it sits over the picture, so it has to stay proportionate

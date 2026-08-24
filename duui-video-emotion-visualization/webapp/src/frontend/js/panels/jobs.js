@@ -110,8 +110,7 @@ function jobRow(job) {
     <div class="job-text">
       <strong>${title}</strong>
       <span class="job-detail">
-        ${counted ? `${job.progress_current}/${job.progress_total}` : ""}
-        ${detail}
+        ${counted ? `${job.progress_current}/${job.progress_total}` : ""} ${detail}
         <span class="job-elapsed">${formatDuration(job.elapsed_seconds)}</span>
       </span>
       <!-- Determinate only when the job actually counts something.

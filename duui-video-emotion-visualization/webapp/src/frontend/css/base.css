@@ -92,7 +92,8 @@
    file is 42KB and keeps the family complete rather than half-shipped. */
 @font-face {
   font-family: "Roboto";
-  src: url("../fonts/roboto/Roboto-VariableFont_wdth,wght.ttf") format("truetype-variations");
+  src: url("../fonts/roboto/Roboto-VariableFont_wdth,wght.ttf")
+    format("truetype-variations");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -100,13 +101,16 @@
 
 @font-face {
   font-family: "Roboto";
-  src: url("../fonts/roboto/Roboto-Italic-VariableFont_wdth,wght.ttf") format("truetype-variations");
+  src: url("../fonts/roboto/Roboto-Italic-VariableFont_wdth,wght.ttf")
+    format("truetype-variations");
   font-weight: 100 900;
   font-style: italic;
   font-display: swap;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 html {
   background: var(--bg);
@@ -123,7 +127,8 @@ html {
   color-scheme: light;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   min-height: 100%;
   color: var(--text);
@@ -149,7 +154,14 @@ body {
   background-attachment: fixed;
 }
 
-h1, h2, h3, h4, h5, h6 { font-weight: bold; }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: bold;
+}
 
 /* Out of the layout, still in the accessibility tree.
 
@@ -226,15 +238,26 @@ h1, h2, h3, h4, h5, h6 { font-weight: bold; }
   clip-path: none;
 }
 
-::selection { background: var(--signal-soft); color: var(--signal-strong); }
+::selection {
+  background: var(--signal-soft);
+  color: var(--signal-strong);
+}
 
 /* Skeleton paints the scrollbar thumb in primary-500. */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--signal);
   border-radius: var(--radius-sm);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--signal-strong); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover {
+  background: var(--signal-strong);
+  background-clip: padding-box;
+}

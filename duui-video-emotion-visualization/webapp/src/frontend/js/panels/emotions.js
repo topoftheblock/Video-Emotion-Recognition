@@ -17,7 +17,13 @@
  */
 
 import { el, html } from "../lib/dom.js";
-import { overlayEnabled, personColorFor, personName, readableTextColor, state } from "../state.js";
+import {
+  overlayEnabled,
+  personColorFor,
+  personName,
+  readableTextColor,
+  state,
+} from "../state.js";
 import { coveredBy } from "../playback/subtitles.js";
 import {
   DISPLAY_LABELS,
@@ -96,7 +102,6 @@ const PANELS = [
   },
 ];
 
-
 /** Built by initEmotionPanels(), read by renderEmotionPanels(). */
 let tracks = [];
 
@@ -149,7 +154,9 @@ export function initEmotionPanels(data) {
       // rather than vanishing as if the filter had broken something.
       el[config.panel].style.display = person ? "" : "none";
       el[config.body].innerHTML = person
-        ? html`<p class="empty-hint">No ${config.modality} readings for this person.</p>`
+        ? html`<p class="empty-hint">
+            No ${config.modality} readings for this person.
+          </p>`
         : "";
       continue;
     }
@@ -159,7 +166,13 @@ export function initEmotionPanels(data) {
     const averageDimensions = config.dimensions.map((d) => meanDimension(readings, d));
 
     const body = el[config.body];
-    body.innerHTML = renderBody(config, labels, averageScores, averageDimensions, readings.length);
+    body.innerHTML = renderBody(
+      config,
+      labels,
+      averageScores,
+      averageDimensions,
+      readings.length,
+    );
 
     // Row order in the markup is dimensions-then-labels (the dimensional
     // readings -- valence/arousal/dominance -- sit at the top, under a
@@ -196,11 +209,13 @@ export function renderEmotionPanels(data, t) {
       setSignedRow(rows[j], live.length ? meanDimension(live, dimension) : null);
     });
     labels.forEach((label, i) => {
-      setScoreRow(rows[config.dimensions.length + i], scores ? scores.get(label) || 0 : null);
+      setScoreRow(
+        rows[config.dimensions.length + i],
+        scores ? scores.get(label) || 0 : null,
+      );
     });
   }
 }
-
 
 function renderBody(config, labels, averageScores, averageDimensions, nReadings) {
   return html`<div class="emo-meta">
@@ -209,7 +224,7 @@ function renderBody(config, labels, averageScores, averageDimensions, nReadings)
     </div>
     <div class="emo-legend"><span>now</span><span>avg</span></div>
     ${config.dimensions.map((dimension, j) => signedRow(dimension, averageDimensions[j]))}
-    ${config.dimensions.length ? html`<hr class="emo-divider">` : ""}
+    ${config.dimensions.length ? html`<hr class="emo-divider" />` : ""}
     ${labels.map((label) => scoreRow(label, averageScores.get(label) || 0))}`;
 }
 

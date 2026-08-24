@@ -11,7 +11,7 @@
     // it. The README beside them is linted, because it carries live
     // instructions.
     "!webapp/docs/a11y-baseline/axe-baseline.md",
-    "!webapp/docs/a11y-baseline/keyboard-sweep.md"
+    "!webapp/docs/a11y-baseline/keyboard-sweep.md",
   ],
   "config": {
     "default": true,
@@ -20,7 +20,7 @@
     "MD013": {
       "line_length": 80,
       "tables": false,
-      "code_blocks": false
+      "code_blocks": false,
     },
     // This project writes *emphasis* with asterisks throughout.
     "MD049": { "style": "asterisk" },
@@ -30,6 +30,6 @@
     "MD024": { "siblings_only": true },
     // Inline HTML is used deliberately: <!-- --> notes in the stub documents and
     // the occasional <br> in a table cell.
-    "MD033": false
-  }
+    "MD033": false,
+  },
 }
