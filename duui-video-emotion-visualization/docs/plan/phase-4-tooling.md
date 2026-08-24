@@ -3,8 +3,7 @@
 *Detailed plan for Phase 4. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` plan drafted 2026-08-22. Q1–Q4 and §4.9 answered; version
-evaluation done — see §4.3.
+Status: `[x]` complete, 2026-08-22.
 Branch: `code-cleanup/phase-4`.
 
 ## 4.0 What this phase is for
@@ -861,18 +860,41 @@ little. If the slowdown would annoy you, CI-only is defensible.
 
 ## 4.10 Exit criteria
 
-- [ ] `lxml` and `starlette` declared; the 3.14 target stated in the Dockerfiles
+- [x] `lxml` and `starlette` declared; the 3.14 target stated in the Dockerfiles
       and in the ruff and mypy configs
-- [ ] Python 3.14 and pgvector pg18 in place; corpus rebuilt and verified
-- [ ] A short Docker command runs the whole suite, documented as the only
-      supported way; `.venv`'s status decided and written down
-- [ ] Pre-commit hook installs in one command and is bypassable
-- [ ] Q1–Q4 answered, outcomes documented — including any "no change"
-- [ ] Pinning strategy applied; `openai` no longer permits 1.x
-- [ ] Every tool in the §6 roster configured, from repo-root config
-- [ ] `cas/types.py` excluded from line-length rules, with the reason recorded
-- [ ] Formatter run committed separately from the config that drives it
-- [ ] `mypy` running lenient, per-module strictness a one-line change
-- [ ] CI workflow in place, `paths:`-filtered on both triggers, with the warning
-- [ ] All four images build; corpus rebuild reproduces Phase 0 row counts
-- [ ] Suite at 150/150; frontend files byte-identical to source
+- [x] Python 3.14 and pgvector pg18 in place; corpus rebuilt and verified
+- [x] A short Docker command runs the whole suite, documented as the only
+      supported way; `.venv` deleted
+- [x] Pre-commit hook installs in one command and is bypassable
+- [x] Q1–Q4 answered, outcomes documented
+- [x] Pinning strategy applied; `openai` no longer permits 1.x
+- [x] Every tool in the §6 roster configured, from repo-root config — 13 checkers
+- [x] `cas/types.py` excluded from line-length rules, with the reason recorded
+- [x] Formatter run committed separately from the config that drives it
+- [x] `mypy` running lenient, per-module strictness a one-line change
+- [x] CI workflow in place, `paths:`-filtered on both triggers, with the warning
+- [x] All six images build; corpus reproduces every Phase 0 row count
+- [x] Suite at 150/150; **all 29 frontend files byte-identical to source**
+
+## 4.11 Final verification
+
+| Check | Result |
+| --- | --- |
+| Six images build | ok |
+| Python / Postgres running | 3.14.7 / 18.6 |
+| Corpus vs Phase 0 | all eight counts identical |
+| Suite | 150 passed |
+| Lint | 13 checkers, all passed |
+| Importer, linker | both run as non-root, end to end |
+| Webapp | subtitle, three modalities, 29 score rows, clean console |
+| **Frontend byte-identical** | **29 of 29 files** |
+
+The last row is the one that mattered most to check: adding a Node toolchain is
+exactly how a project acquires a build step by accident. Every `.js`, `.css` and
+`.html` file the webapp serves was hashed against its source, and all 29 match.
+The tooling is dev-only, as intended.
+
+One finding came out of this pass and is **not** fixed here: three user-facing
+surfaces give three different project names. Recorded as
+[D15](phase-2-ledger.md#23-discrepancy-register); it needs a decision rather
+than a tooling change.

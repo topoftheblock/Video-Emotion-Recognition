@@ -269,6 +269,28 @@ Two things worth keeping from this:
   which is a documented entry point. Phase 6 should decide whether to cover it
   or to remove the fallback.
 
+### D15 — three user-facing surfaces give three different project names
+**Needs a decision; not a defect.** Found during Phase 4's final verification.
+
+| Surface | Says |
+| --- | --- |
+| `index.html` `<title>` — the browser tab | `DUUI Emotion Visualization` |
+| `index.html` `<h1 class="topbar-title">` | `Emotion Visualization` |
+| `app.py` `FastAPI(title=…)` — the OpenAPI document | `DUUI Video Emotion Visualization` |
+
+**Why Phase 3 missed two of them.** That phase swept for `bundestag`, and only
+the FastAPI title contained it (`DUUI Bundestag Video Viewer`). The other two
+never held the dead name, so nothing brought them into the sweep — a search for
+the *wrong* name cannot find a name that is merely inconsistent.
+
+Nothing is broken; three surfaces simply disagree. The glossary settles what the
+project is called, so the `<title>` and the OpenAPI title should match it. The
+`<h1>` is a visible design element and dropping "DUUI" there may well be
+deliberate, so it is not obviously the same question.
+
+Left for a decision rather than changed here: these are strings a person sees,
+and Phase 4 is a tooling phase.
+
 <!-- New entries append here as each sub-project is read. -->
 
 ## 2.4 Shared contracts
