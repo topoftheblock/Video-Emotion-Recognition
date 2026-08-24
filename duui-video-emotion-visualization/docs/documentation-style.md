@@ -3,7 +3,9 @@
 The single style every file in this project follows: Python, JavaScript, CSS,
 SQL, Dockerfiles, Compose, Markdown, and user-facing output.
 
-Three rules override everything else here.
+## The three rules
+
+These override everything else here.
 
 ### 1. Write only what you can verify
 

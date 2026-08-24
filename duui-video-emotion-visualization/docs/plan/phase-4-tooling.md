@@ -255,7 +255,7 @@ ten minutes, so this is a teardown and re-import, not a `pg_upgrade`.
 **pg18 does not start against this project's Compose file**, and the test above
 did not reveal it:
 
-```
+```text
 Error: in 18+, these Docker images are configured to store database data in a
        format which is compatible with "pg_ctlcluster" (specifically, using
        major-version-specific directory names).
@@ -436,7 +436,7 @@ fixture, so a test run never issues `CREATE DATABASE` against whatever
 The first working version reported **149 passed, 1 skipped**, against 150 on the
 host. The skip was honest and self-declaring:
 
-```
+```text
 test_inputs.py:135: root bypasses directory permissions
 ```
 
@@ -539,7 +539,7 @@ Named volumes take their ownership from the image directory **the first time the
 are mounted**. A volume created while the image ran as root stays root-owned
 forever, so the non-root importer could not write to it:
 
-```
+```text
 touch: cannot touch '/data/videos/.probe': Permission denied
 ```
 
@@ -588,9 +588,9 @@ check that is red on its first day stops being read, and then it cannot report
 the next real failure either — but a finding that is never printed cannot be
 acted on when the time comes. So the service prints:
 
-```
+```text
 --- ruff line length (reported, not gated) ---
-48	E501	line-too-long
+48 E501 line-too-long
 ```
 
 and still exits 0. Everything else — undefined names, unused imports, type

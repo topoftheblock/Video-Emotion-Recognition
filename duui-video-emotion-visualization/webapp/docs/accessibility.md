@@ -100,7 +100,8 @@ backstop and depend on whoever is reviewing.
 - **A name that describes state must change when the state does.** `"Play/Pause"`
   announces both and is never accurate about either. Move the icon and the name
   together in one function — `syncPlayButton()` in `js/playback/player.js` and
-  `syncToggleButton()` in `js/playback/subtitles.js` are the pattern. → *judgement*, with
+  `syncToggleButton()` in `js/playback/subtitles.js` are the pattern.
+  → *judgement*, with
   the initial value checked by `test_toggle_buttons_declare_their_pressed_state`
 - **Interpolating a value next to a name needs a separator, and the value needs
   naming.** `${name}<span>${score}</span>` with no whitespace concatenates into
@@ -234,7 +235,7 @@ Settled. Each is argued at the place it applies; this is an index, not a
 restatement. Do not re-litigate without new information.
 
 | Decision | Where the reasoning lives |
-|---|---|
+| --- | --- |
 | Panel dots are decorative (each has an adjacent label), exempt from 1.4.11 | `css/tokens.css`, accent block |
 | `--border` hairlines are decorative separation, exempt | `css/tokens.css`, on `--border-input` |
 | The emotion groove keeps 1.24:1 — every row prints its value as text beside the bar | `css/emotions.css`, `.emo-track` |

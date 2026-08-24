@@ -13,7 +13,7 @@ the same tab-order sweep. Desktop viewport, to match how the baseline was taken.
 ## The diff
 
 | | baseline | now |
-|---|---|---|
+| --- | --- | --- |
 | axe violations, all five states | 4 (2 critical) | **0** |
 | — `aria-allowed-attr` (critical) | 1 node | gone |
 | — `label` (critical) | 1 node | gone |
@@ -33,7 +33,7 @@ accessible name, the two extra contrast pairs) are closed with them.
 ## The tab order now
 
 | # | Region | Element | Announced name | State |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1 | page | `.skip-link` | Skip to player | – |
 | 2 | header | `#videoComboInput` | Video | `expanded=false` |
 | 3 | ask | `#askInput` | Ask a question about this video | – |
@@ -70,7 +70,7 @@ nowhere near sufficient — which is why the two static checkers exist.
 
 ## Static checkers
 
-```
+```text
 contrast_check.py   79 pairs, 0 failing, 15 recorded without assertion
 cvd_check.py        0 pairs below dE2000 10.0
 pytest              11 passed
@@ -91,7 +91,7 @@ Recorded at their call sites so they are not re-litigated. Listed here as an
 index only.
 
 | Decision | Where the reasoning lives |
-|---|---|
+| --- | --- |
 | Panel dots are decorative (labelled), exempt from 1.4.11 | `css/tokens.css`, accent block |
 | `--border` hairlines are decorative separation, exempt | `css/tokens.css`, on `--border-input` |
 | Emotion groove keeps 1.24:1 — value is printed as text beside it | `css/emotions.css`, `.emo-track` |

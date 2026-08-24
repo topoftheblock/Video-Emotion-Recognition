@@ -54,7 +54,7 @@ The recreation is specified in §3.7.1, run as step 10.
 > A migration procedure is still owed to *users*, who may rename with data they
 > cannot reproduce. It is written into `docs/operations.md` during Phase 7 — the
 > stub already has the heading — but **not executed here**.
-
+>
 > Confirmed in Phase 0: renaming a **service** (`db` → `pgvector-db`) is
 > data-safe. Only the **project** name moves volumes.
 
@@ -167,7 +167,7 @@ pattern, repeated 11 times, is a real boundary: those modules are the toolkit fo
 *reading a CAS*, and everything else in the package is orchestration, storage, or
 file I/O.
 
-```
+```text
 importer/
   __main__.py  config.py  db.py  job_runs.py
   pipeline.py  inputs.py  video_files.py
@@ -197,7 +197,7 @@ From the frontend import graph:
   to playback time. `videoLoader.js` looks similar but is not: it orchestrates
   loading and reaches into three panels, so it stays top level.
 
-```
+```text
 js/
   main.js  state.js  videoLoader.js  legend.js
   lib/       api.js  dom.js  format.js

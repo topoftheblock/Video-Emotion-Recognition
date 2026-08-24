@@ -4,7 +4,7 @@ Captured 2026-08-20, before any remediation work. Phase 6.1 re-runs all three
 and diffs against these.
 
 | File | Phase | What it is |
-|---|---|---|
+| --- | --- | --- |
 | [contrast-baseline.txt](contrast-baseline.txt) | 0.1 | 82 colour pairs, 25 failing |
 | [axe-baseline.md](axe-baseline.md) | 0.2 | axe-core 4.10.2 over five application states |
 | [keyboard-sweep.md](keyboard-sweep.md) | 0.3 | the tab order, verified against real key presses |
@@ -46,7 +46,7 @@ method for the sweep are documented in each file.
 ## Summary of the baseline
 
 | Source | Findings |
-|---|---|
+| --- | --- |
 | Contrast checker | 25 failing pairs, 6 recorded-but-exempt |
 | axe-core | 4 violations (2 critical), identical in all five states; 2 incomplete |
 | Keyboard sweep | 10 stops, 5 defects among them, 2 whole features absent from the order |

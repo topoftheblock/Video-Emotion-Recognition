@@ -533,10 +533,11 @@ out — phases marked done, decision records archived.
   The namespace requires that no branch is literally named `code-cleanup`: git
   stores refs as file paths, so a `code-cleanup` *file* and a `code-cleanup/`
   *directory* cannot coexist. This applies on `origin` as well as locally, which
-  is why the old remote `code-cleanup` branch is deleted rather than kept. `code-cleanup` reaches `main` only at the end of the whole pass. One
+  is why the old remote `code-cleanup` branch is deleted rather than kept.
+  `code-cleanup` reaches `main` only at the end of the whole pass. One
   commit per logical step; never mix a rename with a rewrite in the same commit,
   as that makes the diff unreviewable.
-- **Every commit message starts `Phase <N>: `**, followed by a lowercase
+- **Every commit message starts `Phase <N>:`**, followed by a lowercase
   summary — `Phase 3: rename the importer package`. Without it the log gives no
   way to tell which phase a change belongs to, and the phases are the only
   structure this work has. It applies to every commit in a phase branch, not
@@ -760,7 +761,7 @@ nothing to do.** Recorded for the day that changes:
   triggers those obligations, and a `THIRD-PARTY-NOTICES.md` is the tidy answer.
   Not now.
 
-### On linting in CI (answer to the linting question) — yes, and it is the established pattern here
+### On linting in CI — yes, and it is the established pattern here
 
 **It works, and the repository is already doing exactly this.** GitHub Actions
 only reads workflows from `<git-root>/.github/workflows/`, never from a
@@ -795,6 +796,7 @@ directory. The project's own docs should say where it is and why.
 >
 > This warning is not to live only in this plan. It must appear in three places
 > that a person will actually encounter:
+>
 > 1. In the workflow file's own header comment.
 > 2. In the root `README.md` (or the docs page it links to for CI).
 > 3. Alongside anything else describing the project's layout.

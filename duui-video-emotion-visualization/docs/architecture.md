@@ -18,7 +18,8 @@ only place any of it is explained; sub-project READMEs link here.
 
 ### The database
 
-<!-- Why a shared Postgres is the integration point. Schema detail -> database.md -->
+<!-- Why a shared Postgres is the integration point.
+     Schema detail -> database.md -->
 
 ### The video store
 

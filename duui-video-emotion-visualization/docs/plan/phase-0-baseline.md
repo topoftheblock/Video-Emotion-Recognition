@@ -173,7 +173,7 @@ were readable and the diagnosis above was possible. Harmless, but worth knowing:
 already-imported check at `:227`; the real `load_cas_from_xmi` call is at `:253`.
 A skipped file therefore prints:
 
-```
+```text
 Loading CAS data from /data/input/xmi/full_2sek_with_person.xmi...
 [duui_parser] 'first2.mp4' is already imported (video_id 1) -- skipping.
 ```

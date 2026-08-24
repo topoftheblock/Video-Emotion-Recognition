@@ -275,4 +275,3 @@ playback and the canvas overlay.
 CSS is split by region — `tokens.css` for custom properties, then `base`,
 `layout`, `topbar`, `sidebar`, `stage`, `emotions`, `ask`, `jobs`,
 `responsive`, `adaptive`, with `main.css` importing them.
-
