@@ -693,6 +693,54 @@ inside the project, and `run-lint.sh` carries the one-off command for the real
 one. GitHub also rejects a malformed workflow on push, so it is not unchecked —
 only checked later than everything else.
 
+## 4.4h The pre-commit hook, as built
+
+`tests/hooks/pre-commit`. Installed with one command, from anywhere in the
+repository:
+
+```bash
+git config core.hooksPath duui-video-emotion-visualization/tests/hooks
+```
+
+Runs `ruff format --check` and `ruff check` on **staged Python files only** —
+not the whole tree, so unstaged work in progress is never judged. Everything
+slower stays in CI.
+
+### It scopes itself, because `core.hooksPath` cannot be scoped
+
+The setting is repository-wide, and this repository holds a dozen unrelated
+projects. So the hook filters staged paths to `duui-video-emotion-visualization/`
+and exits immediately otherwise — the same problem the CI workflow solves with
+`paths:`, solved the same way one layer down.
+
+### No install required, but rewarded
+
+If `ruff` is on `PATH` the hook uses it and starts in milliseconds. Otherwise it
+falls back to the same version the lint image carries, through Docker, which
+every contributor already needs. Installing `ruff` (`pipx install ruff`) is an
+optimisation, not a prerequisite — which matters because `.venv` is gone and the
+project's Python cannot be installed everywhere.
+
+### Verified against all four outcomes
+
+| Case | Expected | Result |
+| --- | --- | --- |
+| Clean, well-formatted change | commits | ok |
+| Badly formatted Python | **blocked** | blocked, with the fix command printed |
+| Undefined name, formatting fine | **blocked** | blocked on F821 |
+| `git commit --no-verify` | commits anyway | bypass works |
+| Commit touching nothing in this project | passes straight through | no hook output at all |
+
+A hook that cannot block is not a gate, and a hook that cannot be bypassed gets
+worked around, so both directions were tested rather than assumed.
+
+**A note on how that testing went wrong first.** An early round used
+`git reset --hard` to undo a probe commit, which deleted the not-yet-committed
+hook along with it — so the next test ran with no hook, did not block, and
+committed malformed code that looked like a hook failure. Committing the hook
+first and cleaning up with `git checkout --` instead is what made the results
+mean anything.
+
 ## 4.5 The type-checking ratchet
 
 7 of 140 functions carry a return annotation today. Phase 5 adds the rest as it
@@ -746,7 +794,7 @@ Each step is one commit; suite green before each.
 | 7b | ~~Add `USER` to the other three Dockerfiles~~ — **done**, §4.4e | — |
 | 8 | Add `package.json` and the JS/CSS/HTML/Markdown tooling; run `prettier` in **its own commit** | Touches most JS and CSS |
 | 9 | ~~Write the CI workflow~~ — **done**, §4.4g | — |
-| 10 | Add the pre-commit hook for `ruff format --check` and `ruff check` (§4.9b) | Low |
+| 10 | ~~Add the pre-commit hook~~ — **done**, §4.4h | — |
 | 11 | Full verification — all four images build, corpus row counts match Phase 0, suite at 150/150 **via the Docker runner**, frontend byte-identical | — |
 
 **Steps 6 and 8 are the ones to keep isolated.** A formatting run mixed with a
