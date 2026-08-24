@@ -220,7 +220,7 @@ services:
     profiles: ["lint"]
     build:
       context: .
-      dockerfile: Dockerfile.lint
+      dockerfile: tests/Dockerfile.lint
     image: duui-video-emotion-visualization/lint:latest
     volumes:
       - ./:/app:ro
@@ -241,7 +241,7 @@ services:
     profiles: ["test"]
     build:
       context: .
-      dockerfile: Dockerfile.tests
+      dockerfile: tests/Dockerfile.tests
     image: duui-video-emotion-visualization/tests:latest
     depends_on:
       pgvector-db:

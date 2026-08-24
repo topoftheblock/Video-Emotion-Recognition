@@ -604,6 +604,47 @@ it, because a temporary exclusion with no trigger becomes a permanent one.
 `identity/db.py`; the service caught it as F821 and exited 1. Reverting returned
 it to 0. A gate that cannot fail is not a gate.
 
+## 4.4f Where the tooling files live
+
+Asked during step 8, once the root had grown to twenty files. The answer differs
+by file, and the dividing line is **how the tool finds its configuration**.
+
+### Moved: the two Dockerfiles
+
+`Dockerfile.tests` and `Dockerfile.lint` now live in `tests/`, beside the scripts
+they run — `run-tests.sh`, `run-lint.sh`, `check_links.py`, `ensure_test_db.py`.
+Compose names them by explicit path, so nothing discovers them and moving them
+cost two lines. The build context stays `.`, so every `COPY` inside them is
+unchanged.
+
+### Not moved: the eight linter configs
+
+`.prettierrc.json`, `.prettierignore`, `.stylelintrc.json`, `eslint.config.cjs`,
+`.htmlvalidate.json`, `.markdownlint-cli2.jsonc`, `.sqlfluff`, `.yamllint`.
+
+Every one of these is found by **walking up the directory tree** from the file
+being checked. They can be moved if every invocation passes `--config`, and
+`run-lint.sh` could carry those flags — but the cost lands somewhere else:
+
+- **Editor integration stops working.** The Prettier, ESLint and Stylelint
+  extensions discover configuration exactly the way the CLI does. Move the files
+  and format-on-save silently stops, which is where a formatter is worth most.
+- **Every future invocation needs the flag** — the pre-commit hook, the CI job,
+  and anything anyone runs by hand. A convention that only holds when you
+  remember a flag is not a convention.
+- Someone looking for lint configuration looks at the root, because that is
+  where every other project keeps it.
+
+Consolidation has already happened where a tool supports it: `pyproject.toml`
+carries pytest, ruff **and** mypy rather than three separate files.
+
+### Also cleaned up
+
+`.mypy_cache/` and `.ruff_cache/` had been left in the working tree by containers
+that still ran as root, before step 7b. They were not in `.gitignore` — only
+`.pytest_cache/` was. Both are now ignored and removed, and the checkers write to
+`/tmp` instead (§4.4d).
+
 ## 4.5 The type-checking ratchet
 
 7 of 140 functions carry a return annotation today. Phase 5 adds the rest as it
