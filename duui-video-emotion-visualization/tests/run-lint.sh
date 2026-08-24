@@ -54,6 +54,16 @@ run "html-validate" html-validate webapp/src/frontend/index.html
 run "markdownlint" markdownlint-cli2
 run "links"        python /app/tests/check_links.py
 
+# The only workflow-shaped file inside this project. The real workflow lives in
+# the repository root's .github/workflows, one directory above -- outside the
+# mount, and outside the project, which is the same reason it does not travel
+# with the code. Check it by hand from the repository root:
+#
+#     docker run --rm -v "$PWD":/w -w /w \
+#       duui-video-emotion-visualization/lint:latest \
+#       actionlint .github/workflows/duui-video-emotion-visualization.yml
+run "actionlint"   actionlint webapp/docs/a11y-ci.yml
+
 printf '\n'
 [ "$status" -eq 0 ] && echo "all checks passed" || echo "one or more checks failed"
 exit "$status"

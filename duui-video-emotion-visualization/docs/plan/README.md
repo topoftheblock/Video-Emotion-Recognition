@@ -475,6 +475,11 @@ instructions come before architecture.
   wrong and inert. Do **not** activate it.
 - **Font attribution.** A short note that Oxanium / Roboto / Ubuntu Mono are
   third-party, under OFL/UFL, with their license files alongside them.
+- **`tests/` at the project root needs its own README.** It holds no tests — the
+  four sub-projects do. It holds the *runners*: `Dockerfile.tests`,
+  `Dockerfile.lint`, `run-tests.sh`, `run-lint.sh`, `ensure_test_db.py` and
+  `check_links.py`. A directory called `tests` that contains no tests, sitting
+  beside four directories that do, needs one paragraph saying so.
 - **Document where the CI workflow lives and why it is outside the project**,
   and carry the §7 portability warning into the root `README.md` (or the docs
   page it links to) and anywhere the project layout is described.

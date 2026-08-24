@@ -645,6 +645,54 @@ that still ran as root, before step 7b. They were not in `.gitignore` — only
 `.pytest_cache/` was. Both are now ignored and removed, and the checkers write to
 `/tmp` instead (§4.4d).
 
+## 4.4g The CI workflow, as built
+
+`.github/workflows/duui-video-emotion-visualization.yml`, at the **repository
+root** — one directory above this project, because Actions reads workflows from
+nowhere else.
+
+Two jobs, each running the same command a developer runs, so local and CI cannot
+drift:
+
+```yaml
+lint:  docker compose run --rm lint
+tests: docker compose run --rm tests
+```
+
+The test job needs no database setup: the service brings up Postgres, creates its
+own empty test database, applies the schema, and fails rather than skipping if it
+cannot connect.
+
+### Verified without pushing
+
+- **`actionlint` passes** on the new workflow and on the sibling `ci.yml`.
+- **The `paths:` filter scopes correctly**, checked against nine real paths from
+  this repository: files under `duui-video-emotion-visualization/` and the
+  workflow itself trigger it; `duui_bundestag_pipeline/`, `audio_text_pipeline/`,
+  the sibling `ci.yml`, the root `readme.md` and `pom.xml` do not.
+- **Both triggers are filtered.** The sibling `ci.yml` filters only `push`, so
+  its `pull_request` runs on every pull request in the repository whatever
+  changed. That mistake is not copied.
+
+### The header carries the warning, because the file cannot carry itself
+
+The workflow states in its own header that it does not travel with the project,
+that it fails **silently** when left behind — nothing errors, CI simply stops
+covering the code — and what to change if the project ever becomes its own
+repository.
+
+### `actionlint` cannot check the real workflow from the lint service
+
+The same problem, one level down: the workflow is outside the project, so it is
+outside the read-only mount the lint container sees. Mounting the parent's
+`.github` would couple `docker-compose.yml` to its parent's layout, which is the
+coupling this project is trying to have less of.
+
+So the service checks `webapp/docs/a11y-ci.yml`, the workflow-shaped file that is
+inside the project, and `run-lint.sh` carries the one-off command for the real
+one. GitHub also rejects a malformed workflow on push, so it is not unchecked —
+only checked later than everything else.
+
 ## 4.5 The type-checking ratchet
 
 7 of 140 functions carry a return annotation today. Phase 5 adds the rest as it
@@ -697,7 +745,7 @@ Each step is one commit; suite green before each.
 | 7 | Add the lint service: `mypy` lenient, `sqlfluff`, `hadolint`, `yamllint` (§4.4d). `actionlint` waits for step 9, which creates the workflow it checks; `markdownlint` and the link checker move to step 8 with the rest of the Node tooling | Low |
 | 7b | ~~Add `USER` to the other three Dockerfiles~~ — **done**, §4.4e | — |
 | 8 | Add `package.json` and the JS/CSS/HTML/Markdown tooling; run `prettier` in **its own commit** | Touches most JS and CSS |
-| 9 | Write the CI workflow; verify it fires on a change inside the project and stays silent on one outside | Low |
+| 9 | ~~Write the CI workflow~~ — **done**, §4.4g | — |
 | 10 | Add the pre-commit hook for `ruff format --check` and `ruff check` (§4.9b) | Low |
 | 11 | Full verification — all four images build, corpus row counts match Phase 0, suite at 150/150 **via the Docker runner**, frontend byte-identical | — |
 
