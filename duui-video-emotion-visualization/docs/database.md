@@ -14,8 +14,44 @@ are.
 
 ## Conventions
 
-<!-- Composite keys scoped by video_id; ON DELETE CASCADE; why person_id is not
-     globally unique. -->
+### Every CAS-derived row is keyed by `(video_id, xmi:id)`
+
+An `xmi:id` identifies an annotation **within one CAS document**. It carries no
+meaning across documents, so the same id names unrelated things in different
+videos. Keying a table on the id alone would merge them.
+
+Measured in the current corpus: **4,762 of the 40,323 distinct `emotion_id`
+values occur in more than one video.** `emotion_id` 16621, for instance, is
+present in both video 3 and video 6. `cas-to-postgres-importer` has a test for
+exactly this — `test_two_videos_can_hold_the_same_xmi_id`.
+
+The ids are not small counters restarting at 1 per file, which is a natural
+assumption and a wrong one: they are document-wide and start wherever the
+document's numbering starts. The lowest in this corpus are `emotion_id` 1434,
+`person_id` 1755 and `segment_id` 984.
+
+So:
+
+- `video_id` is a surrogate key (`BIGSERIAL`), not anything from a CAS.
+- Every CAS-derived table has `PRIMARY KEY (video_id, <its own xmi id>)`, and
+  every foreign key between two of them carries both columns.
+- `videos` is keyed for the importer by `filename`, the one identifier stable
+  across re-imports and already the join key to the video store.
+
+### The two exceptions
+
+| Table | Why it is not scoped to a video |
+| --- | --- |
+| `models` | Corpus-wide. The same model annotates every video, so it has a natural key of `(name, version, source)` rather than a copy per video. |
+| `global_persons` | Corpus-wide by definition, and its ids are assigned by the database rather than taken from any CAS. |
+
+### `video_id` is not stable across a re-import
+
+`--on-existing replace` deletes a video's row and inserts a new one, so the
+`BIGSERIAL` advances and the video gets a **different** `video_id`. Anything
+holding one — a bookmarked URL, a saved query, an exported result — will not
+survive a replace. The video *file* is unaffected, because the video store is
+keyed by `filename`.
 
 ## Tables
 
