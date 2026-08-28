@@ -3,8 +3,7 @@
 *Detailed plan for Phase 5. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` plan drafted 2026-08-22. Q1, Q3–Q6 answered; Q2 and two new
-questions open — §5.8.
+Status: `[~]` plan complete, 2026-08-22. All eight questions answered.
 Branch: `code-cleanup/phase-5`.
 
 ## 5.0 What this phase is for
@@ -103,8 +102,9 @@ rate is not low.
 
 | Work item | Now | Target |
 | --- | --- | --- |
-| Functions with a return annotation | **7 of 140** | 140 |
-| `mypy --disallow-untyped-defs` errors | **134** (22 + 78 + 34) | 0 |
+| Functions with a return annotation — `src` | **7 of 140** | 140 |
+| Functions in `tests` — also in scope (Q2) | 191 | 191 |
+| `mypy --disallow-untyped-defs` errors | **358** — 134 in `src`, 224 in `tests` | 0 |
 | JS files with `// @ts-check` | **1 of 16** | 16 |
 | `tsc --checkJs` errors | **40** | 0 |
 | Comment lines to judge | **683** | — |
@@ -155,8 +155,13 @@ disallow_untyped_defs = true
 
 A finished sub-project is then held to the strict setting and **cannot regress
 while the next one is in progress**. By the end, strict is already on everywhere
-and there is no cliff. The per-sub-project error counts above are the size of
-each step: 22, then 78, then 34.
+and there is no cliff.
+
+Step sizes, `src` plus `tests` (Q2): **44**, then **137**, then **177**.
+
+`mypy` must be invoked **once per sub-project** rather than once across all
+three, because the three `tests/conftest.py` files collide as duplicate modules.
+`run-lint.sh` needs that change before the ratchet starts.
 
 ### The checkpoint
 
@@ -250,12 +255,34 @@ still be checked before it is written.
 
 ### Q2 — Are test files held to the same standard?
 
-23 test modules. Their docstrings are genuinely valuable — a test's docstring
-should say *why this test exists*, which is the one thing the assertions cannot.
+**Decided 2026-08-22: yes, the same standard.** Docstrings, the comment budget
+and **full type annotations**, with `tests/` inside the `mypy` ratchet like
+everything else.
 
-But full annotation is a different matter: `def test_x() -> None:` on 150 tests
-adds 150 annotations that say nothing. **Proposal: docstrings and comment budget
-yes, `disallow_untyped_defs` no** — exclude `tests/` from the mypy ratchet.
+That is a larger phase than the first estimate. Measured after the decision:
+
+| | src | tests | total |
+| --- | --- | --- | --- |
+| `mypy --disallow-untyped-defs` errors | 134 | **224** | **358** |
+| — `global-identity-linker` | 22 | 22 | 44 |
+| — `cas-to-postgres-importer` | 78 | 59 | 137 |
+| — `webapp` | 34 | 143 | 177 |
+
+The two runner scripts in the project-root `tests/` already pass strict `mypy`
+with no errors.
+
+> **This forces a change to how `mypy` is invoked.** Checking the three test
+> suites together fails before it starts:
+>
+> ```text
+> conftest.py: error: Duplicate module named "conftest"
+> ```
+>
+> Three sub-projects each have a `tests/conftest.py`, and `mypy` cannot hold
+> three modules of the same name in one run. `run-lint.sh` currently calls it
+> once across all three `src/` roots; it must call it **once per sub-project**
+> instead. That happens to be exactly what the ratchet wants anyway, since each
+> sub-project reaches strict at a different time.
 
 ### Q3 — What is `schema_context.py`?
 
@@ -314,9 +341,12 @@ It is on the ledger for this phase, but **it is a behaviour change, not a
 documentation one** — and the value to choose is a judgement call: 2 seconds?
 10? configurable? Under the bug rule that makes it a stop-and-ask.
 
-**Proposal: document the absence where it matters, and leave the fix out of this
-phase.** Phase 6 is where a timeout could actually be tested; changing connection
-behaviour in the middle of a prose rewrite puts two kinds of risk in one diff.
+**Decided 2026-08-22: fixed between Phase 5 and Phase 6, not inside either.**
+
+Phase 5 documents the absence where it matters and changes no behaviour. The fix
+then lands on its own, before the test audit begins — so the diff that changes
+connection behaviour contains nothing else, and Phase 6 inherits a timeout it can
+write a test against rather than one it has to add first.
 
 ### Q8 — Is the checkpoint a report, or a stop?
 
@@ -328,8 +358,12 @@ changed. Or it can be **yours**: five rewritten modules are a small enough sampl
 to read, and if the tone or depth is wrong, that is far cheaper to say after five
 files than after a hundred.
 
-**Proposal: yours.** The guide changed five times while being applied to *two*
-files in Phase 1. This is the last cheap moment to find out it is still wrong.
+**Decided 2026-08-22: a stop, and both of us review.** After
+`global-identity-linker` the work halts. I check the five modules against the
+style guide and report what I would change in the guide; you read them too.
+
+The guide changed five times while being applied to *two* files in Phase 1. Five
+modules is the last cheap sample before a hundred more.
 
 ## 5.9 Exit criteria
 
