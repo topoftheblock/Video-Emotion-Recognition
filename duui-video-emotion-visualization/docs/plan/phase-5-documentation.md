@@ -3,7 +3,8 @@
 *Detailed plan for Phase 5. Overview, cross-cutting rules, decisions log and
 progress table live in [the plan overview](README.md).*
 
-Status: `[~]` plan drafted 2026-08-22. Six questions open — §5.8.
+Status: `[~]` plan drafted 2026-08-22. Q1, Q3–Q6 answered; Q2 and two new
+questions open — §5.8.
 Branch: `code-cleanup/phase-5`.
 
 ## 5.0 What this phase is for
@@ -237,15 +238,15 @@ rationale that matters, that is ~68 interruptions.
 Stopping dead at each one makes the phase unworkable; not stopping breaks the
 rule that matters most.
 
-**Proposal: batch per file, escalate per sub-project.** While rewriting, an
-unverifiable rationale is written into the file as unverified —
+**Decided 2026-08-22: batch per file, escalate per sub-project.** While
+rewriting, an unverifiable rationale is written into the file as unverified —
 `# No derivation for this value is recorded in this repository.` — and added to a
-list. At the end of each sub-project, the list comes to you as one set of
-questions. **Exception: anything that looks like a defect stops immediately**,
-under the existing bug rule.
+list. At the end of each sub-project the list comes back as one set of questions.
 
-Needs your agreement, because it is a deliberate softening of "stop and ask" into
-"record and ask in batches".
+**Two things this does not soften.** Anything that looks like a *defect* still
+stops immediately, under the bug rule. And "record it and move on" is only
+available for a rationale that is *missing*; a claim that can be checked must
+still be checked before it is written.
 
 ### Q2 — Are test files held to the same standard?
 
@@ -266,8 +267,8 @@ It is also the third description of the schema, alongside `schema.sql` and the
 `docs/database.md` Phase 7 will write — flagged in Phase 3 §3.5 as needing an
 owner, with a test suggested to catch drift.
 
-**Proposal: document the module, leave the prompt text alone**, and let Phase 6
-add the drift test.
+**Decided 2026-08-22: document the module, leave the prompt text alone.** Phase 6
+adds the drift test.
 
 ### Q4 — How far does the JavaScript type checking go?
 
@@ -275,9 +276,11 @@ Turning on `// @ts-check` across the 16 modules produces **40 `tsc` errors**,
 mostly DOM narrowing — `Element` where `HTMLVideoElement` is meant. Each is fixed
 by a JSDoc `@type` cast.
 
-**Proposal: yes, fix all 40 and add `tsc` to the lint service.** It is bounded,
-it is the JS half of the annotation work this phase is doing anyway, and half-done
-type checking is worse than none.
+**Decided 2026-08-22: fix all 40 and add `tsc` to the lint service.**
+
+Sequencing matters here: the 40 errors are fixed *first*, and `tsc` joins
+`run-lint.sh` only once they are clean. Adding it before would put the lint gate
+back into the permanently-red state that the E501 exemption exists to avoid.
 
 ### Q5 — Which project name wins? (D15)
 
@@ -287,10 +290,9 @@ type checking is worse than none.
 | `<h1 class="topbar-title">` | `Emotion Visualization` |
 | `FastAPI(title=…)` — OpenAPI | `DUUI Video Emotion Visualization` |
 
-**Proposal: `DUUI Video Emotion Visualization` for the tab and the OpenAPI
-document; leave the `<h1>` as `Emotion Visualization`.** A page heading does not
-need the framework prefix, and it is a visible design element. But it is your
-call, since all three are strings a person sees.
+**Decided 2026-08-22:** `DUUI Video Emotion Visualization` for the `<title>` and
+the OpenAPI document; the `<h1>` stays `Emotion Visualization`. A page heading
+does not need the framework prefix. Closes D15.
 
 ### Q6 — Does `cas/types.py` get a documentation pass?
 
@@ -298,10 +300,36 @@ call, since all three are strings a person sees.
 XML string literals whose `<description>` attributes are themselves prose. It is
 exempt from the line limit already, as a data file that happens to end in `.py`.
 
-**Proposal: module docstring and the section comments yes; the XML strings are
-data, left alone.**
+**Decided 2026-08-22: module docstring and section comments yes; the XML strings
+are data and are left alone.**
 
 ---
+
+### Q7 — Does Phase 5 fix D4, or only document it?
+
+`connect_timeout` is absent from every application module, so `create_app()`
+hangs at startup against a host that blackholes packets rather than refusing.
+
+It is on the ledger for this phase, but **it is a behaviour change, not a
+documentation one** — and the value to choose is a judgement call: 2 seconds?
+10? configurable? Under the bug rule that makes it a stop-and-ask.
+
+**Proposal: document the absence where it matters, and leave the fix out of this
+phase.** Phase 6 is where a timeout could actually be tested; changing connection
+behaviour in the middle of a prose rewrite puts two kinds of risk in one diff.
+
+### Q8 — Is the checkpoint a report, or a stop?
+
+The plan stops after `global-identity-linker` to review the result against the
+style guide and amend the guide if it did not survive contact.
+
+That review can be mine — check the output against the guide, amend, report what
+changed. Or it can be **yours**: five rewritten modules are a small enough sample
+to read, and if the tone or depth is wrong, that is far cheaper to say after five
+files than after a hundred.
+
+**Proposal: yours.** The guide changed five times while being applied to *two*
+files in Phase 1. This is the last cheap moment to find out it is still wrong.
 
 ## 5.9 Exit criteria
 
