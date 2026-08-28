@@ -833,7 +833,7 @@ and verified in Phase 8.
 | 2 — Fact ledger | `[x]` | `code-cleanup/phase-2` | Done 2026-08-22. D1–D12 registered, contracts verified, legacy docs quarantined. Line-by-line reading deferred to Phase 5. |
 | 3 — Structure | `[x]` | `code-cleanup/phase-3` | Done 2026-08-22. Renames, splits and groupings landed; corpus rebuilt and every row count matches Phase 0. |
 | 4 — Dependencies | `[x]` | `code-cleanup/phase-4` | Done 2026-08-22. Python 3.14, Postgres 18, 13 checkers, CI and a pre-commit hook. |
-| 5 — In-file docs | `[ ]` | | |
+| 5 — In-file docs | `[~]` | `code-cleanup/phase-5` | Plan drafted 2026-08-22; six questions open. |
 | 6 — Test audit | `[ ]` | | |
 | 7 — READMEs + docs | `[ ]` | | |
 | 8 — Final sweep | `[ ]` | | |
@@ -852,7 +852,7 @@ and verified in Phase 8.
 | 2 — Fact ledger | [phase-2-ledger.md](phase-2-ledger.md) · [phase-2-modules.md](phase-2-modules.md) | `[x]` done |
 | 3 — Structure | [phase-3-structure.md](phase-3-structure.md) | `[x]` done |
 | 4 — Dependencies + tooling | [phase-4-tooling.md](phase-4-tooling.md) | `[x]` done |
-| 5 — In-file documentation | *not yet written* | `[ ]` |
+| 5 — In-file documentation | [phase-5-documentation.md](phase-5-documentation.md) | `[~]` plan drafted |
 | 6 — Test audit | *not yet written* | `[ ]` |
 | 7 — READMEs + docs | *not yet written* | `[ ]` |
 | 8 — Final sweep | *not yet written* | `[ ]` |
