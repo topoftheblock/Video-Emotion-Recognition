@@ -33,14 +33,14 @@ binding:
 > Every statement must be checkable against the code, the database, the schema,
 > a test, or an authoritative external source. If it cannot be checked, it does
 > not go in.
-
+>
 > **2. The existing comments are not evidence.**
 > They are legacy text: some accurate, some outdated, some simply wrong, with
 > nothing to tell them apart. A comment is *never* a source — not for what the
 > code does, and **not for why it does it**. When an existing comment states a
 > reason, you may not carry that reason forward merely because it is already
 > written down.
-
+>
 > **3. Never invent a rationale, and never assume one.**
 > If you cannot establish *why*, write what it does and say plainly that the
 > reason is not recorded. **If the reason matters and you cannot determine it,
@@ -82,7 +82,7 @@ rate is not low.
   a verification step, not just as a starting point.**
 - **No AI attribution**, and never describe the old comments as AI-written in
   any committed file. *Legacy*, *unverified*, *outdated*.
-- Commit messages start `Phase 5: `.
+- Commit messages start with the `Phase 5:` prefix.
 
 ---
 
@@ -311,6 +311,7 @@ data, left alone.**
 - [ ] All seven ledger items (D4, D5, D7, D8, D10, D12, D15) resolved
 - [ ] The `job_runs.py` pair diffed and its prose identical
 - [ ] `viewer` gone from prose; glossary terminology throughout, including log lines
-- [ ] **E501 exemption removed** from `run-lint.sh` and the hook; lint green with it enforced
+- [ ] **E501 exemption removed** from `run-lint.sh` and the hook; lint green
+      with it enforced
 - [ ] The unverified-rationale list delivered and answered
 - [ ] Suite 150/150, all 13 checkers green, corpus row counts unchanged

@@ -270,6 +270,7 @@ Two things worth keeping from this:
   or to remove the fallback.
 
 ### D15 — three user-facing surfaces give three different project names
+
 **Needs a decision; not a defect.** Found during Phase 4's final verification.
 
 | Surface | Says |
