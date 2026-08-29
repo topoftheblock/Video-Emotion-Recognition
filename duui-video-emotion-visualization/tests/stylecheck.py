@@ -30,9 +30,13 @@ CODE_WIDTH = 88
 BANNER_WIDTH = 74
 
 # A well-formed section banner, per the style guide: `# --- Name ------`.
-BANNER_OK = re.compile(r"^([ \t]*)# --- [A-Z][\w ]* -+$")
-# Anything that looks like it was meant to be one.
-BANNER_ANY = re.compile(r"^[ \t]*#\s*-{2,}")
+# The name may hold anything but a dash run, so an apostrophe or a plus
+# sign is fine.
+BANNER_OK = re.compile(r"^([ \t]*)# --- [A-Z][^-]* -+$")
+# Anything meant to be one. Dashes at *both* ends, which is what tells a
+# banner from a comment opening with a CSS custom property or a CLI flag
+# (`# --factory because ...`).
+BANNER_ANY = re.compile(r"^[ \t]*#\s*-{3,}.*-{3,}\s*$")
 
 # The rule prefixes `pyproject.toml` actually selects. A `noqa` naming
 # anything else suppresses a rule that was never enabled, and only
@@ -64,7 +68,7 @@ GLOSSARY = [
 # that happens to be loaded.
 CORPUS = [
     (r"current corpus|in this corpus|our corpus", re.I, "do not describe the corpus"),
-    (r"\b\d{1,3},\d{3}\b", 0, "no corpus figures"),
+    (r"(?<!\d)\d{1,3},\d{3}(?!\d)", 0, "no corpus figures"),
 ]
 
 CHECKED_SUFFIXES = (".py", ".toml", ".js", ".css", ".html")
@@ -74,9 +78,9 @@ CHECKED_NAMES = ("Dockerfile", ".dockerignore", "requirements.txt")
 # data rather than prose anyone wrote.
 SKIP_PARTS = ("__pycache__", "resources", "fonts", "a11y-baseline", "legacy")
 
-# A well-formed banner in the C-comment languages: `/* --- Name --- */`.
-CSS_BANNER_OK = re.compile(r"^/\* --- [A-Z][\w ]* -+ \*/$")
-CSS_BANNER_ANY = re.compile(r"^\s*/\*\s*-{2,}")
+# The same, in the C-comment languages: `/* --- Name --- */`.
+CSS_BANNER_OK = re.compile(r"^/\* --- [A-Z][^-]* -+ \*/$")
+CSS_BANNER_ANY = re.compile(r"^\s*/\*\s*-{3,}.*-{3,}\s*(\*/)?\s*$")
 
 
 def is_docstring(node: ast.AST) -> bool:
@@ -196,9 +200,16 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
                 found.append((number, "width", f"{kind} {len(line)} > {limit}"))
 
         if number in prose:
-            if re.search(r"(?<=\S) -- (?=\S)", line):
+            # Between words, or left dangling at a line break — both
+            # are the legacy form.
+            if re.search(r"(?<=\S) -- (?=\S)|(?<=\S) --\s*$", line):
                 found.append((number, "emdash", "'--' as an em dash; write '—'"))
+            # A colour value lists numbers the way a grouped thousand
+            # is written, so it is not a corpus figure.
+            colourish = re.search(r"rgba?\(", line) is not None
             for pattern, flags, message in GLOSSARY + CORPUS:
+                if colourish and "corpus figures" in message:
+                    continue
                 if re.search(pattern, line, flags):
                     found.append((number, "term", message))
 
