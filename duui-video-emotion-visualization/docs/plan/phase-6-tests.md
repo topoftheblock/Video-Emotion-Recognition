@@ -40,8 +40,13 @@ non-root user, i.e. giving the test container root-equivalent access to
 the host daemon, and reaching the spawned database across a network the
 compose project does not manage.
 
-**Proposal: drop the testcontainers item.** What remains is a much
-smaller question — see §6.5.
+**Decided 2026-08-29: drop the testcontainers item.** The database
+setup stays exactly as it is — the compose runner brings up
+`pgvector-db`, `ensure_test_db.py` creates the test database and applies
+the schema, and pytest runs against that. No new dependency, and no
+Docker socket in the test container.
+
+What remains is a much smaller question — see §6.5.
 
 ### The Node toolchain now exists
 
@@ -174,9 +179,10 @@ Found while planning, all Phase 5 misses:
 
 ## 6.8 Open questions
 
-1. **Drop testcontainers?** §6.1 argues the premise is gone and the cost
-   is a Docker socket in the test container. Proposed: drop it, and
-   answer §6.5 instead.
+1. ~~**Drop testcontainers?**~~ **Answered 2026-08-29: dropped.** The
+   premise it rested on was fixed by Phase 4's runner, and adopting it
+   would mean a Docker socket in a deliberately non-root container. The
+   database setup is unchanged.
 2. **Which §6.5 option** — leave, loud, or remove?
 3. **How far to go on the parser gap?** A fixture CAS through
    `run_many()` covering all eleven parsers is one test that would catch
