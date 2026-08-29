@@ -25,11 +25,18 @@ The registry of pairs is curated rather than discovered: nothing in the
 stylesheets says which colours end up stacked on which. A new
 combination has to be added here, or it is not checked.
 
-For a standalone report, needing nothing but the standard library:
+**A helper, not a test.** pytest does not collect this file — its name
+does not match `test_*` — and it asserts nothing on its own. It is
+driven by `test_contrast.py`, which holds the policy, and by
+`test_palette.py` indirectly through `cvd_check.py`.
+
+It is also runnable on its own, which is a supported second entry point
+rather than an accident:
 
     python3 tests/contrast_check.py
 
-The assertions live in `test_contrast.py`.
+It needs nothing but the standard library, and prints every pair it
+measured with its ratio.
 """
 
 import re

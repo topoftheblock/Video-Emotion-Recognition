@@ -7,10 +7,22 @@ application dependencies — which is in turn what makes it cheap enough
 to run on every change. Adding a parser dependency here would cost more
 than it saves.
 
-This does not attempt to be an accessibility engine. It answers
-structural questions — which ids exist, what references them, what is
-focusable and in what order — and the tests in test_markup.py turn those
-into the handful of invariants worth holding to.
+**A helper, not a test.** pytest does not collect this file, and it
+asserts nothing on its own. It is driven by `test_markup.py`, which
+turns what it reports into the invariants worth holding to.
+
+It does not attempt to be an accessibility engine. It answers structural
+questions — which ids exist, what references them, what is focusable and
+in what order.
+
+**Where this ends and the linter begins.** `html-validate` owns whether
+the markup is *valid*: unclosed tags, bad nesting, attributes that do
+not belong on an element. This file owns whether the markup is
+*usable*: that a control has a name, that the tab order is sane, that a
+reference resolves to something real. A document can be perfectly valid
+and unusable, which is why both exist. Neither should grow into the
+other — a rule about validity belongs in the linter's configuration, and
+a rule about semantics belongs here.
 """
 
 from html.parser import HTMLParser

@@ -18,9 +18,17 @@ applied in linear RGB, then CIEDE2000 between the simulated pairs.
 CIEDE2000 rather than plain Euclidean dE76 because the palette is
 saturated, which is exactly where dE76 overstates differences.
 
-Standalone report (stdlib only):
+**A helper, not a test.** pytest does not collect this file — its name
+does not match `test_*` — and it asserts nothing on its own. It is
+driven by `test_palette.py`, which holds the policy.
+
+It is also runnable on its own, which is a supported second entry point
+rather than an accident:
 
     python3 tests/cvd_check.py
+
+It needs nothing but the standard library, and prints every pair with
+its separation, worst first.
 """
 
 import math

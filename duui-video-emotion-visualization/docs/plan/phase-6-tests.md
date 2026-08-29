@@ -123,16 +123,25 @@ test is redundant. Anything that merely re-reads the same file stays.
 
 ## 6.4 Support modules and the linter boundary
 
-- `contrast_check.py`, `cvd_check.py` and `markup_check.py` are helper
-  libraries that test modules import, not tests. Move them to
-  `webapp/tests/support/` so the relationship is visible, and name their
-  driving test modules in each header.
-- Confirm the standalone entry point (`python3 tests/contrast_check.py`)
-  still works after the move, and document it as supported — both
-  reports were run during Phase 5 and produce useful output.
-- Write the `html-validate` / `markup_check.py` boundary into both:
-  the linter owns HTML *validity*, the test suite owns *accessibility
-  semantics*.
+The goal is that a reader can tell a helper from a test. Done:
+
+- Each of the three now says in its own header that it is a helper, that
+  pytest does not collect it, and which test module drives it.
+- The standalone entry point is documented as supported rather than
+  accidental, and both reports were run from the documented path to
+  confirm they still work.
+- The `html-validate` / `markup_check.py` boundary is written into both
+  sides — the linter's in `run-lint.sh`, where it is invoked, because
+  `.htmlvalidate.json` cannot carry a comment.
+
+**The move to `webapp/tests/support/` was not made.** Measured first:
+it would have meant updating 13 references across `accessibility.md`,
+`a11y-verification.md`, `axe-baseline.md`, `a11y-ci.yml` and
+`docs/documentation-style.md` — three of them commands a person is told
+to run. Stale references have been this project's most common defect,
+and creating thirteen of them to improve a directory listing is a poor
+trade. The header notes achieve what the move was for; the placement
+half of "a naming or placement convention" is the part dropped.
 
 ## 6.5 What remains of the "runnable without Postgres" item
 
