@@ -133,7 +133,9 @@ def test_nothing_sets_a_font_size_on_the_root(all_css: str) -> None:
 # --- Custom properties --------------------------------------------------
 
 
-def test_every_custom_property_used_is_defined(sheets, all_css) -> None:
+def test_every_custom_property_used_is_defined(
+    sheets: dict[str, str], all_css: str
+) -> None:
     """
     An undefined `var(--x)` is silent: the declaration is simply
     dropped.
@@ -204,14 +206,16 @@ def test_forced_colours_covers_everything_whose_background_is_data(
         )
 
 
-def test_suppressed_outlines_have_a_forced_colours_fallback(sheets, all_css) -> None:
+def test_suppressed_outlines_have_a_forced_colours_fallback(
+    sheets: dict[str, str], all_css: str
+) -> None:
     """
     `outline: none` plus a `box-shadow` ring is fine until forced
     colours, which drops box shadows and would leave those controls with
     no focus indicator at all — invisible until someone tries to use the
     app that way.
     """
-    suppressed = set()
+    suppressed: set[str] = set()
     for name, source in sheets.items():
         if name == "adaptive.css":
             continue

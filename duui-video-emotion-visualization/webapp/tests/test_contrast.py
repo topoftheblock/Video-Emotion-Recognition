@@ -66,7 +66,7 @@ def test_person_palette_is_read_from_state_js() -> None:
     assert palette[-1] == "#c8c8d0"
 
 
-def test_every_pair_resolves(results) -> None:
+def test_every_pair_resolves(results: list) -> None:
     """A typo in the registry would otherwise surface as a KeyError deep
     in a later assertion rather than as its own failure."""
     assert len(results) > 60
@@ -104,8 +104,11 @@ def test_readable_text_color_clears_aa_for_every_person_colour() -> None:
 
     weak = []
     for colour in palette:
-        rgb = contrast_check._parse_rgba(colour)[0]
-        ratio = contrast_check.contrast(contrast_check._parse_rgba(pick(rgb))[0], rgb)
+        parsed = contrast_check._parse_rgba(colour)
+        picked = contrast_check._parse_rgba(pick(parsed[0])) if parsed else None
+        assert parsed is not None and picked is not None
+        rgb = parsed[0]
+        ratio = contrast_check.contrast(picked[0], rgb)
         if ratio < contrast_check.TEXT:
             weak.append(f"  {colour}: picked {pick(rgb)} at {ratio:.2f}:1")
 

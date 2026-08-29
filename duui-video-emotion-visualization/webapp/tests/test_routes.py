@@ -6,6 +6,8 @@ temporary first. Only the paths needing neither a database nor a
 configured model are asserted here.
 """
 
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -13,7 +15,7 @@ from backend.app import create_app
 
 
 @pytest.fixture
-def client(tmp_path: object, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     """An app whose video store points somewhere temporary.
 
     `create_app` creates that directory and mounts it, so redirecting

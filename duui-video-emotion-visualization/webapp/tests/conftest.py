@@ -31,6 +31,7 @@ try:
 except ImportError:  # pragma: no cover - depends on the environment
     psycopg2 = None
 
+DB_CONFIG: dict[str, str] | None
 try:
     from backend.config import DB_CONFIG
 except Exception:  # pragma: no cover - backend needs its own dependencies

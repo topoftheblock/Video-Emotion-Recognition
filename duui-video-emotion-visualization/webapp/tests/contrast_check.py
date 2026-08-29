@@ -96,7 +96,15 @@ def contrast(fg: RGB, bg: RGB) -> float:
 
 def composite(fg: RGB, alpha: float, bg: RGB) -> RGB:
     """Paint `fg` at `alpha` over opaque `bg`, source-over."""
-    return tuple(round(f * alpha + b * (1 - alpha)) for f, b in zip(fg, bg))
+    r, g, b = (
+        round(f * a + q * (1 - a))
+        for f, q, a in (
+            (fg[0], bg[0], alpha),
+            (fg[1], bg[1], alpha),
+            (fg[2], bg[2], alpha),
+        )
+    )
+    return (r, g, b)
 
 
 # Parsing the committed sources.
@@ -129,14 +137,14 @@ def _parse_rgba(text: str) -> tuple[RGB, float] | None:
         digits = hex_match.group(1)
         if len(digits) == 3:
             digits = "".join(c * 2 for c in digits)
-        return tuple(int(digits[i : i + 2], 16) for i in (0, 2, 4)), 1.0
+        r, g, b = (int(digits[i : i + 2], 16) for i in (0, 2, 4))
+        return (r, g, b), 1.0
 
     rgb_match = _RGB.match(text)
     if rgb_match:
-        r, g, b, a = rgb_match.groups()
-        return (round(float(r)), round(float(g)), round(float(b))), float(
-            a
-        ) if a else 1.0
+        red, green, blue, alpha = rgb_match.groups()
+        channels = (round(float(red)), round(float(green)), round(float(blue)))
+        return channels, float(alpha) if alpha else 1.0
 
     return None
 
@@ -154,7 +162,7 @@ def load_tokens(path: Path = TOKENS_CSS) -> dict[str, tuple[RGB, float]]:
     source = path.read_text(encoding="utf-8")
     raw = {name: value.strip() for name, value in _DECL.findall(source)}
 
-    resolved = {}
+    resolved: dict[str, tuple[RGB, float]] = {}
 
     def resolve(name: str, seen: tuple = ()) -> tuple[RGB, float] | None:
         """Follow one name to a colour, through any var() aliases."""
@@ -219,12 +227,12 @@ def _readable_text_color_impl(path: Path = STATE_JS) -> TextColorPicker:
         which is what the replacement is specified to do.
     """
     source = path.read_text(encoding="utf-8")
-    body = re.search(
+    match = re.search(
         r"export function readableTextColor\s*\([^)]*\)\s*\{(.*?)\n\}",
         source,
         re.DOTALL,
     )
-    body = body.group(1) if body else ""
+    body = match.group(1) if match else ""
 
     candidates = re.findall(r'"(#[0-9a-fA-F]{6})"', body)
     threshold = re.search(
@@ -251,15 +259,20 @@ def _readable_text_color_impl(path: Path = STATE_JS) -> TextColorPicker:
 
     options = candidates or ["#0b0e14", "#ffffff"]
 
-    def pick(rgb: RGB) -> str:
+    def by_contrast(rgb: RGB) -> str:
         """Choose whichever candidate contrasts better."""
-        return max(
-            options, key=lambda hex_value: contrast(_parse_rgba(hex_value)[0], rgb)
-        )
+
+        def ratio(hex_value: str) -> float:
+            """The contrast of one candidate against this colour."""
+            parsed = _parse_rgba(hex_value)
+            assert parsed is not None
+            return contrast(parsed[0], rgb)
+
+        return max(options, key=ratio)
 
     description = "max contrast of " + ", ".join(options)
-    pick.description = description  # type: ignore[attr-defined]
-    return pick  # type: ignore[return-value]
+    by_contrast.description = description  # type: ignore[attr-defined]
+    return by_contrast  # type: ignore[return-value]
 
 
 # The pair registry.
@@ -735,7 +748,9 @@ def _person_pairs(palette: list[str], pick_text: TextColorPicker) -> list[Pair]:
             )
         )
     for colour in palette:
-        rgb = _parse_rgba(colour)[0]
+        parsed = _parse_rgba(colour)
+        assert parsed is not None, f"palette entry is not a colour: {colour}"
+        rgb = parsed[0]
         pairs.append(
             Pair(
                 "person",
@@ -805,7 +820,7 @@ def failures(results: list[Result] | None = None) -> list[Result]:
     return [r for r in results if r.status == "FAIL"]
 
 
-def _main() -> None:
+def _main() -> int:
     """Print the full report, grouped by area of the interface."""
     results = check()
     pick_text = _readable_text_color_impl()

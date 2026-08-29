@@ -16,12 +16,13 @@ from collections.abc import Iterator
 
 import psycopg2
 import pytest
+from psycopg2.extensions import cursor
 
 from backend.config import DB_CONFIG
 from backend.queries import stats, videos
 
 
-def _next_id(cur: object, table: str, column: str) -> int:
+def _next_id(cur: cursor, table: str, column: str) -> int:
     """Return an id above everything already in the table.
 
     The importer writes these keys straight from the CAS's own `xmi:id`
@@ -96,6 +97,7 @@ def test_the_playback_payload_carries_only_readings_on_the_timeline(
 ) -> None:
     """The payload drops the untimed reading, keeping the timed one."""
     payload = videos.build_playback_payload(video_with_both_text_annotators)
+    assert payload is not None
 
     # The frontend renders everything off the playback time, so a
     # reading with no time cannot be placed — and leaving it in is what

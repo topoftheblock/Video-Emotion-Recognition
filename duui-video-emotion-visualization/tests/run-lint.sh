@@ -49,21 +49,13 @@ report "ruff line length" ruff check --select E501 --statistics .
 # duplicate rather than checking anything. The sub-projects do not share files by
 # design, so they are checked the way they are built -- separately.
 
-# Finished sub-projects. Phase 5 has rewritten these, so they are held to the
-# full standard: `tests` is checked alongside `src`, and every function must
-# carry annotations. Move a name up here when its rewrite lands -- that is the
-# ratchet, and it is why this list is the one place that records what is done.
-for project in global-identity-linker cas-to-postgres-importer; do
+# Every sub-project is now held to the full standard: `tests` is checked
+# alongside `src`, and every function carries annotations. The list stays a list
+# rather than collapsing into one invocation because the three `tests/conftest.py`
+# files still collide as duplicate modules if passed together.
+for project in global-identity-linker cas-to-postgres-importer webapp; do
   run "mypy ($project)" mypy --cache-dir="/tmp/mypy-cache-$project" \
     --disallow-untyped-defs "$project/src" "$project/tests"
-done
-
-# Not yet rewritten. `src` only, and no strictness: these still hold unannotated
-# functions by the hundred, and reporting work that has not been scheduled yet
-# just makes a red check that stops being read. Their tests join the run at the
-# same moment their annotations do.
-for project in webapp; do
-  run "mypy ($project)" mypy --cache-dir="/tmp/mypy-cache-$project" "$project/src"
 done
 
 run "sqlfluff"     sqlfluff lint --dialect postgres pgvector-db/schema.sql
@@ -81,16 +73,13 @@ run "html-validate" html-validate webapp/src/frontend/index.html
 run "markdownlint" markdownlint-cli2
 run "links"        python /app/tests/check_links.py
 
-# The style guide and the glossary, on the sub-projects Phase 5 has
-# finished. Same list as the mypy ratchet above, and it moves with it:
-# no other checker enforces prose width, em dashes, glossary terms or
-# docstring coverage, so without this they hold only by review.
-for project in global-identity-linker cas-to-postgres-importer; do
+# The style guide and the glossary, on every sub-project. No other
+# checker enforces prose width, em dashes, glossary terms or docstring
+# coverage, so without this they would hold only by review.
+for project in global-identity-linker cas-to-postgres-importer webapp; do
   run "style ($project)" python /app/tests/stylecheck.py "$project" \
     --exempt cas/types.py query_agent/schema_context.py
 done
-# Reported, not gated, until Phase 5 rewrites it.
-report "style (webapp)" python /app/tests/stylecheck.py webapp
 
 # The only workflow-shaped file inside this project. The real workflow lives in
 # the repository root's .github/workflows, one directory above -- outside the

@@ -249,7 +249,14 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
                 node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
             ):
                 continue
-            if not ast.get_docstring(node):
+            # An @overload stub is a signature, not an implementation:
+            # the real function below it carries the docstring.
+            overload = any(
+                (isinstance(d, ast.Name) and d.id == "overload")
+                or (isinstance(d, ast.Attribute) and d.attr == "overload")
+                for d in getattr(node, "decorator_list", [])
+            )
+            if not overload and not ast.get_docstring(node):
                 found.append(
                     (node.lineno, "docstring", f"{node.name} has no docstring")
                 )

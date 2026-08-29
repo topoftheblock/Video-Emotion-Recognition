@@ -15,6 +15,7 @@ into the handful of invariants worth holding to.
 
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import overload
 
 INDEX_HTML = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
 
@@ -31,7 +32,11 @@ class Element:
     __slots__ = ("tag", "attrs", "order", "text", "parents")
 
     def __init__(
-        self, tag: str, attrs: dict[str, str], order: int, parents: tuple[str, ...]
+        self,
+        tag: str,
+        attrs: dict[str, str],
+        order: int,
+        parents: tuple["Element", ...],
     ) -> None:
         """Record the tag, its attributes, and its ancestry."""
         self.tag = tag
@@ -39,6 +44,12 @@ class Element:
         self.order = order
         self.parents = parents
         self.text = ""
+
+    @overload
+    def get(self, name: str) -> str | None: ...
+
+    @overload
+    def get(self, name: str, default: str) -> str: ...
 
     def get(self, name: str, default: str | None = None) -> str | None:
         """Return one attribute's value, or `default`."""
@@ -78,8 +89,8 @@ class _Reader(HTMLParser):
     def __init__(self) -> None:
         """Start with an empty document and no open tags."""
         super().__init__(convert_charrefs=True)
-        self.elements = []
-        self._stack = []
+        self.elements: list[Element] = []
+        self._stack: list[Element] = []
         self._order = 0
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
@@ -153,7 +164,7 @@ class Document:
     @property
     def ids(self) -> list[str]:
         """Every id in the document, in document order."""
-        return [e.get("id") for e in self.elements if e.has("id")]
+        return [e.get("id", "") for e in self.elements if e.has("id")]
 
     @property
     def focusable(self) -> list[Element]:

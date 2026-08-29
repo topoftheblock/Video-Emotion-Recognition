@@ -62,13 +62,13 @@ MIN_SEPARATION = 10.0
 
 
 def _to_linear(c: float) -> float:
-    """Undo the sRGB transfer curve for one 0-1 channel."""
+    """Undo the sRGB transfer curve, from a 0-255 channel to linear."""
     c /= 255
     return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
 
-def _to_srgb(c: float) -> float:
-    """Reapply the sRGB transfer curve to one 0-1 channel."""
+def _to_srgb(c: float) -> int:
+    """Reapply the sRGB transfer curve, linear to a 0-255 channel."""
     c = max(0.0, min(1.0, c))
     v = 12.92 * c if c <= 0.0031308 else 1.055 * (c ** (1 / 2.4)) - 0.055
     return round(v * 255)
@@ -77,7 +77,8 @@ def _to_srgb(c: float) -> float:
 def parse_hex(value: str) -> tuple[int, int, int]:
     """Read a six-digit hex literal into its channels."""
     v = value.lstrip("#")
-    return tuple(int(v[i : i + 2], 16) for i in (0, 2, 4))
+    r, g, b = (int(v[i : i + 2], 16) for i in (0, 2, 4))
+    return (r, g, b)
 
 
 def to_hex(rgb: tuple[int, int, int]) -> str:
@@ -93,7 +94,8 @@ def simulate(rgb: tuple[int, int, int], kind: str) -> tuple[int, int, int]:
     matrix = CVD_MATRICES[kind]
     lin = [_to_linear(c) for c in rgb]
     out = [sum(m * v for m, v in zip(row, lin)) for row in matrix]
-    return tuple(_to_srgb(c) for c in out)
+    r, g, b = (_to_srgb(c) for c in out)
+    return (r, g, b)
 
 
 # --- CIELAB + CIEDE2000 -------------------------------------------------
@@ -238,7 +240,7 @@ def convergent(
     return [r for r in separations(palette) if r[3] < threshold]
 
 
-def _main() -> None:
+def _main() -> int:
     """Print every pair and its separation, worst first."""
     palette = load_palette()
     print(f"palette ({len(palette)}): {' '.join(palette)}\n")

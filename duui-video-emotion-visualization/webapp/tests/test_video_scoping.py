@@ -35,7 +35,7 @@ def two_videos_sharing_ids(db_available: bool) -> Iterator[tuple[int, int]]:
         pytest.skip("no database available")
 
     conn = get_db_connection()
-    video_ids = []
+    video_ids: list[int] = []
     try:
         with conn.cursor() as cur:
             for index, filename in enumerate(FILENAMES):
@@ -64,7 +64,8 @@ def two_videos_sharing_ids(db_available: bool) -> Iterator[tuple[int, int]]:
                     (video_id, SHARED_EMOTION_ID, f"label_from_video_{index + 1}", 0.9),
                 )
         conn.commit()
-        yield video_ids
+        first, second = video_ids
+        yield (first, second)
     finally:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM videos WHERE video_id = ANY(%s)", (video_ids,))
@@ -93,6 +94,7 @@ def test_the_playback_payload_carries_one_video_of_scores(
     first, _second = two_videos_sharing_ids
 
     payload = videos.build_playback_payload(first)
+    assert payload is not None
 
     scores = payload["emotion_scores"][SHARED_EMOTION_ID]
     assert [s["label"] for s in scores] == ["label_from_video_1"]

@@ -16,7 +16,7 @@ by nothing automated and never will be (see "Known gaps" in the guide).
 from collections import Counter
 
 import pytest
-from markup_check import Document
+from markup_check import Document, Element
 
 HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 
@@ -129,7 +129,7 @@ def test_every_focusable_element_is_inside_a_landmark(doc: Document) -> None:
     everything, including the landmarks.
     """
 
-    def is_landmark(element: object) -> bool:
+    def is_landmark(element: Element) -> bool:
         """Whether this is a landmark a screen reader announces."""
         if element.tag in ("header", "main", "nav", "aside", "footer"):
             return True
