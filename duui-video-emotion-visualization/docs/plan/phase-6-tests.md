@@ -177,19 +177,25 @@ Found while planning, all Phase 5 misses:
 | 8 | Re-measure coverage; record the before and after |
 | 9 | Verify: suite green, all checkers green, corpus row counts unchanged |
 
-## 6.8 Open questions
+## 6.8 Questions, answered
 
-1. ~~**Drop testcontainers?**~~ **Answered 2026-08-29: dropped.** The
-   premise it rested on was fixed by Phase 4's runner, and adopting it
-   would mean a Docker socket in a deliberately non-root container. The
-   database setup is unchanged.
-2. **Which §6.5 option** — leave, loud, or remove?
-3. **How far to go on the parser gap?** A fixture CAS through
-   `run_many()` covering all eleven parsers is one test that would catch
-   most regressions. Per-parser unit tests are eleven times the work for
-   a narrower net. Proposed: the end-to-end one first, then per-parser
-   only where the pipeline cannot reach a branch.
-4. **Is a coverage floor wanted in CI?** A number that cannot fall would
-   keep this from decaying. It also has to be maintained honestly.
-   Proposed: measure, record, and decide at the end of the phase rather
-   than picking a number now.
+1. ~~Drop testcontainers?~~ **Dropped** (2026-08-29). The premise it
+   rested on was fixed by Phase 4's runner, and adopting it would mean a
+   Docker socket in a deliberately non-root container. The database
+   setup is unchanged.
+2. **Off the supported path: make skips loud** (2026-08-29). They keep
+   skipping, but the run says plainly that it was not a full one, so it
+   cannot be mistaken for a green suite.
+3. **The parser gap: end-to-end first** (2026-08-29). One test drives
+   the shipped sample CAS through `run_many()` and asserts what landed,
+   covering all eleven parsers and the pipeline. Per-parser tests only
+   where that sample cannot reach a branch.
+
+   Measured before deciding: the sample is 581 KB and imports in about a
+   second, producing 122 base emotions, 996 emotion scores and 119 face
+   detections. Small enough to keep the suite fast, rich enough to
+   assert on — so there is no speed trade-off to weigh.
+4. **No coverage floor** (2026-08-29). Coverage is measured and recorded
+   at the end of the phase, but nothing gates on the number: a floor
+   invites tests written to raise a percentage rather than to catch a
+   bug.
