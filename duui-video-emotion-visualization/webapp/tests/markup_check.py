@@ -193,9 +193,9 @@ class Document:
         A deliberately shallow version of the accname algorithm: enough
         to catch a control shipped with no name at all, which is the
         regression worth guarding. `placeholder` is reported separately
-        because it is a last-resort fallback rather than a name — it
-        disappears the moment someone types, which is exactly the
-        finding Phase 1.2 fixed.
+        because it is a last-resort fallback rather than a name: it
+        disappears the moment someone types, which is precisely when a
+        name is still needed.
         """
         if element.get("aria-label", "").strip():
             return "aria-label"

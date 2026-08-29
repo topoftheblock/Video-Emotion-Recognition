@@ -1,15 +1,13 @@
-"""
-Contrast assertions over the committed frontend palette.
+"""Contrast assertions over the committed frontend palette.
 
-Phase 0.1 of docs/accessibility.md, tightened by Phase 3. The maths and
-the pair registry live in tests/contrast_check.py; this file is only the
-policy.
+The arithmetic and the pair registry live in `contrast_check.py`; this
+file is only the policy. See "Colour and contrast" in
+docs/accessibility.md.
 
-That policy used to be a KNOWN_FAILURES baseline of the 25 pairs the
-audit found still open, because asserting zero while they were all live
-would have kept the suite red for the length of the remediation. Phase 3
-closed the last of them, so the baseline is gone and the assertion is
-now the plain one: nothing below its threshold, ever.
+The policy is the plain one — nothing below its threshold, ever. It was
+once a baseline of known failures, because asserting zero while they
+were all still open would have kept the suite red; they are closed, so
+the baseline is gone.
 
 Six pairs are recorded as INFO rather than asserted. Those are
 decisions, not omissions — each is argued at its call site (the panel
@@ -88,9 +86,7 @@ def test_no_contrast_failures(results: list) -> None:
 
 
 def test_readable_text_color_clears_aa_for_every_person_colour() -> None:
-    """
-    Phase 3.1's regression guard, and the check that would have caught
-    the original bug.
+    """The check that would have caught the original bug.
 
     readableTextColor() picks the filter chip's text colour per person
     at render time. It used to threshold on luminance at L > 0.45 — far

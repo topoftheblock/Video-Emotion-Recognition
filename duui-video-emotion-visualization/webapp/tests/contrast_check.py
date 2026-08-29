@@ -214,14 +214,13 @@ def _readable_text_color_impl(path: Path = STATE_JS) -> TextColorPicker:
     """
     Mirror readableTextColor() from js/state.js.
 
-    Deliberately parsed rather than hardcoded, so this tracks the source
-    across Phase 3.1 (which replaces the luminance threshold with a real
-    max-contrast comparison). Two shapes are understood:
+    Parsed rather than hardcoded, so it tracks whichever form the
+    source is in. Two are understood:
 
-      * `L > <threshold> ? "<dark>" : "<light>"` — today's
-        implementation, whose threshold of 0.45 sits far above the true
-        black/white crossover and is exactly what the Phase 3.1 finding
-        is about.
+      * `L > <threshold> ? "<dark>" : "<light>"` — a fixed luminance
+        threshold. One well above the true black-and-white crossover
+        picks the wrong text colour for the colours in between, which is
+        the bug this mirror exists to catch.
       * anything else — assumed to be the fixed form, emulated as "pick
         whichever of the function's two hex literals contrasts better",
         which is what the replacement is specified to do.
@@ -477,10 +476,10 @@ def _static_pairs() -> list[Pair]:
             Layer("--signal"),
             TEXT,
         ),
-        # Was the audit's 3.99:1 finding; 0.85 since Phase 3.2. The
-        # alpha is duplicated from css/sidebar.css rather than read from
-        # it — the one literal in this file that can drift from the
-        # stylesheet it describes, so the two have to move together.
+        # The alpha is duplicated from css/sidebar.css rather than
+        # read from it — the one literal in this file that can drift
+        # from the stylesheet it describes, so the two have to move
+        # together.
         P(
             "sidebar",
             "score on selected row",
@@ -696,8 +695,8 @@ def _person_pairs(palette: list[str], pick_text: TextColorPicker) -> list[Pair]:
     Not the colours themselves. The same six are stroked over arbitrary
     video, where they have to stay bright, which leaves them at
     1.4-2.7:1 against the light rows in the sidebar — and darkening them
-    to fix that would break the other use. Since Phase 3.5 the swatch's
-    boundary is a ring instead, so the ring is what is asserted here;
+    to fix that would break the other use. The swatch's boundary is a
+    ring for that reason, so the ring is what is asserted here;
     the raw colour-on-surface figures stay as INFO, because they are the
     reason the ring exists and would otherwise look like an omission.
 
