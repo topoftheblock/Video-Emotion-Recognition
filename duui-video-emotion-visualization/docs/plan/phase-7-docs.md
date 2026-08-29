@@ -29,7 +29,59 @@ wrong, and nothing in this phase may take a fact from them. Confirmed
 2026-08-29. They are not even a topic checklist: the topics come from
 the code, the schema and the compose file, all of which can be checked.
 
-## 7.2 The starting state, measured
+## 7.2 Rules for this phase
+
+The cross-cutting rules in [§5 of the plan overview](README.md) apply
+unchanged, as do [documentation-style.md](../documentation-style.md) and
+[glossary.md](../glossary.md). These are the additional ones this phase
+needs, because it is the first that writes documents rather than
+comments.
+
+1. **`docs/legacy/` is not a source — not for facts, not for topics.**
+   Nothing may be taken from it, and it is not read for what subjects a
+   page should cover. Topics come from the code, the schema and
+   `docker-compose.yml`.
+
+2. **Never migrate a claim out of a legacy document.** If something
+   there looks worth keeping, establish it from the code, the schema,
+   the database or the tests, and write *that*. If it cannot be
+   established, it does not go in. See §7.9 for the case that set this.
+
+3. **Every command in every document gets run, not read.** A command
+   that no longer works is this documentation's characteristic failure,
+   and Phase 5 found several. A command that cannot be run in this
+   environment is marked as unverified where it stands, or cut.
+
+4. **Every variable is verified against the code that reads it.** Not
+   against `.env.example`, not against the current README, and not
+   against another document. Six of them are read only by
+   `docker-compose.yml`; those are verified there, and the page says
+   which layer reads each.
+
+5. **Every path named in prose must exist.** The link checker covers
+   Markdown links only. A path written as text — `webapp/src/backend/app.py`,
+   `tests/run-lint.sh` — is checked by hand or by script.
+
+6. **The map's "must not contain" column is a check, not advice.** Each
+   finished page is read against its row in
+   [`docs/README.md`](../README.md). A page that explains something
+   another page owns is wrong even if what it says is true.
+
+7. **No placeholder survives.** Every `<!-- … -->` outline comment and
+   every "**Stub.**" banner is either replaced by prose or deleted with
+   its heading. A heading with nothing under it is not a document.
+
+8. **A section with nothing true to say is removed, not padded.** If a
+   procedure does not exist, either establish and verify one, or say
+   plainly that there is none. Neither invent one nor leave the heading
+   empty.
+
+9. **Terminology is checked, not remembered.** `tests/stylecheck.py`
+   reads Markdown for prose width and em dashes but does **not** check
+   the glossary in `.md` files. Terminology in the new pages is checked
+   by hand against [glossary.md](../glossary.md) before each commit.
+
+## 7.3 The starting state, measured
 
 ### `docs/` is four finished pages and four stubs
 
@@ -71,7 +123,7 @@ container runs as. `configuration.md` owns every one of them, and must
 say which layer reads each, because "grep the source" will not find six
 of them.
 
-## 7.3 The `a11y-ci.yml` item, re-checked
+## 7.4 The `a11y-ci.yml` item, re-checked
 
 The outline says to fix a dead `duui-bundestag-stack/…` path and a
 false "no CI" premise. Only half of that is still true:
@@ -91,7 +143,7 @@ give the real reason — a deliberate choice not to spend CI minutes on a
 browser download — and say what activating it would involve. **Do not
 activate it.**
 
-## 7.4 What Phase 5 and Phase 6 left owing
+## 7.5 What Phase 5 and Phase 6 left owing
 
 - `webapp/docs/a11y-verification.md` is titled "after Phases 1–5",
   meaning the accessibility remediation phases. Beside a cleanup effort
@@ -103,11 +155,11 @@ activate it.**
   the `routes/videos.py` payload path — belong in `todo.md` if it
   survives.
 
-## 7.5 Steps
+## 7.6 Steps
 
 | # | Step |
 | --- | --- |
-| 1 | Answer §7.7 |
+| 1 | Answer §7.8 — done |
 | 2 | `docs/architecture.md` — the four parts, the four shared contracts, and why no code is shared |
 | 3 | `docs/configuration.md` — all 31 variables, each verified against the code or the compose file that reads it |
 | 4 | `docs/operations.md` — everyday commands, importing, recomputing, schema upgrades on an existing volume, the Compose-rename hazard, backup, CI |
@@ -116,12 +168,12 @@ activate it.**
 | 7 | `tests/README.md` — what the directory is, since it holds no tests |
 | 8 | Root README — drop the banner, add the links, adopt the short `run` form, note where CI lives |
 | 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication |
-| 10 | Rewrite the `a11y-ci.yml` header (§7.3); retitle `a11y-verification.md` |
+| 10 | Rewrite the `a11y-ci.yml` header (§7.4); retitle `a11y-verification.md` |
 | 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licences alongside |
-| 12 | Delete `docs/legacy/` — its three live references are already gone (§7.8) |
-| 13 | Verify — see §7.6 |
+| 12 | Delete `docs/legacy/` — its three live references are already gone (§7.9) |
+| 13 | Verify — see §7.7 |
 
-## 7.6 Verification
+## 7.7 Verification
 
 - Every checker green, including the link checker over a much larger
   web of links, and `stylecheck.py` over the new prose.
@@ -136,11 +188,11 @@ activate it.**
   `docker compose up -d` to a video playing in the browser, doing only
   what it says.
 
-## 7.7 Questions, answered
+## 7.8 Questions, answered
 
 1. **`docs/legacy/` is deleted** (2026-08-29). Its content is not used
    and is known to be unreliable; leaving it is a trap for the next
-   reader. See §7.8 for what that costs.
+   reader. See §7.9 for what that cost.
 2. **`docs/todo.md` stays**, and the work Phase 6 left open moves into
    it — so "what is left" has one address that is not the plan.
 3. **`pgvector-db/README.md` is short**: what the image is, the pgvector
@@ -150,7 +202,7 @@ activate it.**
    input-path variables a first run with real data must set, and a link
    to `configuration.md` for the rest.
 
-## 7.8 The three references into `docs/legacy/` — already removed
+## 7.9 The three references into `docs/legacy/` — already removed
 
 Found while planning, and dealt with immediately rather than left for
 execution, because two of them cited the legacy document as **evidence
