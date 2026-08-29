@@ -45,7 +45,7 @@ comments.
 2. **Never migrate a claim out of a legacy document.** If something
    there looks worth keeping, establish it from the code, the schema,
    the database or the tests, and write *that*. If it cannot be
-   established, it does not go in. See §7.9 for the case that set this.
+   established, it does not go in. See §7.10 for the case that set this.
 
 3. **Every command in every document gets run, not read.** A command
    that no longer works is this documentation's characteristic failure,
@@ -155,11 +155,39 @@ activate it.**
   the `routes/videos.py` payload path — belong in `todo.md` if it
   survives.
 
-## 7.6 Steps
+## 7.6 Found while writing — needs a decision
+
+**`schema.sql` is idempotent for its indexes and not for its tables.**
+All 15 `CREATE INDEX` statements and the `job_runs` table are declared
+`IF NOT EXISTS`. The other 13 `CREATE TABLE` statements are not, so
+re-running the file against a populated database prints thirteen
+`relation "…" already exists` errors. `psql` continues past them, so it
+half-works: new objects are created, existing ones error.
+
+I nearly documented a re-run as the way to apply a schema change, and
+the run that checked it is what caught this. The page now says what
+actually happens and recommends applying the specific statement instead.
+
+**Whether this is a defect is not clear, so it is not being changed.**
+The asymmetry has a plausible reason: `job_runs` is idempotent because
+three services also create it, and the 13 tables only ever run on an
+empty data directory, where nothing exists to collide with. Against
+that, a file whose halves behave differently is a trap, and the errors
+are alarming for something the documentation might tell you to do.
+
+The argument for leaving it: without `IF NOT EXISTS`, re-running tells
+you loudly that a table is already there. With it, a table whose *shape*
+has changed is silently skipped, which is worse.
+
+**For decision** — leave as is, or make all thirteen `IF NOT EXISTS` for
+consistency. Under the plan's bug rule this is the "not clear" case, so
+it is recorded rather than guessed at.
+
+## 7.7 Steps
 
 | # | Step |
 | --- | --- |
-| 1 | Answer §7.8 — done |
+| 1 | Answer §7.9 — done |
 | 2 | `docs/architecture.md` — the four parts, the four shared contracts, and why no code is shared |
 | 3 | `docs/configuration.md` — all 31 variables, each verified against the code or the compose file that reads it |
 | 4 | `docs/operations.md` — everyday commands, importing, recomputing, schema upgrades on an existing volume, the Compose-rename hazard, backup, CI |
@@ -170,10 +198,10 @@ activate it.**
 | 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication |
 | 10 | Rewrite the `a11y-ci.yml` header (§7.4); retitle `a11y-verification.md` |
 | 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licences alongside |
-| 12 | Delete `docs/legacy/` — its three live references are already gone (§7.9) |
-| 13 | Verify — see §7.7 |
+| 12 | Delete `docs/legacy/` — its three live references are already gone (§7.10) |
+| 13 | Verify — see §7.8 |
 
-## 7.7 Verification
+## 7.8 Verification
 
 - Every checker green, including the link checker over a much larger
   web of links, and `stylecheck.py` over the new prose.
@@ -188,11 +216,11 @@ activate it.**
   `docker compose up -d` to a video playing in the browser, doing only
   what it says.
 
-## 7.8 Questions, answered
+## 7.9 Questions, answered
 
 1. **`docs/legacy/` is deleted** (2026-08-29). Its content is not used
    and is known to be unreliable; leaving it is a trap for the next
-   reader. See §7.9 for what that cost.
+   reader. See §7.10 for what that cost.
 2. **`docs/todo.md` stays**, and the work Phase 6 left open moves into
    it — so "what is left" has one address that is not the plan.
 3. **`pgvector-db/README.md` is short**: what the image is, the pgvector
@@ -202,7 +230,7 @@ activate it.**
    input-path variables a first run with real data must set, and a link
    to `configuration.md` for the rest.
 
-## 7.9 The three references into `docs/legacy/` — already removed
+## 7.10 The three references into `docs/legacy/` — already removed
 
 Found while planning, and dealt with immediately rather than left for
 execution, because two of them cited the legacy document as **evidence
