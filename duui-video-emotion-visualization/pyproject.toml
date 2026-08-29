@@ -3,9 +3,9 @@
 # code lives entirely in its own directory under a `src/` source root,
 # so all of those go on the path: that is what makes `import importer`,
 # `import backend` and `import identity` resolve exactly as they do in
-# the respective
-# images. The three packages are named differently on purpose — all
-# source roots share one path here, so a common name would shadow.
+# the respective images. The three packages are named differently on
+# purpose: all source roots share one path here, so a common name would
+# shadow.
 #
 # Each directory also has its own pyproject.toml, so `cd
 # cas-to-postgres-importer && pytest` (or either of the other two) works

@@ -2,17 +2,18 @@
  * The browser half of the accessibility checks: axe over five
  * application states, plus the keyboard sweep.
  *
- * Phase 6.3 of docs/accessibility.md. The other half —
- * contrast_check.py and cvd_check.py — are pure functions over
- * committed values and run under pytest with no browser. These cannot:
- * three of the five states only exist after JS has run, and the tab
- * order is a property of the rendered document.
+ * See docs/accessibility.md. The other half — contrast_check.py and
+ * cvd_check.py — are pure functions over committed values and run under
+ * pytest with no browser. These cannot: three of the five states only
+ * exist after JS has run, and the tab order is a property of the
+ * rendered document.
  *
- * There is no headless-browser toolchain in this repo (it is Python end
- * to end), so this is written to be pasted into a browser console
- * rather than to require one. It returns a plain object, so it also
- * drops straight into Playwright/Puppeteer `evaluate()` if that ever
- * gets added — see the note at the bottom.
+ * Kept manual by decision. The project does carry a JavaScript
+ * toolchain, so the obstacle is not that one would have to be added:
+ * running this automatically would mean downloading a browser on every
+ * check, and that cost has been judged not worth paying. It returns a
+ * plain object, so it drops straight into a driver's `evaluate()` if
+ * that decision is ever revisited — see the note at the bottom.
  *
  *   1. docker compose up -d pgvector-db webapp
  *   2. open http://localhost:8010, size the window to desktop
@@ -116,7 +117,7 @@ async function a11yCheck({
   });
   await ask("where is someone happy?");
   results.C = await run("C-ask-segments");
-  // Phase 1.1: these rows are <button>s, so they must be reachable.
+  // These rows are <button>s, so they must be reachable by keyboard.
   results.C.focusableInResults = document.querySelectorAll("#askResults button").length;
 
   stub({
@@ -147,9 +148,8 @@ async function a11yCheck({
   );
   await wait(300);
   results.E = await run("E-combobox-open");
-  // Phase 1.5: aria-expanded belongs on the input, options need ids,
-  // and the highlight has to be announced through
-  // aria-activedescendant.
+  // aria-expanded belongs on the input, options need ids, and the
+  // highlight has to be announced through aria-activedescendant.
   results.E.combobox = {
     inputExpanded: input.getAttribute("aria-expanded"),
     activeDescendant: input.getAttribute("aria-activedescendant"),

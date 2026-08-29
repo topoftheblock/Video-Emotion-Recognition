@@ -348,7 +348,7 @@ guide, amend the guide if it did not survive contact, *then* continue.
 
 ---
 
-### `[ ]` Phase 6 — Test audit
+### `[x]` Phase 6 — Test audit
 
 **Why here:** after the structure settles (test paths follow module paths) and
 after Phase 5, which reads every line of source and is the cheapest possible
@@ -843,7 +843,7 @@ and verified in Phase 8.
 | 4 — Dependencies | `[x]` | `code-cleanup/phase-4` | Done 2026-08-22. Python 3.14, Postgres 18, 13 checkers, CI and a pre-commit hook. |
 | 5 — In-file docs | `[x]` | `code-cleanup/phase-5` | Done 2026-08-29. Every comment and docstring rewritten across all four sub-projects; every function annotated; `tsc` and a style checker added to the gate; E501 exemption removed. 15 false claims corrected. Detail: [phase-5-documentation.md](phase-5-documentation.md). |
 | — Fix D4 | `[x]` | `code-cleanup/fix-d4-connect-timeout` | Done 2026-08-29. `connect_timeout` in `DB_CONFIG` across all three services, from `DUUI_DB_CONNECT_TIMEOUT` (default 10). The webapp now starts against an unreachable database instead of never listening. |
-| 6 — Test audit | `[ ]` | | |
+| 6 — Test audit | `[x]` | `code-cleanup/phase-6` | Done 2026-08-29. Coverage 48% to 83%; the importer's parsers and both job-run copies had none. Two of the outline's premises were found stale and dropped. |
 | 7 — READMEs + docs | `[ ]` | | |
 | 8 — Final sweep | `[ ]` | | |
 | 9 — Lockfiles, then changelogs | `[ ]` | | |
@@ -863,7 +863,7 @@ and verified in Phase 8.
 | 4 — Dependencies + tooling | [phase-4-tooling.md](phase-4-tooling.md) | `[x]` done |
 | 5 — In-file documentation | [phase-5-documentation.md](phase-5-documentation.md) | `[x]` done |
 | — Fix D4 (connect timeout) | [fix-d4-connect-timeout.md](fix-d4-connect-timeout.md) | `[x]` done |
-| 6 — Test audit | *not yet written* | `[ ]` |
+| 6 — Test audit | [phase-6-tests.md](phase-6-tests.md) | `[x]` done |
 | 7 — READMEs + docs | *not yet written* | `[ ]` |
 | 8 — Final sweep | *not yet written* | `[ ]` |
 | 9 — Lockfiles, then changelogs | *not yet written* | `[ ]` |

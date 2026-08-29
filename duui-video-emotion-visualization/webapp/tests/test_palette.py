@@ -13,7 +13,7 @@ down rather than re-deriving by eye whenever someone prefers a
 different blue.
 """
 
-import cvd_check
+from support import cvd_check
 
 
 def test_palette_is_read_from_state_js() -> None:

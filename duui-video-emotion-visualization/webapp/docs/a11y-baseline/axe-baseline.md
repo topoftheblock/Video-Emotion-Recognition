@@ -80,7 +80,7 @@ white on `#e0a458` (**2.18:1**, confirmed by reading the computed styles) and
 the selected row's score at `rgba(255,255,255,0.75)` over `--signal`
 (**3.99:1**). axe flagged neither. It also does not check non-text contrast at
 all, so all 13 swatch failures are invisible to it.
-`tests/contrast_check.py` covers 82 pairs and catches all of them.
+`tests/support/contrast_check.py` covers 82 pairs and catches all of them.
 
 **The mouse-only Ask segment list.** In state C, three `<li>` elements each
 carry a click handler and no role, no `tabindex`, no key handling. axe reported

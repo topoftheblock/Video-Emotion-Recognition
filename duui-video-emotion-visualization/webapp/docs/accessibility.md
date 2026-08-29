@@ -30,8 +30,8 @@ docker run --rm -v "$PWD":/w -w /w python:3.14-slim sh -c \
 For the colour reports rather than pass/fail:
 
 ```bash
-docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 tests/contrast_check.py
-docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 tests/cvd_check.py
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 tests/support/contrast_check.py
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 tests/support/cvd_check.py
 ```
 
 The second half needs the app running, because three of the five states it
@@ -140,9 +140,9 @@ backstop and depend on whoever is reviewing.
   does not error; it drops the declaration silently.
   → `test_every_custom_property_used_is_defined`
 - **Adding a colour combination means adding it to the registry.** The pair list
-  in `tests/contrast_check.py` is curated, not discovered — there is no way to
-  know from a stylesheet which colours end up stacked on which. A combination
-  that is not in the registry is not checked.
+  in `tests/support/contrast_check.py` is curated, not discovered — there
+  is no way to know from a stylesheet which colours end up stacked on
+  which. A combination that is not in the registry is not checked.
   → *judgement*, then `test_contrast.py::test_no_contrast_failures`
 - **Thresholds:** 4.5:1 for text, 3:1 for large text and for anything non-text
   that conveys meaning or marks a control's boundary. Exemptions are allowed but
@@ -239,11 +239,11 @@ restatement. Do not re-litigate without new information.
 | Panel dots are decorative (each has an adjacent label), exempt from 1.4.11 | `css/tokens.css`, accent block |
 | `--border` hairlines are decorative separation, exempt | `css/tokens.css`, on `--border-input` |
 | The emotion groove keeps 1.24:1 — every row prints its value as text beside the bar | `css/emotions.css`, `.emo-track` |
-| The input fill no longer carries the field boundary; its border does | `tests/contrast_check.py`, input pairs |
-| The person swatch's boundary is a ring, not its hue | `css/sidebar.css`, `tests/contrast_check.py` |
+| The input fill no longer carries the field boundary; its border does | `tests/support/contrast_check.py`, input pairs |
+| The person swatch's boundary is a ring, not its hue | `css/sidebar.css`, `tests/support/contrast_check.py` |
 | `.person-swatch` opts out of forced colours — the hue *is* the data | `css/adaptive.css` |
 | `.subtitle-box` opts out of forced colours — it sits over video | `css/adaptive.css` |
-| Okabe-Ito palette; the unknown grey separates by lightness, not hue | `js/state.js`, `tests/cvd_check.py` |
+| Okabe-Ito palette; the unknown grey separates by lightness, not hue | `js/state.js`, `tests/support/cvd_check.py` |
 | A `19em` reflow block that was tried and removed | `css/responsive.css`, end of file |
 | Touch targets of 36–41px at ≤560px rather than 44px | `css/responsive.css` — passes WCAG 2.2 AA (2.5.8 needs 24px); a deliberate AAA deviation |
 
@@ -333,8 +333,9 @@ work.
 
 **One literal is duplicated between the stylesheet and the checker** — the
 `0.85` alpha in `.person-row.is-selected .person-meta` appears in both
-`css/sidebar.css` and `tests/contrast_check.py`. Changing one without the other
-silently re-opens the pair. It is commented in both places; it is still a seam.
+`css/sidebar.css` and `tests/support/contrast_check.py`. Changing one
+without the other silently re-opens the pair. It is commented in both
+places; it is still a seam.
 
 **The Ask agent is unavailable without `DUUI_QUERY_API_KEY`**, so two of the five
 browser states are only reachable through the `fetch` stub built into

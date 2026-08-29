@@ -74,5 +74,5 @@ jobs:
         if: always()
         working-directory: duui-video-emotion-visualization/webapp
         run: |
-          python3 tests/contrast_check.py || true
-          python3 tests/cvd_check.py || true
+          python3 tests/support/contrast_check.py || true
+          python3 tests/support/cvd_check.py || true

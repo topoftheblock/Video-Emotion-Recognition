@@ -7,17 +7,29 @@ application dependencies — which is in turn what makes it cheap enough
 to run on every change. Adding a parser dependency here would cost more
 than it saves.
 
-This does not attempt to be an accessibility engine. It answers
-structural questions — which ids exist, what references them, what is
-focusable and in what order — and the tests in test_markup.py turn those
-into the handful of invariants worth holding to.
+**A helper, not a test.** pytest does not collect this file, and it
+asserts nothing on its own. It is driven by `test_markup.py`, which
+turns what it reports into the invariants worth holding to.
+
+It does not attempt to be an accessibility engine. It answers structural
+questions — which ids exist, what references them, what is focusable and
+in what order.
+
+**Where this ends and the linter begins.** `html-validate` owns whether
+the markup is *valid*: unclosed tags, bad nesting, attributes that do
+not belong on an element. This file owns whether the markup is
+*usable*: that a control has a name, that the tab order is sane, that a
+reference resolves to something real. A document can be perfectly valid
+and unusable, which is why both exist. Neither should grow into the
+other — a rule about validity belongs in the linter's configuration, and
+a rule about semantics belongs here.
 """
 
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import overload
 
-INDEX_HTML = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
+INDEX_HTML = Path(__file__).resolve().parents[2] / "src" / "frontend" / "index.html"
 
 # Elements that take focus without an author-supplied tabindex.
 NATIVELY_FOCUSABLE = {"button", "input", "select", "textarea", "a"}
@@ -193,9 +205,9 @@ class Document:
         A deliberately shallow version of the accname algorithm: enough
         to catch a control shipped with no name at all, which is the
         regression worth guarding. `placeholder` is reported separately
-        because it is a last-resort fallback rather than a name — it
-        disappears the moment someone types, which is exactly the
-        finding Phase 1.2 fixed.
+        because it is a last-resort fallback rather than a name: it
+        disappears the moment someone types, which is precisely when a
+        name is still needed.
         """
         if element.get("aria-label", "").strip():
             return "aria-label"

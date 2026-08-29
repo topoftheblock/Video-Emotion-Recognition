@@ -25,11 +25,18 @@ The registry of pairs is curated rather than discovered: nothing in the
 stylesheets says which colours end up stacked on which. A new
 combination has to be added here, or it is not checked.
 
-For a standalone report, needing nothing but the standard library:
+**A helper, not a test.** pytest does not collect this file — its name
+does not match `test_*` — and it asserts nothing on its own. It is
+driven by `test_contrast.py`, which holds the policy, and by
+`test_palette.py` indirectly through `cvd_check.py`.
 
-    python3 tests/contrast_check.py
+It is also runnable on its own, which is a supported second entry point
+rather than an accident:
 
-The assertions live in `test_contrast.py`.
+    python3 tests/support/contrast_check.py
+
+It needs nothing but the standard library, and prints every pair it
+measured with its ratio.
 """
 
 import re
@@ -53,7 +60,7 @@ class TextColorPicker(Protocol):
         """Return the text colour this picker would choose."""
 
 
-FRONTEND = Path(__file__).resolve().parent.parent / "src" / "frontend"
+FRONTEND = Path(__file__).resolve().parents[2] / "src" / "frontend"
 TOKENS_CSS = FRONTEND / "css" / "tokens.css"
 STATE_JS = FRONTEND / "js" / "state.js"
 
@@ -214,14 +221,13 @@ def _readable_text_color_impl(path: Path = STATE_JS) -> TextColorPicker:
     """
     Mirror readableTextColor() from js/state.js.
 
-    Deliberately parsed rather than hardcoded, so this tracks the source
-    across Phase 3.1 (which replaces the luminance threshold with a real
-    max-contrast comparison). Two shapes are understood:
+    Parsed rather than hardcoded, so it tracks whichever form the
+    source is in. Two are understood:
 
-      * `L > <threshold> ? "<dark>" : "<light>"` — today's
-        implementation, whose threshold of 0.45 sits far above the true
-        black/white crossover and is exactly what the Phase 3.1 finding
-        is about.
+      * `L > <threshold> ? "<dark>" : "<light>"` — a fixed luminance
+        threshold. One well above the true black-and-white crossover
+        picks the wrong text colour for the colours in between, which is
+        the bug this mirror exists to catch.
       * anything else — assumed to be the fixed form, emulated as "pick
         whichever of the function's two hex literals contrasts better",
         which is what the replacement is specified to do.
@@ -477,10 +483,10 @@ def _static_pairs() -> list[Pair]:
             Layer("--signal"),
             TEXT,
         ),
-        # Was the audit's 3.99:1 finding; 0.85 since Phase 3.2. The
-        # alpha is duplicated from css/sidebar.css rather than read from
-        # it — the one literal in this file that can drift from the
-        # stylesheet it describes, so the two have to move together.
+        # The alpha is duplicated from css/sidebar.css rather than
+        # read from it — the one literal in this file that can drift
+        # from the stylesheet it describes, so the two have to move
+        # together.
         P(
             "sidebar",
             "score on selected row",
@@ -696,15 +702,15 @@ def _person_pairs(palette: list[str], pick_text: TextColorPicker) -> list[Pair]:
     Not the colours themselves. The same six are stroked over arbitrary
     video, where they have to stay bright, which leaves them at
     1.4-2.7:1 against the light rows in the sidebar — and darkening them
-    to fix that would break the other use. Since Phase 3.5 the swatch's
-    boundary is a ring instead, so the ring is what is asserted here;
+    to fix that would break the other use. The swatch's boundary is a
+    ring for that reason, so the ring is what is asserted here;
     the raw colour-on-surface figures stay as INFO, because they are the
     reason the ring exists and would otherwise look like an omission.
 
     The overlay stroke over footage is not checked at all: its backdrop
     is whatever the video is showing, so there is no ratio to compute —
     only the palette's separability under colour-vision deficiency,
-    which is tests/cvd_check.py's job.
+    which is tests/support/cvd_check.py's job.
     """
     pairs = [
         Pair(
