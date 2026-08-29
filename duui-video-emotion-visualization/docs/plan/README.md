@@ -299,7 +299,7 @@ everything still builds and passes.
 
 ---
 
-### `[ ]` Phase 5 — In-file documentation rewrite
+### `[x]` Phase 5 — In-file documentation rewrite
 
 **Why here:** structure and versions are settled, style is defined, facts are
 verified. Now the prose can be written once.
@@ -841,7 +841,7 @@ and verified in Phase 8.
 | 2 — Fact ledger | `[x]` | `code-cleanup/phase-2` | Done 2026-08-22. D1–D12 registered, contracts verified, legacy docs quarantined. Line-by-line reading deferred to Phase 5. |
 | 3 — Structure | `[x]` | `code-cleanup/phase-3` | Done 2026-08-22. Renames, splits and groupings landed; corpus rebuilt and every row count matches Phase 0. |
 | 4 — Dependencies | `[x]` | `code-cleanup/phase-4` | Done 2026-08-22. Python 3.14, Postgres 18, 13 checkers, CI and a pre-commit hook. |
-| 5 — In-file docs | `[~]` | `code-cleanup/phase-5` | Plan drafted 2026-08-22; six questions open. |
+| 5 — In-file docs | `[x]` | `code-cleanup/phase-5` | Done 2026-08-29. Every comment and docstring rewritten across all four sub-projects; every function annotated; `tsc` and a style checker added to the gate; E501 exemption removed. 15 false claims corrected. Detail: [phase-5-documentation.md](phase-5-documentation.md). |
 | 6 — Test audit | `[ ]` | | |
 | 7 — READMEs + docs | `[ ]` | | |
 | 8 — Final sweep | `[ ]` | | |

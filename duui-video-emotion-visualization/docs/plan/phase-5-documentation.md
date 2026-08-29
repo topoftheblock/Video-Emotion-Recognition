@@ -352,6 +352,89 @@ One sub-project per group of commits; suite and lint green before each.
 
 ---
 
+## 5.6 What the webapp found, and what closed the phase
+
+### The webapp
+
+The largest sub-project, and the one where "the existing comments are
+not evidence" paid for itself most often. Six claims were wrong:
+
+1. **`config.py` said the webapp only reads the database.** It also
+   creates `job_runs` at startup, best-effort, for a database that
+   predates that table.
+2. **`queries/jobs.py` justified a 30-second staleness window** by
+   saying the writers heartbeat "about once a second", making it
+   "generous by an order of magnitude". The background heartbeat is
+   every five seconds; one second is the throttle on progress writes,
+   which is a different thing. Thirty seconds is six missed beats.
+3. **`agent.py` explained that a provider's reasoning field is
+   ignored.** Nothing in the code touches that field, and the claim is
+   about an external service that cannot be checked from here.
+4. **`schema_context.py` cited `docs/data_schema_with_types.md`.** That
+   path has never existed — Phase 2 found this and it was never fixed.
+   `docs/database.md` and `cas/types.py` pointed at the old location too.
+5. **The webapp's conftest said its tests need no rollback fixture
+   because the webapp only reads.** They write, then delete. The real
+   reason is that the query functions under test open their own
+   connections, so uncommitted rows would be invisible to them.
+6. **`a11y_browser_check.js` said wiring the browser sweep into CI would
+   mean adding a JavaScript toolchain "to a repo that has neither".**
+   Phase 4 added the toolchain. Half that reason had been false since.
+
+Plus a whole *class* of dangling reference: eight comments cite "Phase
+N.N of docs/accessibility.md", and that file says outright that the
+phase-by-phase plan is gone. History goes, reasons stay.
+
+**Recorded, not changed:** the `run_sql` tool description promises the
+model a "total row count" that the implementation never returns — it
+sends back only the rows shown and a more-rows flag. Changing prompt
+text changes agent behaviour, which Q3 puts outside this phase.
+
+### The frontend
+
+40 pre-existing `tsc` errors, almost all one mistake repeated: a DOM
+lookup typed as a bare element, then used as a video, an input or a
+canvas. Twenty-two cleared from `lib/dom.js` alone. `tsc --noEmit` now
+runs in the lint suite. Two were real looseness rather than a missing
+type: a number assigned to `input.value`, and `input.value` divided by a
+number — JavaScript coerces both, so they worked.
+
+### Mistakes worth keeping
+
+Every one came from a mechanical pass applied where the file's syntax
+uses the same characters as prose:
+
+- The comment rewrapper folded `#!/bin/sh` into the paragraph below it,
+  and all three shell scripts stopped being executable.
+- The em-dash substitution rewrote `--` inside the pre-commit hook's
+  `git diff --cached ... -- <paths>`, where it is the argument
+  separator. git refused the next commit outright.
+- The banner conversion turned the *first prose line* of two stylesheets
+  into a banner name, because both open with a rule of dashes and then a
+  paragraph rather than a title.
+- The HTML rewrapper joined paragraphs, and an earlier substitution
+  deleted an em dash sitting at a line break instead of converting it —
+  silently changing what one sentence said.
+- A line-numbered `sed` overwrote a `def` line after other edits had
+  shifted the file. The suite still passed, because the function had
+  quietly stopped being collected.
+
+**The rule this yields:** never run a prose transformation over a whole
+file. Restrict it to comment and docstring ranges, and check afterwards
+that the non-prose parts are byte-identical. Every one of these was
+caught in under a minute by a gate — `ruff format`, git itself, the
+style checker — and none by re-reading the diff.
+
+### Closing the phase
+
+The E501 exemption is gone from both `tests/run-lint.sh` and the
+pre-commit hook, as its removal marker instructed; `ruff check .` is now
+plain, and was verified to fail on an over-long line. All three
+sub-projects are in the strict `mypy` list with their tests, and all
+three are gated on the style checker.
+
+---
+
 ## 5.6 The risk, stated plainly
 
 **Nothing in the toolchain can catch a false sentence.**

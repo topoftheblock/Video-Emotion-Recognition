@@ -29,23 +29,7 @@ report() {
 }
 
 run "ruff format"  ruff format --check .
-# E501 is deliberately outside the gate until Phase 5.
-#
-# All 48 findings are prose — comments and docstrings written wider than
-# the style guide's 72 columns for prose. Phase 5 rewrites every one of
-# them, so they clear as a side effect and rewrapping them now would be
-# work thrown away.
-#
-# They are excluded from the gate rather than from the run because a
-# check that is red on its first day stops being read, and then it
-# cannot report the next real failure either. Everything else —
-# undefined names, unused imports, type errors, malformed Dockerfiles —
-# still fails the build.
-#
-# REMOVE THIS EXEMPTION WHEN PHASE 5 CLOSES. The line below and the
-# report line under it both go, leaving a plain `ruff check .`.
-run    "ruff lint"        ruff check --extend-ignore E501 .
-report "ruff line length" ruff check --select E501 --statistics .
+run "ruff lint"    ruff check .
 # One mypy invocation per sub-project, because each owns a
 # `tests/conftest.py` and mypy identifies a module by its name: pass all
 # three paths at once and it sees three different files claiming to be

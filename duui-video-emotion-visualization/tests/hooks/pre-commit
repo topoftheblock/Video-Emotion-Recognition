@@ -58,9 +58,7 @@ if ! run_ruff format --check $staged; then
   exit 1
 fi
 
-# The same exemption the lint service makes: line-length findings are
-# prose that Phase 5 rewrites. REMOVE WHEN PHASE 5 CLOSES.
-if ! run_ruff check --extend-ignore E501 $staged; then
+if ! run_ruff check $staged; then
   echo
   echo "  Lint. Some findings are fixable with:  ruff check --fix"
   exit 1
