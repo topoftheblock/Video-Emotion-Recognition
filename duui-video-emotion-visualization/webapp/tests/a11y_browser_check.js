@@ -2,8 +2,8 @@
  * The browser half of the accessibility checks: axe over five
  * application states, plus the keyboard sweep.
  *
- * Phase 6.3 of docs/accessibility.md. The other half --
- * contrast_check.py and cvd_check.py -- are pure functions over
+ * Phase 6.3 of docs/accessibility.md. The other half —
+ * contrast_check.py and cvd_check.py — are pure functions over
  * committed values and run under pytest with no browser. These cannot:
  * three of the five states only exist after JS has run, and the tab
  * order is a property of the rendered document.
@@ -12,7 +12,7 @@
  * to end), so this is written to be pasted into a browser console
  * rather than to require one. It returns a plain object, so it also
  * drops straight into Playwright/Puppeteer `evaluate()` if that ever
- * gets added -- see the note at the bottom.
+ * gets added — see the note at the bottom.
  *
  *   1. docker compose up -d pgvector-db webapp
  *   2. open http://localhost:8010, size the window to desktop
@@ -56,16 +56,16 @@ async function a11yCheck({
         impact: v.impact,
         nodes: v.nodes.length,
       })),
-      // Two rules are expected here in every state and are not findings:
-      // video-caption (the out-of-scope subtitle track) and color-contrast
-      // (axe declines to resolve backgrounds behind pseudo-elements and
-      // overlaps). See docs/a11y-verification.md.
+      // Two rules are expected here in every state and are not
+      // findings: video-caption (the out-of-scope subtitle track) and
+      // color-contrast (axe declines to resolve backgrounds behind
+      // pseudo-elements and overlaps). See docs/a11y-verification.md.
       incomplete: [...new Set(r.incomplete.map((v) => v.id))],
     };
   };
 
   /* The Ask agent needs DUUI_QUERY_API_KEY, which a dev stack usually
-     has no value for. Only the agent's *response* is stubbed -- the form
+     has no value for. Only the agent's *response* is stubbed — the form
      submit, renderAskResults() and every element axe then scans are the
      real code path. */
   const realFetch = window.fetch.bind(window);
@@ -147,8 +147,9 @@ async function a11yCheck({
   );
   await wait(300);
   results.E = await run("E-combobox-open");
-  // Phase 1.5: aria-expanded belongs on the input, options need ids, and
-  // the highlight has to be announced through aria-activedescendant.
+  // Phase 1.5: aria-expanded belongs on the input, options need ids,
+  // and the highlight has to be announced through
+  // aria-activedescendant.
   results.E.combobox = {
     inputExpanded: input.getAttribute("aria-expanded"),
     activeDescendant: input.getAttribute("aria-activedescendant"),
@@ -174,7 +175,7 @@ async function a11yCheck({
  * The tab order, with each stop's accessible name and state.
  *
  * Focusable elements in document order. That is the real tab order only
- * while nothing carries a positive tabindex, which is asserted below --
+ * while nothing carries a positive tabindex, which is asserted below —
  * and it was checked against twelve actual Tab presses when this was
  * first written. Reload to a clean state before calling.
  */
@@ -268,7 +269,8 @@ function a11ySweep() {
  *   expect(r.summary.totalViolations).toBe(0);
  *   expect(r.summary.unnamedStops).toBe(0);
  *
- * That is deliberately not wired up here: it would mean adding a
- * JavaScript toolchain and a browser download to a repo that has neither,
- * which is a bigger decision than this file should make on its own. */
+ * That is deliberately not wired up here. The project does now carry a
+ * JavaScript toolchain, but running this would additionally mean
+ * downloading a browser on every check, which is a bigger decision than
+ * this file should make on its own. */
 if (typeof module !== "undefined") module.exports = { a11yCheck, a11ySweep };

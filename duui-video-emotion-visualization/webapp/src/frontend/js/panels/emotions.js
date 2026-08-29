@@ -5,10 +5,10 @@
  * label: the reading at the current playhead, and the mean over the
  * whole video (drawn as a tick on the same track, so "is this moment
  * unusual for this video?" is one glance rather than one subtraction).
- * Audio and video additionally carry dimensional readings -- valence
- * and arousal, plus dominance for audio -- which are signed, and so
- * grow left/right from the centre of the track instead of from its
- * left edge.
+ * Audio and video additionally carry dimensional readings — valence and
+ * arousal, plus dominance for audio — which are signed, and so grow
+ * left/right from the centre of the track instead of from its left
+ * edge.
  *
  * Rows are built once per video by initEmotionPanels() and afterwards
  * only updated in place by renderEmotionPanels(), which runs on every
@@ -44,7 +44,7 @@ import {
  * readings that modality actually carries.
  *
  * The label lists are the three models' documented vocabularies. They
- * are presentation order and nothing else -- a label the data has but
+ * are presentation order and nothing else — a label the data has but
  * this list doesn't is still shown, appended alphabetically, so a
  * re-trained model never silently loses a row.
  *
@@ -108,10 +108,10 @@ let tracks = [];
  *
  * Both the per-frame render and the whole-video averages go through
  * here, which is the point: an average over everyone next to a live
- * reading for one person would be a comparison against a baseline
- * that isn't theirs. Readings with no person_id (video-modality
- * frames the importer couldn't attribute to anyone) drop out of a
- * filtered view -- they are not known to be this person's.
+ * reading for one person would be a comparison against a baseline that
+ * isn't theirs. Readings with no person_id (video-modality frames the
+ * importer couldn't attribute to anyone) drop out of a filtered view —
+ * they are not known to be this person's.
  */
 function readingsFor(data, modality) {
   const readings = data.emotions[modality] || [];
@@ -171,10 +171,10 @@ export function initEmotionPanels(data) {
       readings.length,
     );
 
-    // Row order in the markup is dimensions-then-labels (the dimensional
-    // readings -- valence/arousal/dominance -- sit at the top, under a
-    // divider, which is what lets the per-frame update address rows by
-    // index instead of re-querying the DOM.
+    // Row order in the markup is dimensions-then-labels (the
+    // dimensional readings — valence/arousal/dominance — sit at the
+    // top, under a divider, which is what lets the per-frame update
+    // address rows by index instead of re-querying the DOM.
     const fills = body.querySelectorAll("[data-emo-fill]");
     const values = body.querySelectorAll("[data-emo-now]");
     tracks.push({
@@ -193,8 +193,8 @@ export function renderEmotionPanels(data, t) {
     const { config, labels, rows } = track;
     // A narrowed overlay set means the Ask panel decided this modality
     // isn't what the open result is about: the whole-video averages
-    // stay (they are context, not a claim about this instant), the
-    // live readings blank out.
+    // stay (they are context, not a claim about this instant), the live
+    // readings blank out.
     const live = overlayEnabled(config.overlay)
       ? currentReadings(readingsFor(data, config.modality), t)
       : [];

@@ -2,10 +2,10 @@
  * Choosing and loading a video: the dropdown, the payload fetch, and
  * the panels that refresh once per video rather than once per frame.
  *
- * Also owns the empty state -- the cover over the video frame for the
- * cases that otherwise just look like a broken app: nothing imported,
- * a database row whose file isn't in the store, and a payload that
- * failed to load.
+ * Also owns the empty state — the cover over the video frame for the
+ * cases that otherwise just look like a broken app: nothing imported, a
+ * database row whose file isn't in the store, and a payload that failed
+ * to load.
  */
 
 import { fetchGlobalPersons, fetchVideoData, fetchVideos } from "./lib/api.js";
@@ -18,9 +18,9 @@ import { renderPersonList } from "./panels/people.js";
 const IMPORT_COMMAND = "docker compose run --rm cas-to-postgres-importer";
 const LOGS_COMMAND = "docker compose logs -f webapp";
 
-// Marks the frame as covered, which is the one case where it is
-// allowed to grow past 16:9 -- see .stage-frame.is-empty in
-// css/responsive.css for why that is safe only while this is up.
+// Marks the frame as covered, which is the one case where it is allowed
+// to grow past 16:9 — see .stage-frame.is-empty in css/responsive.css
+// for why that is safe only while this is up.
 export function showEmptyState(title, detail, command) {
   el.emptyStateTitle.textContent = title;
   el.emptyStateDetail.textContent = detail;
@@ -49,8 +49,8 @@ export async function loadVideoList() {
   }
 
   // An empty database used to render an empty dropdown over a blank
-  // player with no explanation at all -- indistinguishable from a
-  // broken app. Say what is actually the case, and what to run.
+  // player with no explanation at all — indistinguishable from a broken
+  // app. Say what is actually the case, and what to run.
   if (!videos.length) {
     showEmptyState(
       "No videos imported yet",
@@ -67,20 +67,22 @@ export async function loadVideoList() {
   initVideoCombobox();
   applySelection(videos[0].video_id, false);
 
-  // Cross-video person clusters don't change per video load -- fetched
-  // once and filtered client-side in renderCrossVideoPanel().
+  // The global persons do not change per video load, so they are
+  // fetched once and filtered in the browser.
   state.globalPersonClusters = await fetchGlobalPersons().catch(() => []);
 
   await loadVideo(videos[0].video_id);
 }
 
-/* ------------------------------------------------------------------
-   The video picker is a searchable combobox: a text input that doubles
-   as the search field, with a list of matching filenames under it. The
-   container (#videoSelect) carries a `value` property holding the
-   selected video_id and a `change` event, so the rest of the app keeps
-   treating it like the old <select>.
-   ------------------------------------------------------------------ */
+/* --- The video picker ----------------------------------------------- */
+
+/*
+ * A searchable combobox: a text input that doubles as the search field,
+ * with a list of matching filenames under it. The container carries a
+ * `value` property holding the selected video and fires `change`, so
+ * the rest of the app goes on treating it as the plain control it
+ * replaced.
+ */
 
 let comboReady = false;
 let selectedVideoId = null;
@@ -139,7 +141,7 @@ function applySelection(videoId, dispatch) {
   if (dispatch) el.videoSelect.dispatchEvent(new Event("change"));
 }
 
-/* aria-expanded belongs to whatever carries role="combobox" -- that is
+/* aria-expanded belongs to whatever carries role="combobox" — that is
  * the input, not the #videoSelect wrapper these two used to write to. A
  * plain <div> may not carry the attribute at all, so the old pair
  * managed to be invalid markup *and* leave the input reading
@@ -160,9 +162,9 @@ function closeCombo() {
 }
 
 /**
- * (Re)build the dropdown list from the full `state.videos` list, kept in
- * ascending filename order and narrowed to names containing the input's
- * text (case-insensitive).
+ * (Re)build the dropdown list from the full `state.videos` list, kept
+ * in ascending filename order and narrowed to names containing the
+ * input's text (case-insensitive).
  */
 export function renderVideoOptions() {
   const query = el.videoComboInput.value.trim().toLowerCase();
@@ -189,7 +191,7 @@ export function renderVideoOptions() {
     )
     .join("");
 
-  // The rows just changed, so any previous index is meaningless -- it
+  // The rows just changed, so any previous index is meaningless — it
   // would point at whatever now happens to sit at that position.
   comboHighlight = -1;
   el.videoComboInput.removeAttribute("aria-activedescendant");
@@ -223,7 +225,7 @@ function onComboKeydown(e) {
  *
  * The two keys used to be asymmetric: ArrowDown clamped at the last
  * item, ArrowUp clamped at the *first* and so could never get back to
- * "nothing highlighted" -- which left neither key able to undo the
+ * "nothing highlighted" — which left neither key able to undo the
  * other. Wrapping makes them symmetric and keeps exactly one option
  * highlighted once navigation has started, so aria-activedescendant
  * always points at something that exists.

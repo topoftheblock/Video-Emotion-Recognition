@@ -1,12 +1,12 @@
 /**
- * Playback: the transport controls, and the render loop everything
- * else hangs off.
+ * Playback: the transport controls, and the render loop everything else
+ * hangs off.
  *
  * Nothing here knows what a subtitle or a bounding box is. Renderers
- * register with onFrame() and get called with (data, currentTime) --
- * on every animation frame while playing, and once per timeupdate/seek
- * while paused. That inversion is what keeps this module from having
- * to import every panel in the app.
+ * register with onFrame() and get called with (data, currentTime) — on
+ * every animation frame while playing, and once per timeupdate/seek
+ * while paused. That inversion is what keeps this module from having to
+ * import every panel in the app.
  */
 
 import { el } from "../lib/dom.js";
@@ -57,7 +57,7 @@ function updateTransport(t) {
   if (!el.scrub.matches(":active")) {
     const pct = el.player.duration ? (t / el.player.duration) * 1000 : 0;
     el.scrub.value = String(pct);
-    // Without this the slider announces "0" to "1000" -- its internal
+    // Without this the slider announces "0" to "1000" — its internal
     // resolution, which is not a position in anything the user can see.
     el.scrub.setAttribute("aria-valuetext", `${current} of ${total}`);
   }
@@ -72,7 +72,7 @@ function loop() {
 
 /* Inline SVG rather than the ▶ / ⏸ glyphs these replace. Oxanium has
  * neither, so both came from whatever symbol font the OS fell back to
- * -- which is why they rendered at different sizes, and why only the
+ * — which is why they rendered at different sizes, and why only the
  * triangle sat off-centre: its glyph box carries a trailing side
  * bearing that the pause bars do not, so centring the box left the ink
  * pushed left.

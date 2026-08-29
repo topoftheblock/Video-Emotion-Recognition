@@ -49,7 +49,13 @@ GLOSSARY = [
     (r"\bviewer\b", re.I, "'viewer' is retired — say 'the webapp'"),
     (r"global identit(y|ies)", re.I, "'identity' as a noun — say 'global person'"),
     (r"cross-video person", re.I, "say 'global person'"),
-    (r"\bclips?\b", re.I, "say 'video', not 'clip'"),
+    # The noun only. "clip off the top" is the verb, and `clip_label` is
+    # a column name.
+    (
+        r"\b(a|the|each|every|this|that|per|two|these|those)\s+clips?\b|\bclips\b(?!_)",
+        re.I,
+        "say 'video', not 'clip'",
+    ),
     # Only the noun: "recording its id" is the verb, and is fine.
     (
         r"\b(a|the|each|every|this|that|per)\s+recording\b|\brecordings\b",
@@ -119,7 +125,7 @@ def _c_comment_lines(src: str) -> set[int]:
             continue
         if stripped.startswith("//"):
             lines.add(number)
-        elif "/*" in line:
+        elif stripped.startswith("/*"):
             lines.add(number)
             if "*/" not in line[line.index("/*") :]:
                 in_block = True
@@ -194,10 +200,17 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
             continue
 
         if not exempt:
-            limit = PROSE_WIDTH if number in prose else CODE_WIDTH
-            if len(line) > limit:
-                kind = "prose" if number in prose else "code"
-                found.append((number, "width", f"{kind} {len(line)} > {limit}"))
+            if number in prose:
+                if len(line) > PROSE_WIDTH:
+                    found.append(
+                        (number, "width", f"prose {len(line)} > {PROSE_WIDTH}")
+                    )
+            # Code width in the C-comment languages belongs to prettier
+            # and stylelint, which are configured and run beside this.
+            # Two checkers disagreeing about one line helps nobody.
+            elif path.suffix not in (".js", ".css", ".html"):
+                if len(line) > CODE_WIDTH:
+                    found.append((number, "width", f"code {len(line)} > {CODE_WIDTH}"))
 
         if number in prose:
             # Between words, or left dangling at a line break — both

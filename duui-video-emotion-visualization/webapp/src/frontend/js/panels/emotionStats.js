@@ -2,9 +2,10 @@
 /**
  * Deriving displayable values from a set of emotion readings.
  *
- * Pure functions over plain data: no DOM, no shared state, nothing to mock.
- * Split out of `emotions.js` so that the panel is about rendering and this is
- * about arithmetic; the two were interleaved and neither read clearly.
+ * Pure functions over plain data: no DOM, no shared state, nothing to
+ * mock. Split out of `emotions.js` so that the panel is about rendering
+ * and this is about arithmetic; the two were interleaved and neither
+ * read clearly.
  */
 
 import { coveredBy } from "../playback/subtitles.js";
@@ -14,16 +15,16 @@ export const DISPLAY_LABELS = { "<unk>": "unknown" };
 
 /**
  * Seconds. Video-modality readings are 20ms windows sampled every few
- * frames, so for most instants nothing covers `t` at all -- the
- * nearest sample within this distance stands in, the same way the
- * bounding-box overlay matches detections.
+ * frames, so for most instants nothing covers `t` at all — the nearest
+ * sample within this distance stands in, the same way the bounding-box
+ * overlay matches detections.
  */
 export const SAMPLE_TOLERANCE = 0.15;
 
 /**
  * The readings that describe instant `t`: everything whose window
- * covers it, or -- for the frame-sampled video modality, where the
- * gaps between samples are larger than the samples themselves -- every
+ * covers it, or — for the frame-sampled video modality, where the gaps
+ * between samples are larger than the samples themselves — every
  * reading from the nearest sampled instant.
  *
  * More than one comes back whenever several people were read at the
@@ -67,7 +68,7 @@ export function meanScores(readings, data) {
   return means;
 }
 
-/** Mean of one dimensional column across `readings`, or null if none carry it. */
+/** Mean of one dimension across `readings`, null if none carry it. */
 export function meanDimension(readings, key) {
   let sum = 0;
   let n = 0;
@@ -96,7 +97,7 @@ export function dominantOf(readings, scores) {
   return best && displayLabel(best);
 }
 
-/** The configured order first, then anything the data had that it didn't. */
+/** The configured order first, then whatever else the data had. */
 export function orderLabels(preferred, scores) {
   const present = preferred.filter((label) => scores.has(label));
   const extra = Array.from(scores.keys())
@@ -110,8 +111,8 @@ export function displayLabel(label) {
 }
 
 /**
- * Both clamps exist because these are raw model outputs, and the
- * panels state a range in the way they draw ("share of a full track",
+ * Both clamps exist because these are raw model outputs, and the panels
+ * state a range in the way they draw ("share of a full track",
  * "distance from the centre"). A value outside the range the model is
  * documented to produce is a data problem worth noticing in the
  * numbers, not one worth letting a bar overflow its track over.
