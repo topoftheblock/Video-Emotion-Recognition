@@ -57,11 +57,19 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend"
 # The same Postgres the importer and the linker write into. The webapp
 # reads it, with one exception: it creates `job_runs` at startup if the
 # database predates that table — see `queries/jobs.py`.
-DB_CONFIG = {
+# Seconds to wait for the connection itself. Without it, psycopg2 waits
+# on the operating system's TCP timeout: against a host that accepts the
+# route but never answers, that is minutes with nothing printed. Ten
+# turns that hang into a clean OperationalError. It bounds the connect
+# only, never a query that is already running.
+DB_CONNECT_TIMEOUT = int(os.environ.get("DUUI_DB_CONNECT_TIMEOUT", "10"))
+
+DB_CONFIG: dict[str, str | int] = {
     "dbname": os.environ.get("DUUI_DB_NAME", "your_db"),
     "user": os.environ.get("DUUI_DB_USER", "your_user"),
     "password": os.environ.get("DUUI_DB_PASSWORD", "your_password"),
     "host": os.environ.get("DUUI_DB_HOST", "localhost"),
+    "connect_timeout": DB_CONNECT_TIMEOUT,
 }
 
 # --- Query agent --------------------------------------------------------

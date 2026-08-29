@@ -161,3 +161,56 @@ Recorded because each could reasonably have gone the other way.
    importer anchor, the linker, the webapp and the test runner. Inside
    Compose the database answers immediately and the timeout never fires,
    but a value set in `.env` should reach the code that reads it.
+
+---
+
+## 9. Outcome
+
+Done 2026-08-29. Suite 162 passing (150 before, plus twelve covering the
+new setting), all 19 checkers green.
+
+Measured against a blackholed host, where the same calls previously hung
+past 25 seconds with no output:
+
+| Surface | Before | After |
+| --- | --- | --- |
+| importer | hung | clean failure, ~21s |
+| identity linker | hung | clean failure, ~21s |
+| webapp `/healthz` | never listened | **503 in 10.0s**, naming the host |
+| webapp static frontend | never served | 200, unaffected by the database |
+| `DUUI_DB_CONNECT_TIMEOUT=2` | — | 503 in 2.0s, so the variable is wired |
+
+Normal operation is unchanged: importer, linker and webapp against the
+real database, with every row count identical before and after.
+
+### Two things found while doing it
+
+**1. A Phase 5 regression in `.env.example`.** The comment rewrapper had
+treated commented-out assignments as prose and rewrapped them, joining
+two pairs of variables onto single lines:
+
+    # DUUI_VIDEO_STORE=video_media DUUI_VIDEO_STORE=/Users/you/duui-videos
+    # DUUI_DB_NAME=duui_video_emotion DUUI_DB_USER=duui
+
+Uncommenting either would have produced a broken assignment. It had also
+turned `#VAR=` into `# VAR=` throughout, changing the file's
+uncomment-me ergonomics. Restored, and redone with assignments excluded
+from the pass — the same lesson Phase 5 already recorded, in a file that
+had not been checked closely enough.
+
+**2. The three new test modules could not share a basename.** pytest
+identifies a test module by its basename alone, and all three suites are
+collected together, so three files called `test_db_timeout` collided on
+import. Each is named for the package it covers instead, and says why.
+
+### Recorded for Phase 6
+
+Against an unreachable database the suite now takes 57 seconds rather
+than hanging — but 50 of those are five setups of `test_routes.py`'s
+`client` fixture, each building an app whose startup connects and now
+waits the full ten seconds. It passes, because that call is best-effort.
+
+Not fixed here: making the fixture cheaper means changing its scope,
+which risks leaking state between tests, and Phase 6 already owns
+"make the DB-dependent tests runnable without a pre-existing Postgres"
+via testcontainers — which removes this case entirely.

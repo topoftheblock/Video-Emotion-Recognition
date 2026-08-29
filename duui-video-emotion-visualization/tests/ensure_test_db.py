@@ -30,7 +30,9 @@ def main() -> int:
         "user": os.environ.get("DUUI_DB_USER", "duui"),
         "password": os.environ.get("DUUI_DB_PASSWORD", "duui"),
         "host": os.environ.get("DUUI_DB_HOST", "pgvector-db"),
-        "connect_timeout": 10,
+        # The same knob the three services read, so the project has
+        # one value rather than two that can drift apart.
+        "connect_timeout": int(os.environ.get("DUUI_DB_CONNECT_TIMEOUT", "10")),
     }
 
     # Connect to `postgres` rather than the target: CREATE DATABASE

@@ -15,7 +15,9 @@ needs.
 ## Database
 
 <!-- DUUI_DB_NAME, DUUI_DB_USER, DUUI_DB_PASSWORD, DUUI_DB_HOST,
-     DUUI_DB_HOST_PORT. Note the placeholder defaults and their consequence. -->
+     DUUI_DB_HOST_PORT, DUUI_DB_CONNECT_TIMEOUT. Note the placeholder
+     defaults and their consequence, and that the connect timeout bounds
+     the connection only, never a query already running. -->
 
 ## Importer behaviour
 

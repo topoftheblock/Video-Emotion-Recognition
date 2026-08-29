@@ -24,7 +24,13 @@ from importer.config import DB_CONFIG
 def _can_connect() -> bool:
     """Whether a database is reachable with the configured settings."""
     try:
-        conn = psycopg2.connect(**DB_CONFIG, connect_timeout=2)
+        # Overriding the key rather than passing it a second time:
+        # DB_CONFIG carries a connect_timeout of its own, and a second
+        # keyword would be a TypeError. Two seconds because this only
+        # decides whether to skip the suite, and waiting the full
+        # connect timeout to answer that would slow every run on a
+        # machine with no database.
+        conn = psycopg2.connect(**{**DB_CONFIG, "connect_timeout": 2})
         conn.close()
         return True
     except psycopg2.OperationalError:
