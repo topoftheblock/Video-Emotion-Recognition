@@ -842,6 +842,7 @@ and verified in Phase 8.
 | 3 — Structure | `[x]` | `code-cleanup/phase-3` | Done 2026-08-22. Renames, splits and groupings landed; corpus rebuilt and every row count matches Phase 0. |
 | 4 — Dependencies | `[x]` | `code-cleanup/phase-4` | Done 2026-08-22. Python 3.14, Postgres 18, 13 checkers, CI and a pre-commit hook. |
 | 5 — In-file docs | `[x]` | `code-cleanup/phase-5` | Done 2026-08-29. Every comment and docstring rewritten across all four sub-projects; every function annotated; `tsc` and a style checker added to the gate; E501 exemption removed. 15 false claims corrected. Detail: [phase-5-documentation.md](phase-5-documentation.md). |
+| — Fix D4 | `[x]` | `code-cleanup/fix-d4-connect-timeout` | Done 2026-08-29. `connect_timeout` in `DB_CONFIG` across all three services, from `DUUI_DB_CONNECT_TIMEOUT` (default 10). The webapp now starts against an unreachable database instead of never listening. |
 | 6 — Test audit | `[ ]` | | |
 | 7 — READMEs + docs | `[ ]` | | |
 | 8 — Final sweep | `[ ]` | | |
@@ -860,7 +861,8 @@ and verified in Phase 8.
 | 2 — Fact ledger | [phase-2-ledger.md](phase-2-ledger.md) · [phase-2-modules.md](phase-2-modules.md) | `[x]` done |
 | 3 — Structure | [phase-3-structure.md](phase-3-structure.md) | `[x]` done |
 | 4 — Dependencies + tooling | [phase-4-tooling.md](phase-4-tooling.md) | `[x]` done |
-| 5 — In-file documentation | [phase-5-documentation.md](phase-5-documentation.md) | `[~]` plan drafted |
+| 5 — In-file documentation | [phase-5-documentation.md](phase-5-documentation.md) | `[x]` done |
+| — Fix D4 (connect timeout) | [fix-d4-connect-timeout.md](fix-d4-connect-timeout.md) | `[x]` done |
 | 6 — Test audit | *not yet written* | `[ ]` |
 | 7 — READMEs + docs | *not yet written* | `[ ]` |
 | 8 — Final sweep | *not yet written* | `[ ]` |

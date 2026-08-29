@@ -91,11 +91,25 @@ See D7.
 
 ### D4 — no `connect_timeout` in any application code
 
-**Phase 2 → Phase 5 or a bug fix.** Carried from
-[Phase 0 §0.2](phase-0-baseline.md). `webapp/src/backend/db.py`,
-`identity/db.py` and the importer all call `psycopg2.connect()` with no timeout.
-Against a host that blackholes packets, `create_app()` hangs at startup with no
-diagnostic. Compose masks it; a wrong or firewalled database IP triggers it.
+**Closed 2026-08-29** by
+[fix-d4-connect-timeout.md](fix-d4-connect-timeout.md), on its own branch
+between Phase 5 and Phase 6.
+
+Carried from [Phase 0 §0.2](phase-0-baseline.md). Against a host that accepts
+the route but never answers, `psycopg2.connect()` waited on the operating
+system's TCP timeout — reproduced as still hanging at 25 seconds with nothing
+printed.
+
+**This entry understated the scope.** It named three call sites; there were
+five. The two it missed are the job runs' own connections, in both copies of
+`job_runs.py`, where a hang produces neither progress nor an error.
+
+`connect_timeout` now lives in `DB_CONFIG` in all three settings modules, so
+every connection inherits it, read from `DUUI_DB_CONNECT_TIMEOUT` with a
+default of 10. Verified: each service now fails cleanly instead of hanging, and
+the webapp **starts** against an unreachable database, logs a diagnostic naming
+the host, and answers `/healthz` with 503 in ten seconds rather than never
+listening at all.
 
 ### D5 — the importer announces work it then skips
 

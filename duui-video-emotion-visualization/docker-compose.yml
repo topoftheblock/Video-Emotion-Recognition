@@ -51,6 +51,7 @@ x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
     DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_video_emotion}
     DUUI_DB_USER: ${DUUI_DB_USER:-duui}
     DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
+    DUUI_DB_CONNECT_TIMEOUT: ${DUUI_DB_CONNECT_TIMEOUT:-10}
     DUUI_DB_HOST: pgvector-db
     # Container-side paths (what the mounts below land on). Same names
     # as the host-side settings in .env, deliberately: .env decides
@@ -206,6 +207,7 @@ services:
       DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_video_emotion}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
+      DUUI_DB_CONNECT_TIMEOUT: ${DUUI_DB_CONNECT_TIMEOUT:-10}
       DUUI_DB_HOST: pgvector-db
       # Cosine distance, lower = stricter. See README before changing.
       DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD: ${DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD:-0.30}
@@ -262,6 +264,7 @@ services:
       DUUI_DB_NAME: ${DUUI_TEST_DB_NAME:-duui_video_emotion_test}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
+      DUUI_DB_CONNECT_TIMEOUT: ${DUUI_DB_CONNECT_TIMEOUT:-10}
     # The image already runs as a non-root user, which is what keeps the
     # suite at 150 rather than 149 + 1 skipped — see Dockerfile.tests.
     # This override exists only for a host whose ids differ and which
@@ -286,6 +289,7 @@ services:
       DUUI_DB_NAME: ${DUUI_DB_NAME:-duui_video_emotion}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
+      DUUI_DB_CONNECT_TIMEOUT: ${DUUI_DB_CONNECT_TIMEOUT:-10}
       DUUI_DB_HOST: pgvector-db
       DUUI_VIDEO_DIR: /data/videos
       # Optional "Ask" panel (natural-language questions -> SQL). Leave

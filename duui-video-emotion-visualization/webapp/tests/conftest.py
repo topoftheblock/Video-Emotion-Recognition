@@ -31,7 +31,7 @@ try:
 except ImportError:  # pragma: no cover - depends on the environment
     psycopg2 = None
 
-DB_CONFIG: dict[str, str] | None
+DB_CONFIG: dict[str, str | int] | None
 try:
     from backend.config import DB_CONFIG
 except Exception:  # pragma: no cover - backend needs its own dependencies
@@ -43,7 +43,13 @@ def _can_connect() -> bool:
     if psycopg2 is None or DB_CONFIG is None:
         return False
     try:
-        conn = psycopg2.connect(**DB_CONFIG, connect_timeout=2)
+        # Overriding the key rather than passing it a second time:
+        # DB_CONFIG carries a connect_timeout of its own, and a second
+        # keyword would be a TypeError. Two seconds because this only
+        # decides whether to skip the suite, and waiting the full
+        # connect timeout to answer that would slow every run on a
+        # machine with no database.
+        conn = psycopg2.connect(**{**DB_CONFIG, "connect_timeout": 2})
         conn.close()
         return True
     except psycopg2.OperationalError:
