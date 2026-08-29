@@ -110,16 +110,34 @@ The same 97 statements, in the same file twice, and no test drives
 either — including the throttle, the heartbeat thread, and the
 crash-recovery path that rewrites a stale `running` row.
 
-## 6.3 Redundancy
+## 6.3 Redundancy — measured, and none found
 
-To be measured, not assumed. The candidates the outline names are the
-four accessibility suites (7 + 4 + 16 + 10 tests). They read the same
-committed CSS and HTML, so overlap is plausible — but they assert
-different properties of it, and overlap in *input* is not redundancy.
+The method was: for each candidate, ask what would stop being caught if
+it were deleted. Overlap in *input* is not redundancy.
 
-**Method:** for each suite, list what would still be caught if it were
-deleted. Only a test whose failure mode is already covered by another
-test is redundant. Anything that merely re-reads the same file stays.
+The strongest-looking pair was
+`test_contrast.py::test_person_palette_is_read_from_state_js` and
+`test_palette.py::test_palette_is_read_from_state_js` — near-identical
+bodies asserting the same seven colours from the same file.
+
+They are not redundant. They exercise **two different parsers**:
+`contrast_check.load_person_colours` and `cvd_check.load_palette` are
+separate implementations, each reading `state.js` for its own checker.
+If one broke, only its own test would notice.
+
+That leaves a real observation, recorded rather than acted on: two
+helpers in the same suite each parse the palette out of `state.js`. They
+could share one parser, since they are in the same sub-project and the
+no-shared-files rule does not apply within one. They do not, because
+each is documented as independently runnable with nothing but the
+standard library, and coupling them would make one script depend on the
+other for no gain beyond removing eight lines.
+
+The three `test_*_db_timeout.py` files look alike for the same reason
+and are not redundant either: each reads a different settings module.
+
+**Nothing was removed.** No test was found whose failure mode another
+test already covers.
 
 ## 6.4 Support modules and the linter boundary
 
