@@ -44,6 +44,32 @@ answer it for you. A confident-sounding reason nobody verified is worse than no
 reason at all — the next reader cannot tell it apart from a real one, and that
 is precisely how the current comments became untrustworthy.
 
+### 4. Never describe the current corpus
+
+**Documentation describes the software, not the data that happens to be loaded.**
+
+Do not write row counts, id ranges, per-table totals, or "in the current corpus
+there are N of these". Every one of those is a measurement of one database on one
+day. It is stale the next time anything is imported, and a reader cannot tell a
+stale number from a live one.
+
+Write the **property** instead — the thing that stays true whatever is loaded:
+
+```text
+no    4,762 of the 40,323 distinct emotion ids occur in more than one video
+yes   the same xmi:id can occur in more than one video
+```
+
+```text
+no    all 7,068 tokens have a NULL segment_id
+yes   a token may carry no segment link
+```
+
+This does not weaken rule 1. A measurement is **evidence** — it belongs in the
+phase record that used it to decide something. A property is **documentation**,
+and it is verified by a test or by the schema, both of which stay true as the
+data changes.
+
 ### And write for a stranger
 
 A reader who has not seen this file before, looking for one specific thing.

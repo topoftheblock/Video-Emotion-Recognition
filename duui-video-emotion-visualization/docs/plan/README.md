@@ -598,6 +598,14 @@ out — phases marked done, decision records archived.
   word, except where behaviour genuinely differs — and there, the difference is
   stated explicitly. The pairs get diffed as a check, not just as a starting
   point.
+- **Never describe the current corpus in documentation.** No row counts, id
+  ranges or per-table totals in a comment, a docstring, a `docs/` page or a
+  README — in **Phase 5, Phase 7, and any later documentation work**. Those are
+  measurements of one database on one day; they go stale on the next import, and
+  a reader cannot tell a stale number from a live one. Write the property that
+  holds whatever is loaded. Measurements stay in the phase records, where they
+  are evidence for a decision rather than a claim about the software. Recorded as
+  rule 4 in the style guide.
 - **Upgrade steps go in the plan, not in the documentation.** Where a phase
   changes something an existing deployment would have to fix by hand — a volume
   that needs chowning, a database that needs recreating — record it in that

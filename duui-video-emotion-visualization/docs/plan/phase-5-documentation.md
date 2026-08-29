@@ -66,6 +66,7 @@ rate is not low.
 | **8-line rule** | A comment longer than 8 lines belongs in `docs/`, leaving a summary and a link. Docstrings are exempt from the *count*, not the *principle*: length is fine for describing what a module owns, not for arguing a design decision. |
 | **History goes, reasons stay** | Delete what the code used to do, what was tried first, which bug prompted it. Keep the constraint that still binds. |
 | **Docstrings** | Google style, summary on the first line, imperative, one sentence. No types in the docstring — the annotation carries them. |
+| **No corpus figures** | Row counts, id ranges and per-table totals describe one database on one day, not the software. Write the property; leave the measurement in the phase record. Rule 4 of the style guide. |
 | **Glossary** | [`docs/glossary.md`](../glossary.md) is binding on comments, docstrings **and user-facing strings**. |
 | **US English**, 88 columns for code, 72 for prose | |
 

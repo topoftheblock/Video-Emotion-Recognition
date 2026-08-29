@@ -3,8 +3,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- Read before adding a table: everything imported from a CAS is keyed by
 -- (video_id, <the CAS's own xmi:id>), never by the xmi:id alone. An xmi:id is
 -- unique within one document and means nothing across documents, so the same id
--- names different things in different videos -- 4,762 of the 40,323 distinct
--- emotion ids in the current corpus occur in more than one video.
+-- names different things in different videos.
 --
 -- `models` and `global_persons` are the two deliberate exceptions: both are
 -- corpus-wide and neither takes its id from a CAS.
@@ -87,9 +86,7 @@ CREATE TABLE linguistic_tokens (
     ner_label TEXT,
     PRIMARY KEY (video_id, token_id),
     -- Nullable because the upstream annotation carries the link only
-    -- sometimes. In the current corpus it never does: all 7,068 tokens have a
-    -- NULL segment_id, and the webapp matches tokens to sentences by time
-    -- overlap instead (see webapp/tests/test_sentence_text.py).
+    -- sometimes.
     FOREIGN KEY (video_id, segment_id) REFERENCES segments(video_id, segment_id)
         ON DELETE CASCADE
 );
@@ -184,9 +181,7 @@ CREATE TABLE base_emotions (
     video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
     emotion_id BIGINT NOT NULL,
     -- Often NULL, in every modality: a reading the upstream pipeline could
-    -- not attribute to a person still belongs to the video. In the current
-    -- corpus that is 18,356 of 42,930 video rows, 886 of 1,450 text and
-    -- 161 of 725 audio.
+    -- not attribute to a person still belongs to the video.
     person_id BIGINT,
     modality TEXT CHECK (modality IN ('audio', 'video', 'text')),
     granularity TEXT CHECK (granularity IN ('frame', 'segment', 'sentence', 'shot')),

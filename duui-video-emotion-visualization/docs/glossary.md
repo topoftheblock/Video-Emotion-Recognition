@@ -7,8 +7,6 @@ Terms are derived from `pgvector-db/schema.sql`, which is the authority: the
 database is the contract every sub-project shares, so where a table or column
 already names a concept, that name wins.
 
-Row counts are from the development corpus on 2026-08-22 and are illustrative.
-
 ---
 
 ## Core entities
@@ -59,10 +57,10 @@ by embeddings; identifies what produced a given annotation.
 A span of a video. Table `segments`. **The umbrella term**, distinguished by
 `kind`:
 
-| `kind` | Meaning | Corpus |
-| --- | --- | --- |
-| `sentence` | One transcript sentence | 725 |
-| `shot` | One camera shot | 195 |
+| `kind` | Meaning |
+| --- | --- |
+| `sentence` | One transcript sentence |
+| `shot` | One camera shot |
 
 Say "segment" when the kind does not matter, and **"sentence segment" or "shot
 segment" when it does**. Do not use bare "sentence" for a segment — the code
@@ -79,10 +77,10 @@ Say "token". "Word" refers to the `word` column specifically.
 
 A span during which a person is present in one modality. Table `presences`.
 
-| `modality` | Meaning | Corpus |
-| --- | --- | --- |
-| `visible` | On screen | 529 |
-| `speech` | Speaking | 186 |
+| `modality` | Meaning |
+| --- | --- |
+| `visible` | On screen |
+| `speech` | Speaking |
 
 A presence is a *span*; a detection is a *frame*.
 
@@ -103,11 +101,11 @@ Say "face detection" or "person detection" when the distinction matters,
 One emotion reading: a person, a modality, a granularity, a time span, plus
 valence/arousal/dominance and a dominant label. Table `base_emotions`.
 
-| `modality` | `granularity` | Corpus |
-| --- | --- | --- |
-| `video` | `frame` | 42,930 |
-| `text` | `sentence` | 1,450 |
-| `audio` | `sentence` | 725 |
+| `modality` | `granularity` |
+| --- | --- |
+| `video` | `frame` |
+| `text` | `sentence` |
+| `audio` | `sentence` |
 
 **"Base" is meaningful and the name stays.** The upstream models do not share an
 emotion inventory — some emit far more granular emotions than others — so those
@@ -121,18 +119,18 @@ Say "base emotion" for the row, matching the table.
 
 ### emotion score
 
-One `(label, score)` pair belonging to a base emotion. Table `emotion_scores` —
-375,205 rows, since each base emotion carries a score for every label in its
-model's inventory.
+One `(label, score)` pair belonging to a base emotion. Table `emotion_scores`.
+A base emotion carries one score per label in its model's inventory, so this is
+by far the largest table.
 
 A base emotion has one `dominant_label`; the scores are the full distribution.
 
 Note that **label vocabularies are model-native and differ by modality**: video
 uses eight capitalized labels (`Anger`, `Happiness`, …), text uses lowercase
 GoEmotions-style labels (`joy`, `approval`, `curiosity`, …), and audio uses its
-own set (`happy`, `angry`, `fearful`, …). `dominant_label` also carries `<unk>`
-and empty values in the current corpus. Do not assume a shared label set when
-querying across modalities — the comparable axis is valence/arousal/dominance.
+own set (`happy`, `angry`, `fearful`, …). `dominant_label` can also be `<unk>`
+or empty. Do not assume a shared label set when querying across modalities — the
+comparable axis is valence/arousal/dominance.
 
 ### modality
 
