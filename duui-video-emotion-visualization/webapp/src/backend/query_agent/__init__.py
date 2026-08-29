@@ -1,3 +1,5 @@
+"""The query agent: a question, explored against the schema, as SQL."""
+
 from .agent import OVERLAY_CHOICES, QueryAgentError, answer_question
 
-__all__ = ["answer_question", "QueryAgentError", "OVERLAY_CHOICES"]
+__all__ = ["OVERLAY_CHOICES", "QueryAgentError", "answer_question"]

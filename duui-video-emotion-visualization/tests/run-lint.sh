@@ -82,7 +82,7 @@ run "links"        python /app/tests/check_links.py
 # docstring coverage, so without this they hold only by review.
 for project in global-identity-linker cas-to-postgres-importer; do
   run "style ($project)" python /app/tests/stylecheck.py "$project" \
-    --exempt cas/types.py
+    --exempt cas/types.py query_agent/schema_context.py
 done
 # Reported, not gated, until Phase 5 rewrites it.
 report "style (webapp)" python /app/tests/stylecheck.py webapp

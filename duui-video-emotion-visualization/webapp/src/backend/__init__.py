@@ -1,1 +1,1 @@
-"""Viewer backend package: settings, DB access, HTTP routes and the NL->SQL agent."""
+"""The webapp: settings, database access, HTTP routes, and the agent."""

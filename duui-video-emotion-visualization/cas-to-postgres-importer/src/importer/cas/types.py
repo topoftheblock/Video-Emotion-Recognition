@@ -21,7 +21,7 @@ TYPES = {
     "document_meta_data": "de.tudarmstadt.ukp.dkpro.core.api.metadata.type.DocumentMetaData",
     # Lives under the `.model` subpackage, not directly under
     # `.annotation` — confirmed against real pipeline output.
-    # NOTE: canonical mapping doc (data_schema_with_types.md) specifies
+    # The design mapping (docs/legacy/data-schema-design.md) specifies
     # the bare `annotation.MetaData` type here, not `.model.MetaData`.
     # Since `model.MetaData`/`model.HuggingfaceMetaData` both extend
     # this bare type (see INJECTED_FALLBACK_TYPES), selecting the bare

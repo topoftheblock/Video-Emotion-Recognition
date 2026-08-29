@@ -1,36 +1,36 @@
-"""
-The fixed (not LLM-written) emotion statistics served by
-GET /api/stats/{video_id}.
+"""The fixed emotion statistics, served by `/api/stats/{video_id}`.
 
-Deliberately plain SQL rather than routed through the NL->SQL agent,
-both for speed/determinism and so there's always at least a few
-analyses available even with the query agent unconfigured. Computed on
-demand, not cached/written back to the DB -- see README "What the
-viewer shows" for why.
+Plain SQL rather than anything routed through the query agent, so these
+are fast, deterministic, and available even when the agent is
+unconfigured. Computed on demand and never written back.
 
-These three are cross-cutting: they compare modalities and people
-against each other, which is not what the viewer's per-modality
-emotion panels do, so nothing in the frontend currently reads them.
-The endpoint stays because it is the one analysis surface that needs
-neither an LLM nor hand-written SQL from the caller.
+All three are cross-cutting: they compare modalities and people against
+each other, which is not what the webapp's per-modality panels do, so
+nothing in the frontend reads them. The endpoint stays because it is
+the one analysis surface needing neither an LLM nor hand-written SQL
+from the caller.
 """
+
+from typing import Any
 
 from ..db import query
 
+Row = dict[str, Any]
 
-def emotion_distribution(video_id):
-    """
-    Stat 1: how often each dominant_label occurred, per emotion series.
 
-    Grouped by *series*, not by modality, because modality='text' holds
-    the output of two different annotators at once (see
-    query_agent/schema_context.py): an Ekman-mapped reading that is on
-    the timeline, and a raw 28-class GoEmotions reading that is not.
-    There is one of each per sentence, so grouping by modality alone
-    counted every sentence twice and could report a label more often
-    than the video has sentences. `modality` is still returned
-    alongside, so a caller that only cares about the modality can group
-    the two text series back together knowingly.
+def emotion_distribution(video_id: int) -> list[Row]:
+    """Count how often each dominant label occurred, per series.
+
+    Grouped by *series* rather than by modality, because
+    `modality='text'` carries the output of two annotators at once: a
+    reading that is on the timeline, over a small label set, and a
+    GoEmotions reading that is not. There is one of each per sentence,
+    so grouping by modality alone counts every sentence twice and can
+    report a label more often than the video has sentences.
+
+    `modality` is still returned alongside, so a caller that only cares
+    about the modality can group the two text series back together
+    knowingly.
     """
     return query(
         """
@@ -49,12 +49,16 @@ def emotion_distribution(video_id):
     )
 
 
-def person_emotion_averages(video_id):
-    """Stat 2: mean valence/arousal per person, per modality."""
+def person_emotion_averages(video_id: int) -> list[Row]:
+    """Average valence and arousal per person, per modality."""
     return query(
         """
-        SELECT be.person_id, COALESCE(p.clip_label, 'person ' || be.person_id::text) AS clip_label,
-               be.modality, avg(be.valence) AS avg_valence, avg(be.arousal) AS avg_arousal, count(*) AS n
+        SELECT be.person_id,
+               COALESCE(p.clip_label, 'person ' || be.person_id::text) AS clip_label,
+               be.modality,
+               avg(be.valence) AS avg_valence,
+               avg(be.arousal) AS avg_arousal,
+               count(*) AS n
         FROM base_emotions be
         -- Both halves of the key: person_id alone is a per-video
         -- number, so joining on it would fan every reading out across
@@ -68,19 +72,22 @@ def person_emotion_averages(video_id):
     )
 
 
-def modality_agreement(video_id):
-    """
-    Stat 3: of the sentences with both a text and a video emotion
-    reading, what fraction agree on valence sign (both positive or
-    both negative)? A single summary number, not per-sentence rows --
-    see query_agent/schema_context.py's "Cross-modality label
-    comparison" note for why this uses valence sign rather than
-    comparing dominant_label strings across modalities directly.
+def modality_agreement(video_id: int) -> dict[str, Any]:
+    """Measure how often text and video agree on a sentence's valence.
+
+    Of the sentences carrying both a text and a video reading, what
+    fraction agree on the sign of valence — both positive, or both
+    negative. One summary number, not per-sentence rows.
+
+    Compared on valence sign rather than on `dominant_label`, because
+    the label vocabularies are model-native and differ by modality, so
+    the labels are not comparable across them; valence is.
     """
     rows = query(
         """
         WITH text_anchored AS (
-            SELECT s.segment_id, s.start_time, s.end_time, s.person_id, te.valence AS text_valence
+            SELECT s.segment_id, s.start_time, s.end_time, s.person_id,
+                   te.valence AS text_valence
             FROM segments s
             JOIN base_emotions te
               ON te.video_id = s.video_id AND te.modality = 'text'
@@ -91,12 +98,16 @@ def modality_agreement(video_id):
             SELECT ta.segment_id, avg(ve.valence) AS video_valence
             FROM text_anchored ta
             JOIN base_emotions ve
-              ON ve.video_id = %s AND ve.modality = 'video' AND ve.person_id = ta.person_id
-             AND ve.start_time BETWEEN ta.start_time AND ta.end_time AND ve.valence IS NOT NULL
+              ON ve.video_id = %s AND ve.modality = 'video'
+             AND ve.person_id = ta.person_id
+             AND ve.start_time BETWEEN ta.start_time AND ta.end_time
+             AND ve.valence IS NOT NULL
             GROUP BY ta.segment_id
         )
         SELECT count(*) AS n_compared,
-               count(*) FILTER (WHERE sign(ta.text_valence) = sign(vp.video_valence)) AS n_agree
+               count(*) FILTER (
+                   WHERE sign(ta.text_valence) = sign(vp.video_valence)
+               ) AS n_agree
         FROM text_anchored ta
         JOIN video_per_sentence vp ON vp.segment_id = ta.segment_id
         """,
@@ -111,8 +122,8 @@ def modality_agreement(video_id):
     }
 
 
-def for_video(video_id):
-    """All three stats, as the /api/stats/{video_id} payload."""
+def for_video(video_id: int) -> dict[str, Any]:
+    """Return all three statistics, as the endpoint's payload."""
     return {
         "emotion_distribution": emotion_distribution(video_id),
         "person_averages": person_emotion_averages(video_id),

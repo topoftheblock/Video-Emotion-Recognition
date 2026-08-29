@@ -1,34 +1,42 @@
-"""
-Everything read per video: the video row itself, its persons, its
-segments/tokens, its emotions and its detections.
+"""Everything read per video, and the payload assembled from it.
 
-`build_playback_payload` assembles the single JSON blob the frontend
-loads once per video and then renders entirely off `currentTime` --
-which is why it is one payload rather than a route per table.
+The video row itself, its people, its segments and tokens, its emotions
+and its detections.
+
+`build_playback_payload` assembles the single JSON document the
+frontend loads once per video and then renders entirely off the
+playback time — which is why it is one payload rather than a route per
+table.
 """
+
+from typing import Any
 
 from ..db import query
 
+Row = dict[str, Any]
 
-def list_all():
-    """Every imported video, newest import first."""
+
+def list_all() -> list[Row]:
+    """Return every imported video, newest import first."""
     return query(
-        "SELECT video_id, filename, duration, fps, width, height FROM videos ORDER BY processed_at DESC"
+        "SELECT video_id, filename, duration, fps, width, height "
+        "FROM videos ORDER BY processed_at DESC"
     )
 
 
-def get(video_id):
-    """The full videos row, or None if there is no such video."""
+def get(video_id: int) -> Row | None:
+    """Return the full video row, or None if there is no such video."""
     rows = query("SELECT * FROM videos WHERE video_id = %s", (video_id,))
     return rows[0] if rows else None
 
 
-def exists(video_id):
-    """True if `video_id` is a known video -- cheaper than get()."""
+def exists(video_id: int) -> bool:
+    """Return whether this video is known — cheaper than `get`."""
     return bool(query("SELECT video_id FROM videos WHERE video_id = %s", (video_id,)))
 
 
-def get_persons(video_id):
+def get_persons(video_id: int) -> list[Row]:
+    """Return the people detected in this video."""
     return query(
         "SELECT person_id, global_person_id, clip_label, "
         "audio_video_match_score, global_person_match_score "
@@ -37,7 +45,8 @@ def get_persons(video_id):
     )
 
 
-def get_sentences(video_id):
+def get_sentences(video_id: int) -> list[Row]:
+    """Return this video's sentence segments, in time order."""
     return query(
         "SELECT segment_id, start_time, end_time, person_id "
         "FROM segments WHERE video_id = %s AND kind = 'sentence' ORDER BY start_time",
@@ -45,7 +54,8 @@ def get_sentences(video_id):
     )
 
 
-def get_shots(video_id):
+def get_shots(video_id: int) -> list[Row]:
+    """Return this video's shot segments, in time order."""
     return query(
         "SELECT segment_id, seg_index, start_time, end_time "
         "FROM segments WHERE video_id = %s AND kind = 'shot' ORDER BY start_time",
@@ -53,7 +63,8 @@ def get_shots(video_id):
     )
 
 
-def get_tokens(video_id):
+def get_tokens(video_id: int) -> list[Row]:
+    """Return this video's transcript tokens, in time order."""
     return query(
         "SELECT token_id, segment_id, start_time, end_time, word, pos_tag, ner_label "
         "FROM linguistic_tokens WHERE video_id = %s ORDER BY start_time",
@@ -61,25 +72,23 @@ def get_tokens(video_id):
     )
 
 
-def get_timeline_emotions(video_id):
-    """
-    Every emotion reading that sits on the timeline.
+def get_timeline_emotions(video_id: int) -> list[Row]:
+    """Return every emotion reading that sits on the timeline.
 
-    `start_time IS NOT NULL` is not defensive filtering -- it is what
-    separates the two different annotators whose output shares
-    modality='text' (see query_agent/schema_context.py): the
-    Ekman-mapped reading carries real start_time/end_time, the raw
-    28-class GoEmotions reading is anchored to character offsets only.
-    Both describe the same sentence, so anything that treats
-    modality='text' as one series counts every sentence twice -- which
-    is how a label came to be reported more often than there are
-    sentences.
+    `start_time IS NOT NULL` is not defensive filtering. It is what
+    separates two different annotators whose output shares
+    `modality='text'`: one produces a reading per sentence carrying real
+    times, over a small label set — anger, disgust, fear, joy, neutral,
+    sadness, surprise — while the other produces a GoEmotions reading
+    over 28 labels, anchored to character offsets with no times at all.
 
-    Everything the frontend renders is driven off `currentTime`, so a
-    reading with no time cannot be placed at all. Leaving it out of the
-    payload keeps that trap out of the frontend entirely; the raw
-    GoEmotions rows stay reachable through /api/stats and the query
-    agent.
+    Both describe the same sentence. Anything treating `modality='text'`
+    as a single series therefore counts every sentence twice.
+
+    Everything the frontend renders is driven off the playback time, so
+    a reading with no time cannot be placed at all. Leaving those out of
+    the payload keeps the trap out of the frontend; they stay reachable
+    through `/api/stats` and the query agent.
     """
     return query(
         "SELECT emotion_id, person_id, modality, granularity, start_time, end_time, "
@@ -90,16 +99,22 @@ def get_timeline_emotions(video_id):
     )
 
 
-def get_emotion_scores(video_id, emotion_ids):
-    """
-    Per-label scores for the given emotions, highest score first.
+def get_emotion_scores(video_id: int, emotion_ids: list[int]) -> list[Row]:
+    """Return the per-label scores for these emotions, highest first.
 
-    Scoped to one video, not just to the ids: emotion_id comes from the
-    CAS's own per-document counter, so the same id exists in most other
-    videos too (see pgvector-db/schema.sql's identity note). Without the
-    video_id this would pull in other videos' scores for the same
-    numbers -- for this corpus, up to nine readings' worth of labels
-    landing on one reading.
+    Scoped to one video, and not to the ids alone: `emotion_id` comes
+    from the CAS's own per-document counter, so the same id exists in
+    other videos too — see the identity note in
+    `pgvector-db/schema.sql`. Without the video, this would pull in
+    other videos' scores for the same numbers and pile several
+    readings' worth of labels onto one reading.
+
+    Args:
+        video_id: The video the emotions belong to.
+        emotion_ids: The emotions to fetch scores for.
+
+    Returns:
+        One row per label per emotion; empty if no ids were given.
     """
     if not emotion_ids:
         return []
@@ -110,29 +125,45 @@ def get_emotion_scores(video_id, emotion_ids):
     )
 
 
-def _get_detections(table, video_id):
+def _get_detections(table: str, video_id: int) -> list[Row]:
+    """Return one table's detections for this video, in time order.
+
+    `table` is interpolated into the statement rather than passed as a
+    parameter, which a table name cannot be. Both call sites below pass
+    a literal, so no external value reaches it.
+    """
     return query(
-        f"SELECT detection_id, presence_id, person_id, frame_index, t_time, x, y, w, h, detection_score "
-        f"FROM {table} WHERE video_id = %s ORDER BY t_time",
+        "SELECT detection_id, presence_id, person_id, frame_index, t_time, "
+        f"x, y, w, h, detection_score FROM {table} "
+        "WHERE video_id = %s ORDER BY t_time",
         (video_id,),
     )
 
 
-def get_face_detections(video_id):
+def get_face_detections(video_id: int) -> list[Row]:
+    """Return this video's face detections, in time order."""
     return _get_detections("face_detections", video_id)
 
 
-def get_person_detections(video_id):
+def get_person_detections(video_id: int) -> list[Row]:
+    """Return this video's person detections, in time order."""
     return _get_detections("person_detections", video_id)
 
 
-def assemble_sentence_text(sentence, tokens):
-    """
-    Join every token whose start_time falls inside this sentence's
-    [start_time, end_time] window, in time order. Matched by time
-    overlap rather than linguistic_tokens.segment_id -- confirmed
-    against a real CAS that segment_id isn't always populated on the
-    source annotation, so time-range matching is the reliable path.
+def assemble_sentence_text(sentence: Row, tokens: list[Row]) -> str:
+    """Join the tokens that fall inside one sentence, in time order.
+
+    Matched by time overlap rather than by `linguistic_tokens.
+    segment_id`. That column is not reliably populated on the source
+    annotation — in the data this was checked against it is never
+    populated — so the time range is the only link that actually works.
+
+    Args:
+        sentence: The sentence segment, with its start and end times.
+        tokens: This video's tokens, in time order.
+
+    Returns:
+        The sentence text, or "" when the sentence has no time span.
     """
     start, end = sentence["start_time"], sentence["end_time"]
     if start is None or end is None:
@@ -145,10 +176,14 @@ def assemble_sentence_text(sentence, tokens):
     return " ".join(w for w in words if w)
 
 
-def build_playback_payload(video_id):
-    """
-    The whole per-video payload the frontend renders from, or None if
-    there is no such video.
+def build_playback_payload(video_id: int) -> dict[str, Any] | None:
+    """Assemble everything the frontend needs to play one video.
+
+    Args:
+        video_id: The video to build the payload for.
+
+    Returns:
+        The payload, or None if there is no such video.
     """
     video = get(video_id)
     if video is None:
@@ -160,14 +195,16 @@ def build_playback_payload(video_id):
         sentence["text"] = assemble_sentence_text(sentence, tokens)
 
     emotions = get_timeline_emotions(video_id)
-    emotions_by_modality = {"video": [], "audio": [], "text": []}
-    for e in emotions:
-        emotions_by_modality.setdefault(e["modality"] or "video", []).append(e)
+    emotions_by_modality: dict[str, list[Row]] = {"video": [], "audio": [], "text": []}
+    for emotion in emotions:
+        emotions_by_modality.setdefault(emotion["modality"] or "video", []).append(
+            emotion
+        )
 
-    scores_by_emotion = {}
-    for s in get_emotion_scores(video_id, [e["emotion_id"] for e in emotions]):
-        scores_by_emotion.setdefault(s["emotion_id"], []).append(
-            {"label": s["label"], "score": s["score"]}
+    scores_by_emotion: dict[int, list[Row]] = {}
+    for score in get_emotion_scores(video_id, [e["emotion_id"] for e in emotions]):
+        scores_by_emotion.setdefault(score["emotion_id"], []).append(
+            {"label": score["label"], "score": score["score"]}
         )
 
     return {

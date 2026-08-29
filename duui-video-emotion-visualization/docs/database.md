@@ -3,7 +3,7 @@
 Written from `pgvector-db/schema.sql`, which is authoritative for what the
 database actually contains.
 
-**This does not replace `pgvector-db/data_schema_with_types.md`.** That file is
+**This does not replace `docs/legacy/data-schema-design.md`.** That file is
 a different artifact: the *design* mapping from UIMA CAS types to tables. The
 two are complementary — it records what the pipeline export was specified to be,
 this records what the database is. See the Phase 2 ledger for how far apart they

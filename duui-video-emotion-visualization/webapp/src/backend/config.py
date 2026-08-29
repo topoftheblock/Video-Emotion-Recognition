@@ -1,17 +1,14 @@
-"""
-Central configuration for the viewer.
+"""Deployment settings for the webapp: paths, credentials, the agent.
 
-Every setting the webapp reads lives here, so nothing else in this
-container hardcodes a path or a credential inline.
+Every setting the webapp reads lives here, so nothing else in the image
+hard-codes a path or a credential.
 
-Deliberately separate from the importer's own config (see
-cas-to-postgres-importer/src/importer/config.py): the two
-containers are independent images with independent code, and share
-nothing but the database and the video store. The settings they *both*
-read -- DB_CONFIG and VIDEO_MEDIA_DIR -- are defined in each of them
-from the same environment variables, which is what keeps the two ends
-of those two contracts pointing at the same place (see
-docker-compose.yml, where both services get the same values).
+Deliberately separate from the importer's own settings module: the two
+are independent images with independent code, sharing nothing but the
+database and the video store. The values they *both* read are defined
+in each of them from the same environment variables, which is what
+keeps the two ends of those contracts pointing at the same place; see
+docker-compose.yml, where both services are given the same values.
 """
 
 import os
@@ -22,44 +19,44 @@ try:
 
     load_dotenv()
 except ImportError:
-    # dotenv is optional -- if it's not installed, real environment
-    # variables (export FOO=bar, or set by your process manager) still
-    # work fine; only the convenience of a local .env file is lost.
+    # Optional. Without it, environment variables set by the shell or
+    # the process manager still work; only .env file support is lost.
     pass
 
-# --- Video media -------------------------------------------------------
-# Where *served* video files live -- the one place both the importer
-# (copies into it, see
-# cas-to-postgres-importer/src/importer/cas/sofas.py) and the webapp
-# (reads from it, see backend/routes/videos.py) agree a video for
-# `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. The viewer only
-# ever reads from it; it never sees the importer's input directory at
-# all.
+# --- Video store --------------------------------------------------------
+
+# The video store: the one place the importer, which copies into it,
+# and the webapp, which reads from it, agree that the video for
+# `videos.filename = X` lives at `<VIDEO_MEDIA_DIR>/X`. The webapp
+# never sees the importer's input directory at all.
 #
-# Defaults to "cas" -- the same default the importer uses for its input
-# directory -- so a native (non-Docker) setup collapses the two into one
-# directory and the importer's copy step is a harmless no-op. In Docker
-# they're genuinely different: the importer reads /data/input/xmi and writes
-# /data/videos, and the webapp mounts /data/videos read-only (see
-# docker-compose.yml).
+# Defaults to the same value the importer defaults its input directory
+# to, so a native (non-Docker) setup collapses the two into one
+# directory and the importer's copy step becomes a harmless no-op.
+# Under Docker they are genuinely different: the importer writes
+# /data/videos, and the webapp mounts it read-only.
 VIDEO_MEDIA_DIR = os.environ.get("DUUI_VIDEO_DIR", "cas")
 
-# Resolved once, here, so the routes that check "is this video's file
-# actually present" and the /media static mount cannot drift apart.
-# Creating it is deliberately NOT done at import time -- create_app()
-# does that, so importing this package never touches the filesystem.
+# Resolved once, here, so that the routes checking whether a video's
+# file is present and the `/media` mount serving it cannot drift apart.
+# Creating the directory is deliberately not done at import time:
+# `create_app` does that, so importing this package touches no
+# filesystem.
 VIDEO_DIR = Path(VIDEO_MEDIA_DIR).resolve()
 
-# --- Frontend ---------------------------------------------------------
-# The HTML/CSS/JS served as static files: a sibling of this package
-# under the source root (src/backend/ -> src/frontend/). The whole src/
-# tree is copied verbatim into the image, so this resolves identically
-# in the repo and in the container.
+# --- Frontend -----------------------------------------------------------
+
+# The HTML, CSS and JavaScript served as static files: a sibling of
+# this package under the source root. The whole source tree is copied
+# verbatim into the image, so this resolves identically in the
+# repository and in the container.
 STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
-# --- Database ---------------------------------------------------------
-# The same Postgres the importer writes into; the viewer only reads.
+# --- Database -----------------------------------------------------------
 
+# The same Postgres the importer and the linker write into. The webapp
+# reads it, with one exception: it creates `job_runs` at startup if the
+# database predates that table — see `queries/jobs.py`.
 DB_CONFIG = {
     "dbname": os.environ.get("DUUI_DB_NAME", "your_db"),
     "user": os.environ.get("DUUI_DB_USER", "your_user"),
@@ -67,15 +64,15 @@ DB_CONFIG = {
     "host": os.environ.get("DUUI_DB_HOST", "localhost"),
 }
 
-# --- Natural-language query agent -------------------------------------
-# Talks to an OpenAI-compatible chat-completions endpoint (this project
-# uses a university-hosted Open WebUI/Ollama gateway serving Qwen3-VL,
-# not Anthropic directly -- swap DUUI_QUERY_BASE_URL/DUUI_QUERY_MODEL to
-# point at a different OpenAI-compatible provider if needed).
-#
-# Leave DUUI_QUERY_API_KEY empty and the "Ask" panel reports itself as
-# unconfigured while the rest of the viewer works unchanged.
+# --- Query agent --------------------------------------------------------
 
+# The "Ask" panel talks to an OpenAI-compatible chat-completions
+# endpoint. The default points at a university-hosted gateway; set
+# DUUI_QUERY_BASE_URL and DUUI_QUERY_MODEL to use a different
+# OpenAI-compatible provider.
+#
+# Leave DUUI_QUERY_API_KEY empty and the panel reports itself as
+# unconfigured, while the rest of the webapp works unchanged.
 QUERY_AGENT_API_KEY = os.environ.get("DUUI_QUERY_API_KEY", "")
 QUERY_AGENT_BASE_URL = os.environ.get(
     "DUUI_QUERY_BASE_URL", "https://lehre.llm.texttechnologylab.org/api"

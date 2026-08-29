@@ -67,8 +67,16 @@ CORPUS = [
     (r"\b\d{1,3},\d{3}\b", 0, "no corpus figures"),
 ]
 
-CHECKED_SUFFIXES = (".py", ".toml", ".txt")
-CHECKED_NAMES = ("Dockerfile", ".dockerignore")
+CHECKED_SUFFIXES = (".py", ".toml", ".js", ".css", ".html")
+CHECKED_NAMES = ("Dockerfile", ".dockerignore", "requirements.txt")
+
+# Not source: vendored font licences, and recorded measurements that are
+# data rather than prose anyone wrote.
+SKIP_PARTS = ("__pycache__", "resources", "fonts", "a11y-baseline", "legacy")
+
+# A well-formed banner in the C-comment languages: `/* --- Name --- */`.
+CSS_BANNER_OK = re.compile(r"^/\* --- [A-Z][\w ]* -+ \*/$")
+CSS_BANNER_ANY = re.compile(r"^\s*/\*\s*-{2,}")
 
 
 def is_docstring(node: ast.AST) -> bool:
@@ -88,12 +96,38 @@ def is_docstring(node: ast.AST) -> bool:
     )
 
 
+def _c_comment_lines(src: str) -> set[int]:
+    """Return the line numbers inside `//` or `/* */` comments.
+
+    A deliberately simple scan: it does not try to understand strings or
+    regex literals, so a `//` inside one counts as a comment. That errs
+    toward checking more prose, never less, which is the safe direction
+    for a style check.
+    """
+    lines: set[int] = set()
+    in_block = False
+    for number, line in enumerate(src.split("\n"), start=1):
+        stripped = line.strip()
+        if in_block:
+            lines.add(number)
+            if "*/" in line:
+                in_block = False
+            continue
+        if stripped.startswith("//"):
+            lines.add(number)
+        elif "/*" in line:
+            lines.add(number)
+            if "*/" not in line[line.index("/*") :]:
+                in_block = True
+    return lines
+
+
 def prose_lines(src: str, path: pathlib.Path) -> set[int]:
     """Return the line numbers holding comment or docstring prose.
 
     Args:
         src: The file's contents.
-        path: Its path, which decides whether docstrings are looked for.
+        path: Its path, which decides how comments are recognized.
 
     Returns:
         Every line number that carries prose rather than code.
@@ -104,6 +138,14 @@ def prose_lines(src: str, path: pathlib.Path) -> set[int]:
             if is_docstring(node):
                 doc = node.body[0]
                 lines.update(range(doc.lineno, doc.end_lineno + 1))
+    if path.suffix in (".js", ".css"):
+        return _c_comment_lines(src)
+    if path.suffix == ".html":
+        return {
+            number
+            for number, line in enumerate(src.split("\n"), start=1)
+            if "<!--" in line or "-->" in line
+        }
     for number, line in enumerate(src.split("\n"), start=1):
         if re.match(r"^\s*#", line):
             lines.add(number)
@@ -130,6 +172,14 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
         return [(exc.lineno or 1, "syntax", str(exc))]
 
     for number, line in enumerate(lines, start=1):
+        if path.suffix in (".js", ".css") and CSS_BANNER_ANY.match(line):
+            if not CSS_BANNER_OK.match(line.strip()):
+                found.append((number, "banner", f"malformed banner: {line.strip()}"))
+            elif len(line) != BANNER_WIDTH:
+                found.append(
+                    (number, "banner", f"banner is {len(line)}, want {BANNER_WIDTH}")
+                )
+            continue
         if BANNER_ANY.match(line):
             if not BANNER_OK.match(line):
                 found.append((number, "banner", f"malformed banner: {line.strip()}"))
@@ -152,7 +202,11 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
                 if re.search(pattern, line, flags):
                     found.append((number, "term", message))
 
-        directive = re.search(r"#\s*noqa:?\s*([A-Z]+)\d*", line)
+        directive = (
+            re.search(r"#\s*noqa:?\s*([A-Z]+)\d*", line)
+            if path.suffix == ".py"
+            else None
+        )
         if directive and not directive.group(1).startswith(SELECTED_RULES):
             found.append(
                 (
@@ -206,8 +260,7 @@ def main() -> int:
         path
         for path in pathlib.Path(args.root).rglob("*")
         if path.is_file()
-        and "__pycache__" not in path.parts
-        and "/resources/" not in str(path)
+        and not any(part in SKIP_PARTS for part in path.parts)
         and (path.suffix in CHECKED_SUFFIXES or path.name in CHECKED_NAMES)
     )
 
