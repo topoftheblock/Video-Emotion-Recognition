@@ -1,6 +1,6 @@
-# Keeps the build context small and avoids baking local state into the
-# viewer image. The image builds from this directory, so paths here are
-# relative to webapp/.
+# Keeps the build context small and local state out of the image. The
+# build context is this directory, so every path below is relative to
+# it.
 __pycache__/
 *.pyc
 .pytest_cache/

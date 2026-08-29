@@ -119,11 +119,13 @@ function initVideoCombobox() {
     }, 120),
   );
   el.videoComboList.addEventListener("mousedown", (e) => {
-    const item = e.target.closest("[data-video-id]");
+    const item = /** @type {HTMLElement} */ (
+      /** @type {Element} */ (e.target).closest("[data-video-id]")
+    );
     if (item) applySelection(Number(item.dataset.videoId), true);
   });
   document.addEventListener("click", (e) => {
-    if (!el.videoSelect.contains(e.target)) closeCombo();
+    if (!el.videoSelect.contains(/** @type {Node} */ (e.target))) closeCombo();
   });
 }
 
@@ -206,7 +208,10 @@ function onComboKeydown(e) {
   } else if (e.key === "Enter") {
     if (!el.videoComboList.hidden && items[comboHighlight]) {
       e.preventDefault();
-      applySelection(Number(items[comboHighlight].dataset.videoId), true);
+      applySelection(
+        Number(/** @type {HTMLElement} */ (items[comboHighlight]).dataset.videoId),
+        true,
+      );
     }
   } else if (e.key === "Escape") {
     closeCombo();

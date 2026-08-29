@@ -19,7 +19,9 @@ import { compareNames, personColorFor, personName, state } from "../state.js";
  */
 export function initPersonList(onChange) {
   el.personList.addEventListener("click", (event) => {
-    const row = event.target.closest("[data-person-id]");
+    const row = /** @type {HTMLElement} */ (
+      /** @type {Element} */ (event.target).closest("[data-person-id]")
+    );
     if (!row) return;
 
     const personId = Number(row.dataset.personId);

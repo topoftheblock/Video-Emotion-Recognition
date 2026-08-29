@@ -127,7 +127,9 @@ function renderAskResults(result) {
   // handling of their own.
   el.askResults.querySelectorAll(".ask-segment-list").forEach((list) => {
     list.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-index]");
+      const button = /** @type {HTMLElement} */ (
+        /** @type {Element} */ (event.target).closest("[data-index]")
+      );
       if (!button) return;
       jumpToSegment(result.segments[Number(button.dataset.index)], result.overlays);
     });

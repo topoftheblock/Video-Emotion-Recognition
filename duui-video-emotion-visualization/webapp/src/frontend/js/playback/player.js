@@ -56,7 +56,7 @@ function updateTransport(t) {
   // fight the user just as visibly.
   if (!el.scrub.matches(":active")) {
     const pct = el.player.duration ? (t / el.player.duration) * 1000 : 0;
-    el.scrub.value = pct;
+    el.scrub.value = String(pct);
     // Without this the slider announces "0" to "1000" -- its internal
     // resolution, which is not a position in anything the user can see.
     el.scrub.setAttribute("aria-valuetext", `${current} of ${total}`);
@@ -128,6 +128,6 @@ export function initPlayer() {
 
   el.scrub.addEventListener("input", () => {
     if (!el.player.duration) return;
-    el.player.currentTime = (el.scrub.value / 1000) * el.player.duration;
+    el.player.currentTime = (Number(el.scrub.value) / 1000) * el.player.duration;
   });
 }

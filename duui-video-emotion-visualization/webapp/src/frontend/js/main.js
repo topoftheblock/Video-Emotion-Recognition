@@ -45,7 +45,9 @@ initPersonList(() => {
   render();
 });
 
-el.videoSelect.addEventListener("change", (e) => loadVideo(Number(e.target.value)));
+el.videoSelect.addEventListener("change", (e) =>
+  loadVideo(Number(/** @type {HTMLSelectElement} */ (e.target).value)),
+);
 
 // The canvas is sized in CSS pixels off the stage, so it has to be
 // resynced whenever the frame's box changes -- on a new video's

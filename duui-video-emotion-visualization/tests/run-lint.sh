@@ -70,6 +70,11 @@ run "sqlfluff"     sqlfluff lint --dialect postgres pgvector-db/schema.sql
 run "yamllint"     yamllint docker-compose.yml webapp/docs/a11y-ci.yml
 run "hadolint"     hadolint cas-to-postgres-importer/Dockerfile webapp/Dockerfile global-identity-linker/Dockerfile pgvector-db/Dockerfile tests/Dockerfile.tests tests/Dockerfile.lint
 run "eslint"       eslint .
+# The frontend's JSDoc types. No build step: this emits nothing and only
+# checks that a DOM lookup is used as the element it actually is, which
+# is the class of bug a browser reports as "undefined is not a function"
+# and only once that code path runs.
+run "tsc"          tsc --noEmit --project webapp/src/frontend/jsconfig.json
 run "prettier"     prettier --check .
 run "stylelint"    stylelint "webapp/src/frontend/css/*.css"
 run "html-validate" html-validate webapp/src/frontend/index.html
