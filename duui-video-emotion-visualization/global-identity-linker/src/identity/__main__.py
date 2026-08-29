@@ -18,7 +18,7 @@ import sys
 
 from identity.db import get_db_connection
 from identity.job_runs import JobRun
-from identity.linking import recompute_global_identities
+from identity.linking import recompute_global_persons
 
 
 def _progress(index: int, total: int) -> None:
@@ -46,13 +46,14 @@ def main() -> None:
             job.update(phase="comparing embeddings")
 
             def progress(index: int, total: int) -> None:
+                """Show progress on the terminal and in the job run."""
                 _progress(index, total)
                 # Called once per person. JobRun throttles its writes,
                 # so this stays a counter rather than one database write
                 # per person.
                 job.update(current=index, total=total)
 
-            stats = recompute_global_identities(cursor, progress=progress)
+            stats = recompute_global_persons(cursor, progress=progress)
             job.update(phase="committing", force=True)
             conn.commit()
             cursor.close()
@@ -71,7 +72,7 @@ def main() -> None:
         )
 
     print(
-        f"\nCleared {stats['identities_deleted']} previous global person(s) "
+        f"\nCleared {stats['global_persons_deleted']} previous global person(s) "
         f"({stats['persons_unlinked']} person link(s) removed)."
     )
     print(

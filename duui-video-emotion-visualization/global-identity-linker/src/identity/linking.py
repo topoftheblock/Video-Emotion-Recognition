@@ -101,7 +101,7 @@ _MODALITIES = (
 )
 
 
-def clear_global_identities(cursor: Cursor) -> tuple[int, int]:
+def clear_global_persons(cursor: Cursor) -> tuple[int, int]:
     """Delete every global person and unlink every person from one.
 
     `global_person_match_score` is cleared with `global_person_id`, both
@@ -126,9 +126,9 @@ def clear_global_identities(cursor: Cursor) -> tuple[int, int]:
     )
 
     cursor.execute("DELETE FROM global_persons")
-    identities_deleted = cursor.rowcount
+    global_persons_deleted = cursor.rowcount
 
-    return persons_unlinked, identities_deleted
+    return persons_unlinked, global_persons_deleted
 
 
 def build_centroids(cursor: Cursor) -> None:
@@ -308,7 +308,7 @@ def _write_match_scores(cursor: Cursor) -> None:
     )
 
 
-def recompute_global_identities(
+def recompute_global_persons(
     cursor: Cursor, progress: Callable[[int, int], None] | None = None
 ) -> dict[str, int]:
     """Clear every global person and rebuild them corpus-wide.
@@ -332,7 +332,7 @@ def recompute_global_identities(
             with
         global persons deleted and created.
     """
-    persons_unlinked, identities_deleted = clear_global_identities(cursor)
+    persons_unlinked, global_persons_deleted = clear_global_persons(cursor)
 
     build_centroids(cursor)
 
@@ -362,7 +362,7 @@ def recompute_global_identities(
     return {
         "persons_total": len(persons),
         "persons_unlinked": persons_unlinked,
-        "identities_deleted": identities_deleted,
+        "global_persons_deleted": global_persons_deleted,
         "persons_linked": persons_linked,
         "identities_created": identities_created,
     }

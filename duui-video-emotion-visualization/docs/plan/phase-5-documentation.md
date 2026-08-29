@@ -246,6 +246,87 @@ against `HEAD`, not against a mid-session backup, or edits made before the
 backup go unchecked — a whole-file `--` substitution can reach inside a string
 literal, and only the `HEAD` comparison would show it.
 
+### `cas-to-postgres-importer`, and what checking it mechanically found
+
+The checkpoint's first finding — that nothing enforces the guide, so it
+holds only by review — was acted on before this sub-project was touched:
+`tests/stylecheck.py` now checks prose width, em dashes, banner form,
+glossary terms in prose **and in identifiers**, dead `noqa`, missing
+docstrings and corpus references, and `run-lint.sh` gates on it for the
+finished sub-projects. It reported 373 findings on the importer at the
+start and 0 at the end.
+
+Two things about running it are worth keeping:
+
+- **It must run on the project's own interpreter.** The host's Python is
+  older, and `except A, B:` (PEP 758) is a syntax error there. The first
+  run reported two files as broken that are perfectly valid, and a
+  checker that cannot parse a file silently checks nothing at all.
+- **`cas/types.py` shadows the standard library's `types`.** Any script
+  run with that directory as the working directory fails on `import
+  pathlib`. Harmless to the package, which imports relatively, but it
+  cost one confusing failure.
+
+What it found that review would not have:
+
+1. **`python -m main` in seven places.** The entry point has been
+   `python -m importer` since Phase 3. Three source files told the user
+   to run a command that does not exist.
+2. **Two more stale references**: `views.py` pointed at
+   `config.IGNORED_ABSENT_TYPES`, which moved to `cas/types.py` in Phase
+   3; `pipeline.py` cited a README section — "Docker architecture" —
+   that does not exist. `tests/conftest.py` named `src.config` for what
+   is `importer.config`.
+3. **Rule 4 violations in the tests.** `test_identity.py` carried exact
+   corpus figures. The *reason* those tests exist is essential and was
+   kept; the counts are gone.
+4. **Glossary violations in identifiers, not prose.** The linker's
+   public `clear_global_identities` and `recompute_global_identities`
+   use "identity" as a noun for the entity, which the glossary forbids.
+   Renamed to `clear_global_persons` and `recompute_global_persons`
+   across every call site. The checker now reads identifiers for this
+   reason — it is the class of violation a prose-only check cannot see.
+5. **28 mypy errors, from the annotations themselves.** Two kinds, both
+   mine: annotating `source_dir: str` where the code has always accepted
+   a `Path` and the tests pass one, and annotating UIMA feature
+   structures as `object` when they are dynamically attributed and
+   `Any` is the honest type.
+
+**Re-checking the linker with the same tool found 16 findings in a
+sub-project already reviewed and committed** — missing docstrings on
+every test function, plus the identifier violations above. Fixed. That
+is the clearest argument for the checker: the same guide, applied by
+hand and then by tool, gave different answers.
+
+### Verifying the importer
+
+The AST-comparison method from the checkpoint does not transfer here.
+It proved the linker's rewrite touched no code, but this rewrite
+legitimately changes code: it adds annotations and imports, wraps eight
+`INSERT` statements, and renames functions. Stripping docstrings *and*
+annotations still reported 26 files, all of them true.
+
+Two checks did carry the weight:
+
+- **Every SQL literal, whitespace-normalized, against `HEAD`.** Wrapping
+  a statement must not change it. Zero of the 46 statements differ.
+- **A full delete-and-reimport.** `--on-existing replace` deletes a
+  video's whole subtree and re-parses the CAS, so it exercises every
+  parser. All twelve table counts came back identical, as did the split
+  across all three emotion modalities, both segment kinds and both
+  presence modalities.
+
+One test failed during the rewrite, correctly: it pinned the exact
+wording of a user-facing warning that the em-dash rule changed. It now
+asserts on what the message must *convey* — the filename, and where to
+put the file — rather than on its phrasing.
+
+**A method warning.** A line-numbered `sed` was used to shorten one
+docstring after other edits had shifted the file, and it overwrote a
+`def` line instead. The suite still passed, because the function had
+silently stopped being collected; `ruff format` caught it. Address
+edits by matching their text, never by line number.
+
 ---
 
 ## 5.5 Steps

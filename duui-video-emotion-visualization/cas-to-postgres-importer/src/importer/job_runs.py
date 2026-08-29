@@ -114,6 +114,7 @@ class JobRun:
     # --- Lifecycle ------------------------------------------------------
 
     def __enter__(self) -> "JobRun":
+        """Open the run, and hand it back for the `with` block."""
         self.start()
         return self
 
@@ -123,6 +124,10 @@ class JobRun:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> Literal[False]:
+        """Close the run, recording whether the body raised.
+
+        Never suppresses the exception: a failed job must still fail.
+        """
         if exc_type is None:
             self.finish("finished")
         else:

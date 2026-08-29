@@ -1,15 +1,19 @@
-"""Parses Emotion annotations into two related tables:
+"""Reads video and audio emotions into two related tables.
 
-- BaseEmotion            one row per Emotion annotation
-- EmotionScore           nested per-label scores on an Emotion
+`base_emotions` takes one row per Emotion annotation, and
+`emotion_scores` the per-label scores nested inside it.
 
-Person linkage: some pipelines set `.personId` directly on the
-Emotion FS. The real Bundestag video-emotion CAS doesn't -- instead
-the Emotion carries a `.reference` to the FaceDetection/PersonDetection
-it was computed from, which in turn links to a PersonTrack -> FaceIdentity.
-`_resolve_emotion_person_id` tries the direct attribute first and
-falls back to walking that reference chain.
+Some pipelines set `.personId` on the Emotion directly. The real CAS
+does not: the Emotion carries a `.reference` to the detection it was
+computed from, which links on to a track and from there to an identity.
+`_resolve_emotion_person_id` tries the direct attribute first and walks
+that chain otherwise.
 """
+
+from typing import Any
+
+from cassis import Cas
+from psycopg2.extensions import cursor as Cursor
 
 from ..cas.person_resolution import (
     resolve_person_id_via_face_fs,
@@ -20,13 +24,21 @@ from ..cas.typesystem import as_list, get_xmi_id
 from ..cas.views import select_across_views
 
 
-def _resolve_emotion_person_id(emotion, context):
-    """
+def _resolve_emotion_person_id(emotion: Any, context: dict) -> int | None:
+    """Return the person this emotion belongs to.
+
     `.personId` is used directly when present. Otherwise `.reference`
-    is walked according to what it points to: a video detection
-    (`reference.track.face`) or an audio/text SpeakerSentence
-    (`reference.speakerSegment.voice`) -- both patterns are confirmed
-    in the real Bundestag video-emotion CAS, one per modality.
+    is walked according to what it points at: a video detection,
+    through `reference.track.face`, or a speaker sentence, through
+    `reference.speakerSegment.voice`. Both are confirmed in the real
+    CAS, one per modality.
+
+    Args:
+        emotion: The Emotion structure.
+        context: The shared context, holding the person lookup maps.
+
+    Returns:
+        The person's id, or None if no path resolves one.
     """
     person_id = getattr(emotion, "personId", None)
     if person_id is not None:
@@ -53,13 +65,18 @@ def _resolve_emotion_person_id(emotion, context):
     return None
 
 
-def _dominant_label_from_scores(scores):
-    """
-    Best-effort recovery of a dominant label when the CAS doesn't set
-    one directly (confirmed absent on the real Bundestag CAS's
-    per-frame Emotion instances): pick the highest-scoring nested
-    EmotionScore. `scores` must already be a plain list (see
-    `as_list`) -- an FSArray wrapper would iterate incorrectly.
+def _dominant_label_from_scores(scores: list) -> str | None:
+    """Recover a dominant label by taking the highest-scoring one.
+
+    Used when the CAS does not set one directly, which is the case on
+    the real per-frame Emotion instances.
+
+    Args:
+        scores: The nested scores, already a plain list. An FSArray
+            wrapper would iterate incorrectly; see `as_list`.
+
+    Returns:
+        The highest-scoring label, or None if none has a usable score.
     """
     best_label, best_score = None, None
     for score in scores:
@@ -76,17 +93,29 @@ def _dominant_label_from_scores(scores):
     return best_label
 
 
-def _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, scores):
-    """
-    Uses DO UPDATE (not DO NOTHING) deliberately: emotion_id comes from
-    the CAS's own xmi:id space, so re-importing the same file must
-    overwrite the existing row with the re-parsed values rather than
-    silently keeping whatever was written first.
+def _insert_base_emotion(
+    cursor: Cursor,
+    emotion: Any,
+    emotion_id: int | None,
+    person_id: int | None,
+    video_id: int | None,
+    scores: list,
+) -> None:
+    """Insert or update one base emotion row.
+
+    DO UPDATE rather than DO NOTHING, deliberately: `emotion_id` comes
+    from the CAS's own `xmi:id` space, so re-importing the same file
+    must overwrite the row with the re-parsed values instead of keeping
+    whatever was written first.
     """
     cursor.execute(
         """
-        INSERT INTO base_emotions (emotion_id, person_id, video_id, modality, granularity, start_time, end_time, begin_offset, end_offset, frame_index, x, y, w, h, valence, arousal, dominance, dominant_label)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO base_emotions
+            (emotion_id, person_id, video_id, modality, granularity,
+             start_time, end_time, begin_offset, end_offset, frame_index,
+             x, y, w, h, valence, arousal, dominance, dominant_label)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s)
         ON CONFLICT (video_id, emotion_id) DO UPDATE SET
             person_id = EXCLUDED.person_id, video_id = EXCLUDED.video_id,
             modality = EXCLUDED.modality, granularity = EXCLUDED.granularity,
@@ -121,7 +150,10 @@ def _insert_base_emotion(cursor, emotion, emotion_id, person_id, video_id, score
     )
 
 
-def _insert_emotion_scores(cursor, scores, emotion_id, video_id):
+def _insert_emotion_scores(
+    cursor: Cursor, scores: list, emotion_id: int | None, video_id: int | None
+) -> None:
+    """Insert the full label distribution for one base emotion."""
     for score in scores:
         cursor.execute(
             """
@@ -138,7 +170,14 @@ def _insert_emotion_scores(cursor, scores, emotion_id, video_id):
         )
 
 
-def parse(cas, cursor, context):
+def parse(cas: Cas, cursor: Cursor, context: dict) -> None:
+    """Insert this video's emotions and their score distributions.
+
+    Args:
+        cas: The loaded CAS.
+        cursor: An open cursor, inside the import's transaction.
+        context: The shared context, threaded through every step.
+    """
     video_id = context.get("global_video_id")
 
     for emotion in select_across_views(cas, TYPES["emotion"]):

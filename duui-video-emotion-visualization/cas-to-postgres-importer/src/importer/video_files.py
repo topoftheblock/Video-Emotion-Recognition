@@ -1,8 +1,9 @@
 """Putting a video where the webapp can find it.
 
-A video reaches the store one of two ways: copied from the input directory, or
-extracted from the CAS that carried it embedded. Either way it lands at
-`<VIDEO_MEDIA_DIR>/<videos.filename>`, which is the only place the webapp looks.
+A video reaches the video store one of two ways: copied from the input
+directory, or extracted from the CAS that carried it embedded. Either
+way it lands at `<VIDEO_MEDIA_DIR>/<videos.filename>`, which is the only
+place the webapp looks.
 
 Reading the CAS itself is `cas/sofas.py`.
 """
@@ -10,21 +11,25 @@ Reading the CAS itself is `cas/sofas.py`.
 import shutil
 from pathlib import Path
 
+from .cas.sofas import SofaPayload
 from .config import VIDEO_MEDIA_DIR
 
 
-def place_video_file(video_filename, source_dir):
-    """
-    Copy `<source_dir>/<video_filename>` to `<VIDEO_MEDIA_DIR>/<video_filename>`
-    if it isn't already there. Returns the destination Path on success,
-    or None if there was nothing to do (no filename) or no source file
-    was found to copy.
+def place_video_file(video_filename: str | None, source_dir: str | Path) -> Path | None:
+    """Copy a video from the input directory into the video store.
 
-    Deliberately never raises: a missing video file means the webapp
-    just won't be able to play that video yet (visible to the user as
-    a normal "video unavailable" state, see the /api/videos
-    `video_file_available` field) -- it shouldn't roll back or block
-    an otherwise-successful DB import.
+    Never raises, deliberately. A missing video file means the webapp
+    cannot play that video yet, which the user sees as a normal
+    "unavailable" state through `/api/videos`. It should not roll back
+    or block an otherwise successful import.
+
+    Args:
+        video_filename: The name recorded in `videos.filename`.
+        source_dir: The directory to copy from.
+
+    Returns:
+        The destination path, or None when there was nothing to do or
+        no source file was found.
     """
     if not video_filename or video_filename == "unknown":
         return None
@@ -34,10 +39,9 @@ def place_video_file(video_filename, source_dir):
     dest = dest_dir / video_filename
 
     if dest.exists():
-        # Already placed -- either a previous run of this same import,
-        # or source_dir (DUUI_INPUT_VIDEO_DIR) and VIDEO_MEDIA_DIR are
-        # the same directory (the default, native-setup case), where
-        # copying onto itself would only be wasted I/O.
+        # Already placed: either by an earlier run, or because the
+        # source and the video store are the same directory — the
+        # default in a native setup — where copying would be wasted I/O.
         print(f"[importer] video file already present at {dest}, leaving as-is")
         return dest
 
@@ -51,26 +55,31 @@ def place_video_file(video_filename, source_dir):
     return dest
 
 
-def extract_video_payload(payload, video_filename):
-    """
-    Write `payload`'s bytes to `<VIDEO_MEDIA_DIR>/<video_filename>`.
-    Returns the destination Path, or None if there was nothing to
-    write.
+def extract_video_payload(
+    payload: SofaPayload | None, video_filename: str | None
+) -> Path | None:
+    """Write a sofa's bytes into the video store.
 
-    Used when no companion video file exists on disk -- a CAS exported
-    with its sofa intact already contains the bytes, so there is no
+    Used when no companion video file exists on disk. A CAS exported
+    with its sofa intact already carries the bytes, so there is no
     reason to make the user supply the same video twice.
 
-    Deliberately never raises, for the same reason `place_video_file`
-    doesn't: a video that can't be recovered costs playback, not the
-    import.
+    Never raises, for the same reason `place_video_file` does not: a
+    video that cannot be recovered costs playback, not the import.
+
+    Args:
+        payload: The sofa captured before the CAS was loaded.
+        video_filename: The name recorded in `videos.filename`.
+
+    Returns:
+        The destination path, or None when there was nothing to write.
     """
     if not video_filename or video_filename == "unknown" or payload is None:
         return None
 
     try:
         data = payload.data()
-    except Exception as exc:  # noqa: BLE001 -- playback, not the import
+    except Exception as exc:  # costs playback, not the import
         print(f"[importer] warning: could not decode the video sofa: {exc}")
         return None
     if not data:
@@ -92,18 +101,28 @@ def extract_video_payload(payload, video_filename):
     return dest
 
 
-def ensure_video_available(video_filename, source_dir, payload=None):
-    """
-    Make `videos.filename` playable by the webapp: copy the companion
-    video file if there is one, otherwise fall back to the copy that
-    was embedded in the CAS. Returns the destination Path, or None if
-    neither source had the video -- in which case the DB rows are still
-    fine, only playback isn't.
+def ensure_video_available(
+    video_filename: str | None,
+    source_dir: str | Path,
+    payload: SofaPayload | None = None,
+) -> Path | None:
+    """Make a video playable by the webapp, from either source.
 
-    `payload` is the sofa captured before the CAS was loaded (see
-    find_media_sofas/select_video_sofa). It is still only decoded if
-    the first source came up empty, so a re-import of a video already
-    in the store does no base64 work at all.
+    Copies the companion video file if there is one, and otherwise
+    falls back to the copy embedded in the CAS.
+
+    `payload` is decoded only if the first source came up empty, so
+    re-importing a video already in the store does no base64 work.
+
+    Args:
+        video_filename: The name recorded in `videos.filename`.
+        source_dir: The directory to copy from.
+        payload: The sofa captured before the CAS was loaded, if any.
+
+    Returns:
+        The destination path, or None if neither source had the video —
+        in which case the database rows are still fine, and only
+        playback is missing.
     """
     dest = place_video_file(video_filename, source_dir)
     if dest is not None:
@@ -117,8 +136,8 @@ def ensure_video_available(video_filename, source_dir, payload=None):
     if video_filename and video_filename != "unknown":
         print(
             f"[importer] warning: no video for '{video_filename}' in "
-            f"{source_dir} and none embedded in the CAS -- the DB rows were "
-            f"still imported, but the webapp won't be able to play it until a "
+            f"{source_dir} and none embedded in the CAS — the database rows "
+            f"were still imported, but the webapp cannot play it until a "
             f"file with that exact name is placed in {Path(VIDEO_MEDIA_DIR)}"
         )
     return None

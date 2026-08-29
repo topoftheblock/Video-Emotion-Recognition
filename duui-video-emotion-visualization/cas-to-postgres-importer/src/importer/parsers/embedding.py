@@ -1,21 +1,24 @@
-"""Parses FaceEmbedding and VoiceEmbedding rows.
+"""Reads the face and voice embeddings that identify a person.
 
-Two embedding storage patterns show up across DUUI pipelines:
+Two storage patterns appear across DUUI pipelines:
 
-  1. The identity FS (FaceIdentity/VoiceIdentity) directly carries
-     `.person`, `.model`, and a raw embedding vector under
-     `.embeddings`.
-  2. The identity FS only carries a string id (`faceId`/`voiceId`) and
-     a *reference* to a separate Embedding FeatureStructure
-     (`org.texttechnologylab.uima.type.Embedding`) that holds the real
-     `.embedding` vector and a `.ModelReference` -- confirmed in the
-     real Bundestag video-emotion CAS. In this pattern, person
-     linkage is string-based and resolved via person_resolution
-     using the face_id/voice_id -> person_id maps built in person.py.
+1. The identity structure carries `.person`, `.model` and a raw vector
+   under `.embeddings` directly.
+2. The identity structure carries only a string id and a *reference* to
+   a separate Embedding structure holding the real `.embedding` vector
+   and a `.ModelReference` — the shape confirmed in the real CAS. Here
+   the person link is string-based, and is resolved through
+   `cas/person_resolution.py` using the maps `person.py` built.
 
-Both patterns are handled so this keeps working regardless of which
-DUUI component version produced the CAS.
+Both are handled, so this keeps working whichever component version
+produced the CAS.
 """
+
+from collections.abc import Callable
+from typing import Any
+
+from cassis import Cas
+from psycopg2.extensions import cursor as Cursor
 
 from ..cas.person_resolution import (
     resolve_person_id_via_face_fs,
@@ -26,13 +29,19 @@ from ..cas.typesystem import as_list, get_xmi_id
 from ..cas.views import select_across_views
 
 
-def _to_pgvector_literal(embedding_repr):
-    """
-    Convert a raw embedding representation into the text literal
-    format pgvector expects on INSERT: `[v1,v2,v3]` -- bracketed,
-    comma-separated. cassis hands back a bare space-separated string
-    (or a plain sequence of numbers) from the underlying UIMA feature,
-    which pgvector's input parser rejects outright.
+def _to_pgvector_literal(embedding_repr: Any) -> str | None:
+    """Convert a raw vector into the literal pgvector expects.
+
+    That is `[v1,v2,v3]`: bracketed and comma-separated. cassis hands
+    back a space-separated string, or a plain sequence of numbers, from
+    the underlying UIMA feature — which pgvector's input parser rejects
+    outright.
+
+    Args:
+        embedding_repr: The vector as cassis returned it.
+
+    Returns:
+        The literal, or None when there is no vector.
     """
     if embedding_repr is None:
         return None
@@ -45,15 +54,20 @@ def _to_pgvector_literal(embedding_repr):
     return "[" + ",".join(str(v) for v in values) + "]"
 
 
-def _resolve_embedding_rows(identity_fs):
-    """
-    Normalizes the different shapes `.embeddings` can take into a list
-    of (embedding_id, model_id, embedding_repr) tuples -- one per
-    underlying Embedding FS when `.embeddings` references one or more
-    separate Embedding annotations (a FaceIdentity can legitimately
-    link several, e.g. one per detection over time: "988 990"), or a
-    single tuple keyed on the identity FS's own id when `.embeddings`
-    already holds the raw vector directly (older pipeline shape).
+def _resolve_embedding_rows(identity_fs: Any) -> list[tuple]:
+    """Normalize the shapes `.embeddings` takes into one row list.
+
+    One row per underlying Embedding structure when `.embeddings`
+    references separate Embedding annotations — a FaceIdentity may
+    legitimately link several, one per detection over time — or a
+    single row keyed on the identity's own id when `.embeddings`
+    already holds the raw vector, which is the older shape.
+
+    Args:
+        identity_fs: The FaceIdentity or VoiceIdentity structure.
+
+    Returns:
+        `(embedding_id, model_id, vector)` triples.
     """
     embeddings_value = getattr(identity_fs, "embeddings", None)
     if embeddings_value is None:
@@ -62,8 +76,8 @@ def _resolve_embedding_rows(identity_fs):
     items = as_list(embeddings_value)
 
     if items and all(hasattr(item, "embedding") for item in items):
-        # Every item is a real Embedding FeatureStructure: dereference
-        # each one into its own row so none are silently dropped.
+        # Every item is a real Embedding structure: dereference each
+        # into its own row, so none is silently dropped.
         return [
             (
                 get_xmi_id(item),
@@ -77,13 +91,24 @@ def _resolve_embedding_rows(identity_fs):
     return [(get_xmi_id(identity_fs), None, str(embeddings_value))]
 
 
-def _parse_embeddings(cas, cursor, uima_type, table_name, resolve_person_id, context):
-    """
-    Face and voice embeddings differ only in which identity type they
-    come from, which resolver turns that identity into a person_id, and
-    which table they land in -- everything else (the `.embeddings`
-    shapes, the model reference, the pgvector literal) is identical, so
-    one helper covers both (same pattern as parsers/detection.py).
+def _parse_embeddings(
+    cas: Cas,
+    cursor: Cursor,
+    uima_type: str,
+    table_name: str,
+    resolve_person_id: Callable[[Any, dict], int | None],
+    context: dict,
+) -> None:
+    """Insert every embedding of one kind into one table.
+
+    Face and voice embeddings differ only in the identity type they
+    come from, the resolver that turns it into a person, and the table
+    they land in. The `.embeddings` shapes, the model reference and the
+    pgvector literal are identical, so one helper covers both.
+
+    `table_name` is interpolated into the statement rather than passed
+    as a parameter, which a table name cannot be. Both call sites below
+    pass a literal, so no external value reaches it.
     """
     video_id = context.get("global_video_id")
     # The model references in this CAS are xmi:ids; `models` is keyed
@@ -102,7 +127,9 @@ def _parse_embeddings(cas, cursor, uima_type, table_name, resolve_person_id, con
                 continue
             cursor.execute(
                 f"""
-                INSERT INTO {table_name} (video_id, embedding_id, person_id, model_id, embedding)
+                INSERT INTO {table_name}
+                    (video_id, embedding_id, person_id, model_id,
+                     embedding)
                 VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT (video_id, embedding_id) DO NOTHING
                 """,
@@ -116,7 +143,14 @@ def _parse_embeddings(cas, cursor, uima_type, table_name, resolve_person_id, con
             )
 
 
-def parse(cas, cursor, context):
+def parse(cas: Cas, cursor: Cursor, context: dict) -> None:
+    """Insert this video's face and voice embeddings.
+
+    Args:
+        cas: The loaded CAS.
+        cursor: An open cursor, inside the import's transaction.
+        context: The shared context, threaded through every step.
+    """
     _parse_embeddings(
         cas,
         cursor,

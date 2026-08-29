@@ -4,7 +4,7 @@ Setup inserts, the calls under test and the assertions all share the
 `db_cursor` fixture's single uncommitted transaction, so nothing needs
 cleaning up and no separate test schema is required.
 
-`clear_global_identities`, and so `recompute_global_identities`, deletes
+`clear_global_persons`, and so `recompute_global_persons`, deletes
 every row in `global_persons` rather than only the rows a test inserted.
 That is the behaviour under test; the fixture's rollback is what stops
 it reaching a populated database.
@@ -36,15 +36,18 @@ _DIMENSIONS = {"face_embeddings": 512, "voice_embeddings": 192}
 
 
 def _vector_literal(dim: int, base: float) -> str:
+    """Build a pgvector literal of `dim` values, spaced from `base`."""
     return "[" + ",".join(f"{base + i * 0.001:.4f}" for i in range(dim)) + "]"
 
 
 def _opposite_vector(dim: int, base: float) -> str:
+    """Build the exact negation of `_vector_literal`."""
     # Exact negation of _vector_literal — cosine distance to it is 2.0.
     return "[" + ",".join(f"{-(base + i * 0.001):.4f}" for i in range(dim)) + "]"
 
 
 def _seed_person(cursor: Cursor, person: Person, clip_label: str) -> None:
+    """Insert a person, and the video they belong to."""
     video_id, person_id = person
     cursor.execute(
         "INSERT INTO videos (video_id, filename) VALUES (%s, %s) "
@@ -65,6 +68,16 @@ def _embed(
     embedding_id: int | None = None,
     invert: bool = False,
 ) -> None:
+    """Give a person one embedding, in the named table.
+
+    Args:
+        cursor: An open cursor.
+        table: Either `face_embeddings` or `voice_embeddings`.
+        person: The `(video_id, person_id)` pair.
+        base: The value the vector is built from.
+        embedding_id: An explicit id, when the test needs a known one.
+        invert: Store the negated vector, the far end of the scale.
+    """
     video_id, person_id = person
     vec = (
         _opposite_vector(_DIMENSIONS[table], base)
@@ -120,6 +133,7 @@ def linkable(db_cursor: Cursor) -> Cursor:
 
 
 def test_links_persons_with_matching_face_embeddings(linkable: Cursor) -> None:
+    """Two people with matching faces become one global person."""
     _embed(linkable, "face_embeddings", P1, 1.0)
     _embed(linkable, "face_embeddings", P2, 1.0)
 
@@ -134,6 +148,7 @@ def test_links_persons_with_matching_face_embeddings(linkable: Cursor) -> None:
 
 
 def test_does_not_link_dissimilar_face_embeddings(linkable: Cursor) -> None:
+    """Faces too far apart are left unlinked."""
     _embed(linkable, "face_embeddings", P1, 1.0)
     _embed(linkable, "face_embeddings", P2, -1.0)
 
@@ -146,6 +161,7 @@ def test_does_not_link_dissimilar_face_embeddings(linkable: Cursor) -> None:
 def test_falls_back_to_voice_when_there_are_no_face_embeddings(
     linkable: Cursor,
 ) -> None:
+    """With no faces to compare, voices decide the match."""
     _embed(linkable, "voice_embeddings", P1, 1.0)
     _embed(linkable, "voice_embeddings", P2, 1.0)
 
@@ -158,6 +174,7 @@ def test_falls_back_to_voice_when_there_are_no_face_embeddings(
 
 
 def test_does_not_link_two_people_from_the_same_video(db_cursor: Cursor) -> None:
+    """Two people in one video are never linked to each other."""
     # Identical embeddings, same video: two tracks of one person within
     # one recording are the importer's business, not a *cross*-video
     # person, and merging them here would invent a global person that
@@ -176,6 +193,7 @@ def test_does_not_link_two_people_from_the_same_video(db_cursor: Cursor) -> None
 def test_does_not_relink_a_person_that_already_has_a_global_id(
     linkable: Cursor,
 ) -> None:
+    """A person already linked is left as they are."""
     linkable.execute(
         "INSERT INTO global_persons (real_name) VALUES (NULL) "
         "RETURNING global_person_id"
@@ -199,7 +217,8 @@ def test_does_not_relink_a_person_that_already_has_a_global_id(
     assert _global_ids(linkable, P2)[P2] == existing_global_id
 
 
-def test_clear_removes_every_global_identity(linkable: Cursor) -> None:
+def test_clear_removes_every_global_person(linkable: Cursor) -> None:
+    """Clearing removes the global persons and unlinks the people."""
     linkable.execute(
         "INSERT INTO global_persons (real_name) VALUES (NULL) "
         "RETURNING global_person_id"
@@ -211,19 +230,20 @@ def test_clear_removes_every_global_identity(linkable: Cursor) -> None:
         (global_id, P1, P2),
     )
 
-    persons_unlinked, identities_deleted = linking.clear_global_identities(linkable)
+    persons_unlinked, global_persons_deleted = linking.clear_global_persons(linkable)
 
     assert persons_unlinked >= 2
-    assert identities_deleted >= 1
+    assert global_persons_deleted >= 1
     assert _global_ids(linkable, P1, P2) == {P1: None, P2: None}
     linkable.execute("SELECT count(*) FROM global_persons")
     assert linkable.fetchone()[0] == 0
 
 
-def test_recompute_clears_stale_identities_and_rebuilds_from_embeddings(
+def test_recompute_clears_stale_links_and_rebuilds_from_embeddings(
     linkable: Cursor,
 ) -> None:
-    # A stale identity that the embeddings do NOT justify: P1 and P2
+    """A full recompute discards old links and rebuilds them."""
+    # A stale link the embeddings do not justify: P1 and P2
     # look nothing alike, so a full recompute has to drop this rather
     # than preserve it. This is the case the old per-import step could
     # never fix — it only ever added links.
@@ -241,7 +261,7 @@ def test_recompute_clears_stale_identities_and_rebuilds_from_embeddings(
     _embed(linkable, "face_embeddings", P1, 1.0)
     _embed(linkable, "face_embeddings", P2, -1.0)
 
-    stats = linking.recompute_global_identities(linkable)
+    stats = linking.recompute_global_persons(linkable)
 
     assert _global_ids(linkable, P1, P2) == {P1: None, P2: None}
     linkable.execute(
@@ -249,20 +269,21 @@ def test_recompute_clears_stale_identities_and_rebuilds_from_embeddings(
         (stale_global_id,),
     )
     assert linkable.fetchone()[0] == 0
-    assert stats["identities_deleted"] >= 1
+    assert stats["global_persons_deleted"] >= 1
     assert stats["persons_total"] >= 2
 
 
 def test_recompute_links_matching_persons_regardless_of_insert_order(
     linkable: Cursor,
 ) -> None:
+    """The result does not depend on the order people arrived in."""
     # The whole point of recomputing corpus-wide: P1's video was
     # "imported" first, so the old per-video step running for V1 could
     # not have seen P2 at all. A full pass links them either way.
     _embed(linkable, "face_embeddings", P1, 1.0)
     _embed(linkable, "face_embeddings", P2, 1.0)
 
-    linking.recompute_global_identities(linkable)
+    linking.recompute_global_persons(linkable)
 
     ids = _global_ids(linkable, P1, P2)
     assert ids[P1] is not None
@@ -270,6 +291,7 @@ def test_recompute_links_matching_persons_regardless_of_insert_order(
 
 
 def test_recompute_writes_global_person_match_score(db_cursor: Cursor) -> None:
+    """Each link records how close the match that made it was."""
     # P1 (V1) and P4 (V3) have identical face centroids (cross-video
     # distance ~0); P2 (V2) is the opposite (distance ~2).
     # global_person_match_score is each person's nearest *cross-video*
@@ -283,7 +305,7 @@ def test_recompute_writes_global_person_match_score(db_cursor: Cursor) -> None:
     _embed(db_cursor, "face_embeddings", P2, 1.0, invert=True)
     _embed(db_cursor, "face_embeddings", P4, 1.0)
 
-    linking.recompute_global_identities(db_cursor)
+    linking.recompute_global_persons(db_cursor)
 
     ids = _global_ids(db_cursor, P1, P2, P4)
     assert ids[P1] is not None and ids[P1] == ids[P4]
@@ -296,6 +318,7 @@ def test_recompute_writes_global_person_match_score(db_cursor: Cursor) -> None:
 
 
 def test_global_person_match_score_is_order_independent(db_cursor: Cursor) -> None:
+    """The recorded score does not depend on insertion order."""
     # The score is a pure function of the centroids, so a full recompute
     # (which runs _write_match_scores after the link loop) must yield
     # identical scores on a second pass after a clear — the value does
@@ -307,11 +330,11 @@ def test_global_person_match_score_is_order_independent(db_cursor: Cursor) -> No
     _embed(db_cursor, "face_embeddings", P2, 1.0, invert=True)
     _embed(db_cursor, "face_embeddings", P4, 1.0)
 
-    linking.recompute_global_identities(db_cursor)
+    linking.recompute_global_persons(db_cursor)
     first = _match_scores(db_cursor, P1, P2, P4)
 
-    linking.clear_global_identities(db_cursor)
-    linking.recompute_global_identities(db_cursor)
+    linking.clear_global_persons(db_cursor)
+    linking.recompute_global_persons(db_cursor)
     second = _match_scores(db_cursor, P1, P2, P4)
 
     assert first == second
@@ -320,7 +343,8 @@ def test_global_person_match_score_is_order_independent(db_cursor: Cursor) -> No
 
 
 def test_clear_also_nulls_global_person_match_score(db_cursor: Cursor) -> None:
-    # clear_global_identities resets the score alongside
+    """Clearing resets the score alongside the link itself."""
+    # clear_global_persons resets the score alongside
     # global_person_id (it is meaningless once the links it describes
     # are gone), but must not touch audio_video_match_score — that is
     # the importer's value.
@@ -334,7 +358,7 @@ def test_clear_also_nulls_global_person_match_score(db_cursor: Cursor) -> None:
         (P1,),
     )
 
-    linking.recompute_global_identities(db_cursor)
+    linking.recompute_global_persons(db_cursor)
     db_cursor.execute(
         "SELECT global_person_match_score, audio_video_match_score FROM persons "
         "WHERE (video_id, person_id) = %s",
@@ -343,7 +367,7 @@ def test_clear_also_nulls_global_person_match_score(db_cursor: Cursor) -> None:
     before_score, before_av = db_cursor.fetchone()
     assert before_score is not None
 
-    linking.clear_global_identities(db_cursor)
+    linking.clear_global_persons(db_cursor)
     db_cursor.execute(
         "SELECT global_person_match_score, audio_video_match_score FROM persons "
         "WHERE (video_id, person_id) = %s",

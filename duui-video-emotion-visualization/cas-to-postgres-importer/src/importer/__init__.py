@@ -1,1 +1,1 @@
-"""DUUI CAS-to-Postgres parser package."""
+"""The importer: reads CAS files into the database."""

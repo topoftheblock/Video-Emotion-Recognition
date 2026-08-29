@@ -1,0 +1,231 @@
+"""Check a sub-project against the documentation style guide and glossary.
+
+    python3 tests/stylecheck.py <dir> [--exempt <path suffix>...]
+
+Reports what no other checker does: prose wrapped past 72 columns, `--`
+where an em dash belongs, malformed section banners, retired glossary
+terms in prose *and* in identifiers, `noqa` directives for rules that
+are not enabled, missing docstrings, and references to the current
+corpus.
+
+Every one of these is a rule in docs/documentation-style.md or
+docs/glossary.md that `ruff` and `mypy` say nothing about. Phase 5
+found 212 prose lines wrapped at the wrong width in a sub-project whose
+rewrite was otherwise finished, which is why this exists rather than
+being left to review.
+
+Run it under the project's own interpreter, not the host's: the code
+uses syntax the older versions cannot parse, and a checker that cannot
+parse a file silently checks nothing.
+"""
+
+import argparse
+import ast
+import pathlib
+import re
+import sys
+
+PROSE_WIDTH = 72
+CODE_WIDTH = 88
+BANNER_WIDTH = 74
+
+# A well-formed section banner, per the style guide: `# --- Name ------`.
+BANNER_OK = re.compile(r"^([ \t]*)# --- [A-Z][\w ]* -+$")
+# Anything that looks like it was meant to be one.
+BANNER_ANY = re.compile(r"^[ \t]*#\s*-{2,}")
+
+# The rule prefixes `pyproject.toml` actually selects. A `noqa` naming
+# anything else suppresses a rule that was never enabled, and only
+# implies the project runs a check it does not.
+SELECTED_RULES = ("E", "F", "I")
+
+# (pattern, flags, message). Case matters: "a CAS" is correct, "a cas"
+# is not, so those patterns are deliberately case-sensitive.
+GLOSSARY = [
+    (r"\bviewer\b", re.I, "'viewer' is retired — say 'the webapp'"),
+    (r"global identit(y|ies)", re.I, "'identity' as a noun — say 'global person'"),
+    (r"cross-video person", re.I, "say 'global person'"),
+    (r"\bclips?\b", re.I, "say 'video', not 'clip'"),
+    # Only the noun: "recording its id" is the verb, and is fine.
+    (
+        r"\b(a|the|each|every|this|that|per)\s+recording\b|\brecordings\b",
+        re.I,
+        "say 'video', not 'recording'",
+    ),
+    (r"media directory|video folder", re.I, "say 'video store'"),
+    (r"\btype system\b", re.I, "one word: 'typesystem'"),
+    (r"\bthe XMI\b", 0, "say 'the CAS'; .xmi is the serialization"),
+    (r"\ba cas\b", 0, "'CAS' is uppercase"),
+    (r"\bimport job\b", re.I, "say 'an importer run'"),
+    (r"the visual modality", re.I, "say the literal value: 'video'"),
+]
+
+# Rule 4 of the style guide: documentation never describes the corpus
+# that happens to be loaded.
+CORPUS = [
+    (r"current corpus|in this corpus|our corpus", re.I, "do not describe the corpus"),
+    (r"\b\d{1,3},\d{3}\b", 0, "no corpus figures"),
+]
+
+CHECKED_SUFFIXES = (".py", ".toml", ".txt")
+CHECKED_NAMES = ("Dockerfile", ".dockerignore")
+
+
+def is_docstring(node: ast.AST) -> bool:
+    """Whether this node's first statement is a docstring."""
+    if not isinstance(
+        node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+    ):
+        return False
+    body = getattr(node, "body", None)
+    if not body:
+        return False
+    first = body[0]
+    return (
+        isinstance(first, ast.Expr)
+        and isinstance(first.value, ast.Constant)
+        and isinstance(first.value.value, str)
+    )
+
+
+def prose_lines(src: str, path: pathlib.Path) -> set[int]:
+    """Return the line numbers holding comment or docstring prose.
+
+    Args:
+        src: The file's contents.
+        path: Its path, which decides whether docstrings are looked for.
+
+    Returns:
+        Every line number that carries prose rather than code.
+    """
+    lines: set[int] = set()
+    if path.suffix == ".py":
+        for node in ast.walk(ast.parse(src)):
+            if is_docstring(node):
+                doc = node.body[0]
+                lines.update(range(doc.lineno, doc.end_lineno + 1))
+    for number, line in enumerate(src.split("\n"), start=1):
+        if re.match(r"^\s*#", line):
+            lines.add(number)
+    return lines
+
+
+def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
+    """Check one file against every rule.
+
+    Args:
+        path: The file to check.
+        exempt: Whether the file is exempt from the width limits, which
+            data files that happen to end in `.py` are.
+
+    Returns:
+        `(line, kind, message)` per finding.
+    """
+    src = path.read_text()
+    lines = src.split("\n")
+    found: list[tuple[int, str, str]] = []
+    try:
+        prose = prose_lines(src, path)
+    except SyntaxError as exc:
+        return [(exc.lineno or 1, "syntax", str(exc))]
+
+    for number, line in enumerate(lines, start=1):
+        if BANNER_ANY.match(line):
+            if not BANNER_OK.match(line):
+                found.append((number, "banner", f"malformed banner: {line.strip()}"))
+            elif len(line) != BANNER_WIDTH:
+                found.append(
+                    (number, "banner", f"banner is {len(line)}, want {BANNER_WIDTH}")
+                )
+            continue
+
+        if not exempt:
+            limit = PROSE_WIDTH if number in prose else CODE_WIDTH
+            if len(line) > limit:
+                kind = "prose" if number in prose else "code"
+                found.append((number, "width", f"{kind} {len(line)} > {limit}"))
+
+        if number in prose:
+            if re.search(r"(?<=\S) -- (?=\S)", line):
+                found.append((number, "emdash", "'--' as an em dash; write '—'"))
+            for pattern, flags, message in GLOSSARY + CORPUS:
+                if re.search(pattern, line, flags):
+                    found.append((number, "term", message))
+
+        directive = re.search(r"#\s*noqa:?\s*([A-Z]+)\d*", line)
+        if directive and not directive.group(1).startswith(SELECTED_RULES):
+            found.append(
+                (
+                    number,
+                    "noqa",
+                    f"noqa {directive.group(1)} suppresses an unselected rule",
+                )
+            )
+
+    if path.suffix == ".py" and src.strip():
+        tree = ast.parse(src)
+        if not ast.get_docstring(tree):
+            found.append((1, "docstring", "module has no docstring"))
+        for node in ast.walk(tree):
+            if not isinstance(
+                node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+            ):
+                continue
+            if not ast.get_docstring(node):
+                found.append(
+                    (node.lineno, "docstring", f"{node.name} has no docstring")
+                )
+            if (
+                isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and node.returns is None
+            ):
+                found.append(
+                    (node.lineno, "annot", f"{node.name} has no return annotation")
+                )
+            # The glossary binds identifiers too, not only prose.
+            spaced = node.name.replace("_", " ")
+            for pattern, flags, message in GLOSSARY:
+                if re.search(pattern, spaced, flags):
+                    found.append((node.lineno, "name", f"{node.name}: {message}"))
+    return found
+
+
+def main() -> int:
+    """Check every file under the given directory, and report."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("root", help="the sub-project to check")
+    parser.add_argument(
+        "--exempt",
+        nargs="*",
+        default=[],
+        help="path suffixes exempt from the width limits",
+    )
+    args = parser.parse_args()
+
+    files = sorted(
+        path
+        for path in pathlib.Path(args.root).rglob("*")
+        if path.is_file()
+        and "__pycache__" not in path.parts
+        and "/resources/" not in str(path)
+        and (path.suffix in CHECKED_SUFFIXES or path.name in CHECKED_NAMES)
+    )
+
+    by_kind: dict[str, list[str]] = {}
+    total = 0
+    for path in files:
+        exempt = any(str(path).endswith(suffix) for suffix in args.exempt)
+        for number, kind, message in check_file(path, exempt):
+            by_kind.setdefault(kind, []).append(f"{path}:{number}: {message}")
+            total += 1
+
+    for kind in sorted(by_kind):
+        print(f"\n  [{kind}] {len(by_kind[kind])}")
+        for line in by_kind[kind]:
+            print(f"    {line}")
+    print(f"\n  TOTAL: {total} finding(s)")
+    return 1 if total else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
