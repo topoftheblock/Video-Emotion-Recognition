@@ -255,7 +255,8 @@ CREATE INDEX IF NOT EXISTS base_emotions_person_idx
 -- This file runs only when the data directory is created empty, so an
 -- already-populated deployment never sees it. The same DDL is therefore
 -- repeated as CREATE TABLE IF NOT EXISTS in the three services that write or
--- read the table. All four copies are currently byte-identical; keep them so:
+-- read the table. The four are identical apart from the statement terminator,
+-- which only this file needs; keep them so:
 --   cas-to-postgres-importer/src/importer/job_runs.py
 --   global-identity-linker/src/identity/job_runs.py
 --   webapp/src/backend/queries/jobs.py

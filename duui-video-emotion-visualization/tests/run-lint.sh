@@ -43,7 +43,29 @@ run "ruff format"  ruff format --check .
 # under it both go, leaving a plain `ruff check .`.
 run    "ruff lint"        ruff check --extend-ignore E501 .
 report "ruff line length" ruff check --select E501 --statistics .
-run "mypy"         mypy --cache-dir=/tmp/mypy-cache cas-to-postgres-importer/src webapp/src global-identity-linker/src
+# One mypy invocation per sub-project, because each owns a `tests/conftest.py`
+# and mypy identifies a module by its name: pass all three paths at once and it
+# sees three different files claiming to be `conftest`, then stops on the
+# duplicate rather than checking anything. The sub-projects do not share files by
+# design, so they are checked the way they are built -- separately.
+
+# Finished sub-projects. Phase 5 has rewritten these, so they are held to the
+# full standard: `tests` is checked alongside `src`, and every function must
+# carry annotations. Move a name up here when its rewrite lands -- that is the
+# ratchet, and it is why this list is the one place that records what is done.
+for project in global-identity-linker; do
+  run "mypy ($project)" mypy --cache-dir="/tmp/mypy-cache-$project" \
+    --disallow-untyped-defs "$project/src" "$project/tests"
+done
+
+# Not yet rewritten. `src` only, and no strictness: these still hold unannotated
+# functions by the hundred, and reporting work that has not been scheduled yet
+# just makes a red check that stops being read. Their tests join the run at the
+# same moment their annotations do.
+for project in cas-to-postgres-importer webapp; do
+  run "mypy ($project)" mypy --cache-dir="/tmp/mypy-cache-$project" "$project/src"
+done
+
 run "sqlfluff"     sqlfluff lint --dialect postgres pgvector-db/schema.sql
 run "yamllint"     yamllint docker-compose.yml webapp/docs/a11y-ci.yml
 run "hadolint"     hadolint cas-to-postgres-importer/Dockerfile webapp/Dockerfile global-identity-linker/Dockerfile pgvector-db/Dockerfile tests/Dockerfile.tests tests/Dockerfile.lint

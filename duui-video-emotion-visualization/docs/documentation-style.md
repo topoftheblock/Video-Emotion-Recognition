@@ -366,7 +366,7 @@ CREATE TABLE persons (
 | **Language** | US English, everywhere, including code comments and log output |
 | **Code line width** | 88 (the formatter enforces this) |
 | **Prose line width** | 72 in comments and docstrings; 80 in Markdown |
-| **Em dash** | `—`, not `--`. Files are UTF-8. |
+| **Em dash** | `—`, not `--`. Files are UTF-8. Applies in code comments, docstrings, and user-facing strings alike — `--` was the legacy style. |
 | **Quotes in prose** | Straight `"` and `'` |
 | **Backticks** | Around identifiers, filenames, and literal values |
 | **File references** | Repo-relative: `webapp/src/backend/app.py`, not `app.py` |
@@ -374,6 +374,13 @@ CREATE TABLE persons (
 Prose wraps narrower than code on purpose: long lines of explanation are harder
 to read than long lines of code, and the codebase already wraps prose near 72
 (measured p90 = 71).
+
+**72 is the hard rule for comments and docstrings, not a target.** Applying the
+guide to the first sub-project produced 212 prose lines wrapped at 88 — every
+one of them written while the rule said 72. Nothing in the linter enforces it
+(`E501` fires at 88, and only for Python), so it holds only if it is checked
+deliberately. The one exception is a **section banner, which runs to column
+74**, matching the form in §7; it is a rule, not prose.
 
 ---
 

@@ -146,7 +146,15 @@ finish quickly, real enough to test the guide.
 ### The ratchet
 
 As each sub-project is finished, tighten `mypy` on it immediately rather than
-leaving everything lenient and flipping one switch at the end:
+leaving everything lenient and flipping one switch at the end. A finished
+sub-project is then held to the strict setting and **cannot regress while the
+next one is in progress**. By the end, strict is already on everywhere and there
+is no cliff.
+
+Step sizes, `src` plus `tests` (Q2): **44**, then **137**, then **177**.
+
+**Where the ratchet lives — corrected in execution.** The plan originally put it
+in `pyproject.toml`:
 
 ```toml
 [[tool.mypy.overrides]]
@@ -154,15 +162,34 @@ module = ["identity.*"]
 disallow_untyped_defs = true
 ```
 
-A finished sub-project is then held to the strict setting and **cannot regress
-while the next one is in progress**. By the end, strict is already on everywhere
-and there is no cliff.
+That does not work, and the reason is worth keeping. The override matches on
+module name, and it has to cover a sub-project's `tests` as well as its `src`
+(Q2) — but a test module has no package to qualify it. All three sub-projects
+own a plain `conftest`, so `module = ["conftest", "test_*"]` matches all three
+at once and turns strictness on for two sub-projects that have not been
+rewritten yet. Tried, and it did exactly that: 7 errors across the importer's
+and the webapp's conftests.
 
-Step sizes, `src` plus `tests` (Q2): **44**, then **137**, then **177**.
+So the ratchet lives in `tests/run-lint.sh` instead, as a **list of finished
+sub-projects** that get `--disallow-untyped-defs`, with the rest checked
+leniently. Moving a name between the two lists is the whole operation, and the
+list is the record of what is done. `pyproject.toml` points at it.
 
-`mypy` must be invoked **once per sub-project** rather than once across all
-three, because the three `tests/conftest.py` files collide as duplicate modules.
-`run-lint.sh` needs that change before the ratchet starts.
+Two things follow from the same constraint:
+
+- `mypy` runs **once per sub-project**, because those three `conftest` modules
+  collide as duplicates in a single invocation and it stops rather than checking
+  anything. `run-lint.sh` needed this before the ratchet could start.
+- A sub-project's **`tests` join its `mypy` run when its rewrite lands**, not
+  before — the same ratchet, applied to coverage as well as strictness. Adding
+  all the tests up front makes the check red on work that is not scheduled yet,
+  which is how a check stops being read.
+
+**Carried forward:** `webapp/tests/conftest.py:40` assigns `None` to `DB_CONFIG`
+in an `except ImportError` fallback, where `backend.config.DB_CONFIG` is
+`dict[str, str]`. Not a runtime fault — every use is guarded by `is None` — but
+it needs `DB_CONFIG: dict[str, str] | None` when the webapp's turn comes. Found
+by pointing `mypy` at the tests, not by any test run.
 
 ### The checkpoint
 
@@ -171,6 +198,53 @@ Review the result against the style guide, amend the guide if it did not survive
 contact, *then* continue. The guide has been applied to exactly two files so far
 (`identity/config.py` and `identity/db.py`, in Phase 1) and it changed five times
 during that exercise.
+
+### What the checkpoint found
+
+Applied to `global-identity-linker` and checked against the guide afterwards.
+The guide held; the *application* of it did not, in four ways.
+
+1. **Prose width was ignored, at scale.** 212 comment and docstring lines were
+   wrapped at 88 instead of the guide's 72 — including files rewritten in the
+   same session that quoted the rule. `db.py`, rewritten in Phase 1 and used to
+   validate the guide, sits at a maximum of 69, so the rule is workable; it was
+   simply not applied. Nothing enforces it: `E501` fires at 88, and only for
+   Python. **Every later sub-project needs this checked explicitly**, since no
+   linter will say a word. Guide sharpened to say so.
+
+2. **Em dashes were written `--`, 21 times.** The guide says `—`; `--` is the
+   legacy style the rewrite is supposed to remove. Two of the conversions land
+   in user-facing strings — a `pytest.skip` message, and the
+   `'interrupted — superseded by a later run'` text written into
+   `job_runs.message` — so this one is visible in the product, not only in the
+   source. Guide amended to say the rule covers user-facing strings too.
+
+3. **Section banners were inconsistent and partly malformed.** They existed as
+   `# -- name ---` (two dashes, lowercase) against the guide's
+   `# --- Name ---`, and widths ran 73 and 74 in the same file. Now uniformly
+   74. Worth knowing that a naive ` -- ` → ` — ` substitution *eats these
+   banners*, and that `(\s*)` in a multiline pattern swallows the preceding
+   newline; both happened here and both were caught by `ruff format`, not by
+   reading.
+
+4. **Twelve `# noqa: BLE001` directives suppress a rule that is not
+   enabled.** `select = ["E", "F", "I"]` — `BLE` is not in it, so every one of
+   them is dead, and each implies a rule the project does not run. Verified by
+   deleting one and watching `ruff` still pass. The nine in the linker and its
+   `job_runs` twin are gone, reasons kept as ordinary comments. **Three
+   remain** — `cas-to-postgres-importer/src/importer/video_files.py`,
+   `.../pipeline.py`, and `webapp/src/backend/queries/jobs.py` — for those
+   sub-projects' turns.
+
+**Method note.** Rewrapping prose mechanically is not safe on its own. What
+caught the damage here was comparing the *word stream* of every comment and
+docstring before and after, so a rewrap shows as zero edits and any change of
+wording stands out, plus an AST comparison with docstrings stripped to prove no
+executable code moved. Both are worth repeating on the two larger sub-projects,
+where hand-reading a diff of this size is not realistic. Note the trap: compare
+against `HEAD`, not against a mid-session backup, or edits made before the
+backup go unchecked — a whole-file `--` substitution can reach inside a string
+literal, and only the `HEAD` comparison would show it.
 
 ---
 

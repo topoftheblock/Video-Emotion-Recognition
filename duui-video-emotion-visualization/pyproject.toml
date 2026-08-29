@@ -64,15 +64,13 @@ known-first-party = ["importer", "backend", "identity"]
 # The runtime, not whatever interpreter runs mypy.
 python_version = "3.14"
 
-# Lenient on purpose. 7 of 140 functions carry a return annotation today; Phase 5
-# adds the rest as it rewrites each file, and tightens this per sub-project as it
-# finishes one. Turning strictness on now would report the absence of work that
-# has not been scheduled yet.
+# Lenient here, strict per sub-project. Strictness is not configured in this
+# file, because it has to apply to a sub-project's `tests` as well as its `src`,
+# and a test module has no package name to match on -- all three sub-projects
+# own a plain `conftest`. So the ratchet lives where it can be expressed: the
+# list of finished sub-projects in tests/run-lint.sh, which passes
+# `--disallow-untyped-defs` for those and nothing for the rest.
 #
-# To tighten one sub-project when Phase 5 finishes it, add:
-#
-#     [[tool.mypy.overrides]]
-#     module = ["identity.*"]
-#     disallow_untyped_defs = true
-#
+# When the last sub-project finishes, that split collapses into
+# `disallow_untyped_defs = true` on the line below.
 ignore_missing_imports = true

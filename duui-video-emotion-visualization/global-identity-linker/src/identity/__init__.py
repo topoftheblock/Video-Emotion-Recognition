@@ -1,1 +1,1 @@
-"""Cross-video global person identity: a standalone, explicitly-run job."""
+"""The identity linker: a standalone, explicitly run job."""

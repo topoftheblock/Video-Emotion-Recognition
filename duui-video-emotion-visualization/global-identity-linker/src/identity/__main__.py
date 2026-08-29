@@ -1,25 +1,17 @@
-#!/usr/bin/env python3
-"""
-Entry point for the cross-video global-identity job.
+# !/usr/bin/env python3
+"""Entry point for the identity linker: `python -m identity`.
 
-`src/` is the source root (it goes on the path, it is not a package),
-so this runs as the `identity` package's entry module -- with `src/` on
-PYTHONPATH, or from inside it:
+Takes no arguments. The corpus already in the database is the whole
+input, every global person is cleared, and the groupings are rebuilt —
+so this is what to run after importing new videos, since the importer
+links nothing itself.
 
-    python -m identity
+The clear and the rebuild are one transaction. An interrupted run rolls
+back to the groupings that existed before it started, never to a corpus
+that has been cleared and not rebuilt.
 
-It takes no arguments: the whole corpus already in the database is the
-input. Every existing global identity is cleared and the groupings are
-recomputed from scratch, so this is the thing to re-run after importing
-new videos -- the importer itself no longer links anything.
-
-The wipe and the rebuild are one transaction: an interrupted run rolls
-back to the identities you had before it started, never to a corpus
-that has been cleared but not rebuilt.
-
-Configuration (DB credentials, distance thresholds) is read from
-src/identity/config.py, and can be overridden via the environment
-variables listed there (DUUI_DB_NAME, DUUI_GLOBAL_PERSON_*, etc.)
+Settings come from `config.py` and are overridable through the `DUUI_*`
+environment variables named there.
 """
 
 import sys
@@ -29,32 +21,35 @@ from identity.job_runs import JobRun
 from identity.linking import recompute_global_identities
 
 
-def _progress(index, total):
-    # One line per 100 people (and on the last one) -- a real corpus is
-    # thousands of persons, and a line each would bury the summary,
-    # while total silence for minutes looks like a hang.
+def _progress(index: int, total: int) -> None:
+    """Print a progress line every hundred persons, and on the last one.
+
+    Often enough that a long run does not look like a hang, rarely
+    enough that the lines do not bury the summary printed at the end.
+    """
     if index % 100 == 0 or index == total:
         print(f"  ...{index}/{total} persons processed")
 
 
-def main():
-    # The status row is written on its own autocommit connection, so it
-    # stays visible to the viewer while the recompute below sits in one
-    # long uncommitted transaction (see job_runs.py).
+def main() -> None:
+    """Recompute every global person, reporting progress as it goes."""
+    # JobRun writes its status row on its own autocommit connection, so
+    # progress stays visible to the webapp while the recompute below
+    # sits in a single uncommitted transaction.
     with JobRun("global-identity") as job:
         print("Connecting to database...")
         job.update(phase="connecting")
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
-            print("Clearing previous global identities and recomputing...")
+            print("Clearing previous global persons and recomputing...")
             job.update(phase="comparing embeddings")
 
-            def progress(index, total):
+            def progress(index: int, total: int) -> None:
                 _progress(index, total)
-                # Called once per person; JobRun throttles it to a write
-                # a second, so this stays a counter and not a commit
-                # storm on a corpus of thousands.
+                # Called once per person. JobRun throttles its writes,
+                # so this stays a counter rather than one database write
+                # per person.
                 job.update(current=index, total=total)
 
             stats = recompute_global_identities(cursor, progress=progress)
@@ -70,28 +65,25 @@ def main():
         job.update(
             message=(
                 f"{stats['persons_linked']} of {stats['persons_total']} person(s) "
-                f"linked into {stats['identities_created']} global identit"
-                f"{'y' if stats['identities_created'] == 1 else 'ies'}"
+                f"linked into {stats['identities_created']} global person(s)"
             ),
             force=True,
         )
 
     print(
-        f"\nCleared {stats['identities_deleted']} previous global "
-        f"identit{'y' if stats['identities_deleted'] == 1 else 'ies'} "
+        f"\nCleared {stats['identities_deleted']} previous global person(s) "
         f"({stats['persons_unlinked']} person link(s) removed)."
     )
     print(
         f"Recomputed over {stats['persons_total']} person(s): "
         f"{stats['persons_linked']} linked into "
-        f"{stats['identities_created']} global identit"
-        f"{'y' if stats['identities_created'] == 1 else 'ies'}."
+        f"{stats['identities_created']} global person(s)."
     )
     if stats["persons_total"] and not stats["persons_linked"]:
         print(
-            "No cross-video links were found. That is the expected result "
-            "for a single imported video, or if no face/voice embeddings "
-            "were imported; otherwise the distance thresholds "
+            "No cross-video links were found. That is expected with a single "
+            "imported video, or when no face or voice embeddings were "
+            "imported. Otherwise the distance thresholds "
             "(DUUI_GLOBAL_PERSON_*_DISTANCE_THRESHOLD) may be too strict."
         )
 
@@ -99,6 +91,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception as exc:  # noqa: BLE001 -- report, don't traceback-dump
+    except Exception as exc:  # report it, don't dump a traceback
         print(f"[identity] ERROR: {exc}")
         sys.exit(1)

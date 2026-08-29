@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS job_runs (
     progress_current INT,
     progress_total INT,
     message TEXT,
-    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     finished_at TIMESTAMPTZ
 ) WITH (fillfactor = 70)
 """
