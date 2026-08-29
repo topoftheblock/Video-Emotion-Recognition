@@ -1,10 +1,12 @@
-/* ---------------- Per-modality emotion panels ----------------
+/* --- Per-modality emotion panels ------------------------------------ */
+
+/*
    Three panels of the same shape (text / audio / video), built by
    js/panels/emotions.js. Every row is one grid so the labels, the
    tracks and both numbers line up down the whole panel and across all
    three of them.
 
-   Colour comes entirely from the theme's primary ramp -- flat fills,
+   Colour comes entirely from the theme's primary ramp — flat fills,
    no gradients, matching the Gateway's treatment of its accents.
 --------------------------------------------------------------- */
 
@@ -22,9 +24,9 @@
   margin-bottom: 2px;
 }
 
-/* 18px, not the 16px this panel's numbers otherwise use -- once the
-   rows around it move from 10.5px to 14px, 16 no longer reads as
-   clearly senior to them. Matches .ask-title's heading weight instead:
+/* 18px, not the 16px this panel's numbers otherwise use — once the rows
+   around it move from 10.5px to 14px, 16 no longer reads as clearly
+   senior to them. Matches .ask-title's heading weight instead:
    proportionality, not a Gateway precedent. */
 .emo-dominant {
   font-family: var(--font-mono);
@@ -44,18 +46,18 @@
 }
 
 /* Same columns as .emo-row, so the two words sit exactly over the
-   numbers they name. Matches Skeleton's .table tbody td (text-sm,
-   14px) -- these rows are dense tabular data, read continuously while
+   numbers they name. Matches Skeleton's .table tbody td (text-sm, 14px)
+   — these rows are dense tabular data, read continuously while
    scrubbing. .emo-label inherits this for its own size (no separate
    rule below); .emo-legend's own more-specific rule immediately after
-   pulls it back down to the badge/chip size instead, so header and
-   data keep their size hierarchy even though both now clear the
-   12px floor. */
+   pulls it back down to the badge/chip size instead, so header and data
+   keep their size hierarchy even though both now clear the 12px floor.
+   */
 
 /* Columns widened from the pre-resize 62px/34px/34px, tuned for 11px
    mono: at 14px the longest label ("Happiness", "disgusted",
-   "dominance" -- 9 characters) and the widest value ("-1.00"/"+1.00",
-   5 characters) need the extra room, checked against the model
+   "dominance" — 9 characters) and the widest value ("-1.00"/"+1.00", 5
+   characters) need the extra room, checked against the model
    vocabularies in PANELS above and formatSigned()'s output. */
 .emo-row,
 .emo-legend {
@@ -63,7 +65,7 @@
 
   /* em, not px: every one of these columns is sized by the text it
      holds, so they have to grow with it. In px they held at the default
-     root size and clipped the moment a reader raised it -- at 200% the
+     root size and clipped the moment a reader raised it — at 200% the
      labels and both value columns overflowed their cells.
 
      Ubuntu Mono advances 0.5em per character, so the widths are just
@@ -75,7 +77,7 @@
   font-size: var(--text-sm);
 }
 
-/* Matches Skeleton's .badge/.chip (text-xs, 12px) -- this is a column
+/* Matches Skeleton's .badge/.chip (text-xs, 12px) — this is a column
    header, the same role as .panel-title and .person-legend. */
 .emo-legend {
   font-size: var(--text-xs);
@@ -86,8 +88,8 @@
   margin-bottom: 1px;
 }
 
-/* Columns 1 and 2 are empty in the legend -- the two spans are the
-   value columns. */
+/* Columns 1 and 2 are empty in the legend — the two spans are the value
+   columns. */
 .emo-legend span {
   grid-column: 3;
   text-align: right;
@@ -99,7 +101,7 @@
 
 /* --text-strong (surface-600), not --text-dim: read continuously while
    scrubbing, same reasoning as .job-detail. Size comes from .emo-row
-   above via inheritance -- this has no font-size of its own. */
+   above via inheritance — this has no font-size of its own. */
 .emo-label {
   font-family: var(--font-mono);
   color: var(--text-strong);
@@ -110,7 +112,8 @@
 
 /* Valence/arousal/dominance read as a different kind of quantity from
    the label scores; they sit at the top of the panel under a hairline
-   divider (see .emo-divider) rather than inline with the label scores. */
+   divider (see .emo-divider) rather than inline with the label scores.
+   */
 .emo-row-dim .emo-label {
   font-style: italic;
 }
@@ -149,7 +152,7 @@
 
 /* --border-input, not --border-strong. This is the line a signed value
    is read as growing away from, so it is meaningful rather than
-   decorative -- and against the groove it sits on, --border-strong was
+   decorative — and against the groove it sits on, --border-strong was
    1.90:1. (The audit measured it against the card and got 2.35; the
    card is not what is behind it.) */
 .emo-track-signed::before {

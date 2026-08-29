@@ -9,14 +9,14 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23006c98'/%3E%3Cpath d='M10 11l6 5-6 5V11z' fill='white'/%3E%3C/svg%3E"
     />
-    <!-- Oxanium is self-hosted from fonts/ (see css/base.css); nothing here
-     is fetched from a CDN. -->
+    <!-- Oxanium is self-hosted from fonts/ (see css/base.css); nothing
+         here is fetched from a CDN. -->
     <link rel="stylesheet" href="css/main.css" />
   </head>
   <body>
     <!-- First focusable thing on the page. Everything before the player
-       -- the whole topbar and the entire Ask panel -- is otherwise five
-       tab stops a keyboard user has to cross every time. -->
+         — the whole topbar and the entire Ask panel — is otherwise
+         five tab stops a keyboard user has to cross every time. -->
     <a class="skip-link" href="#stageFrame">Skip to player</a>
 
     <header class="topbar">
@@ -25,10 +25,10 @@
         <h1 class="topbar-title">Emotion Visualization</h1>
       </div>
       <!-- Not a <label>: it used to wrap the whole combobox, listbox
-         included, which lets "Video" be pulled into the accessible name
-         of every option in the list. The input is named by pointing at
-         the span instead, so the visible label and the announced one are
-         the same string. -->
+           included, which lets "Video" be pulled into the accessible
+           name of every option in the list. The input is named by
+           pointing at the span instead, so the visible label and the
+           announced one are the same string. -->
       <div class="video-picker">
         <span id="videoPickerLabel">Video</span>
         <div id="videoSelect" class="video-combobox">
@@ -57,8 +57,8 @@
     </header>
 
     <!-- Filled by js/panels/jobs.js while the importer or the
-       cross-video identity job is running; empty and collapsed
-       otherwise. -->
+         cross-video identity job is running; empty and collapsed
+         otherwise. -->
     <div
       class="job-banner"
       id="jobBanner"
@@ -67,10 +67,10 @@
       style="display: none"
     ></div>
 
-    <!-- Named, so it is a landmark. An unnamed <section> is not one, which
-       left the heading, the input and every result outside every
-       landmark on the page -- landmark navigation skipped the feature
-       entirely. -->
+    <!-- Named, so it is a landmark. An unnamed <section> is not one,
+         which left the heading, the input and every result outside
+         every landmark on the page — landmark navigation skipped the
+         feature entirely. -->
     <section class="ask-panel" aria-labelledby="askTitle">
       <div class="ask-panel-inner">
         <div class="ask-card">
@@ -96,9 +96,10 @@
             </div>
           </div>
           <form id="askForm" class="ask-form">
-            <!-- .ask-title above is the visible heading for this panel, so a
-               second visible label would be noise -- but the input still
-               needs a name of its own, and the placeholder is not one. -->
+            <!-- .ask-title above is the visible heading for this panel,
+                 so a second visible label would be noise — but the
+                 input still needs a name of its own, and the
+                 placeholder is not one. -->
             <label class="visually-hidden" for="askInput"
               >Ask a question about this video</label
             >
@@ -134,20 +135,21 @@
 
     <main class="layout">
       <section class="stage">
-        <!-- tabindex="-1" so the skip link actually moves focus here and
-           not merely the scroll position. Not reachable by Tab. -->
+        <!-- tabindex="-1" so the skip link actually moves focus here
+             and not merely the scroll position. Not reachable by Tab.
+             -->
         <div class="stage-frame" id="stageFrame" tabindex="-1">
           <video id="player" playsinline></video>
           <canvas id="overlay"></canvas>
           <!-- Hidden until the first render fills it, and whenever the
-             CC button turns subtitles off. subtitleBox is the one
-             translucent card -- transcript line on top, emotion label
-             beneath, sharing a single background rather than each
-             carrying its own pill. js/playback/subtitles.js hides it too,
-             separately from subtitleBar, for the frame-by-frame case
-             where captions are on but neither line has anything to
-             say at this instant (see the comment above
-             SUBTITLE_GAP_TOLERANCE). -->
+               CC button turns subtitles off. subtitleBox is the one
+               translucent card — transcript line on top, emotion label
+               beneath, sharing a single background rather than each
+               carrying its own pill. js/playback/subtitles.js hides it
+               too, separately from subtitleBar, for the frame-by-frame
+               case where captions are on but neither line has anything
+               to say at this instant (see the comment above
+               SUBTITLE_GAP_TOLERANCE). -->
           <div class="subtitle-bar" id="subtitleBar" style="display: none">
             <div class="subtitle-box" id="subtitleBox">
               <span class="subtitle-text" id="subtitleText"></span>
@@ -161,8 +163,8 @@
           </div>
         </div>
         <div class="transport">
-          <!-- Initial (paused) icon; js/playback/player.js swaps it on play/pause
-             and holds the matching pair of paths. -->
+          <!-- Initial (paused) icon; js/playback/player.js swaps it on
+               play/pause and holds the matching pair of paths. -->
           <button id="playBtn" class="transport-btn" type="button" aria-label="Play">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M8.5 5v14l10.5-7z" />
@@ -181,9 +183,10 @@
             ><span id="timeCurrent">0:00</span> <span class="time-sep">/</span>
             <span id="timeTotal">0:00</span></span
           >
-          <!-- The value is a position out of 1000; js/playback/player.js keeps
-             aria-valuetext holding the clock instead, which is what a
-             screen reader announces when it is present. -->
+          <!-- The value is a position out of 1000;
+               js/playback/player.js keeps aria-valuetext holding the
+               clock instead, which is what a screen reader announces
+               when it is present. -->
           <input
             id="scrub"
             class="scrub"
@@ -196,17 +199,17 @@
           />
         </div>
 
-        <!-- One panel per modality, and they live with the player rather
-           than in the sidebar: they describe what is happening at the
-           playhead, so they belong next to the thing being played.
-           Ordered video -> audio -> text, from the most to the least
-           directly observable in the frame.
+        <!-- One panel per modality, and they live with the player
+             rather than in the sidebar: they describe what is happening
+             at the playhead, so they belong next to the thing being
+             played. Ordered video -> audio -> text, from the most to
+             the least directly observable in the frame.
 
-           The bodies are built by js/panels/emotions.js once per video
-           and then only updated in place, so the row set is not in this
-           file. The empty [data-emo-filter] chips name the selected
-           person while the People panel is filtering these three, and
-           collapse (:empty) when nothing is selected. -->
+             The bodies are built by js/panels/emotions.js once per
+             video and then only updated in place, so the row set is not
+             in this file. The empty [data-emo-filter] chips name the
+             selected person while the People panel is filtering these
+             three, and collapse (:empty) when nothing is selected. -->
         <div class="emotion-panels">
           <div class="panel" id="videoEmotionPanel" style="display: none">
             <h2 class="panel-title">
@@ -240,11 +243,11 @@
         </div>
       </section>
 
-      <!-- Who, rather than what: narrowing from this instant ("on screen
-         now") out to the whole corpus ("also appears in"). Source order
-         is the order they appear in both layouts -- the narrow layout
-         drops this whole column below the stage rather than reordering
-         anything inside it. -->
+      <!-- Who, rather than what: narrowing from this instant ("on
+           screen now") out to the whole corpus ("also appears in").
+           Source order is the order they appear in both layouts — the
+           narrow layout drops this whole column below the stage rather
+           than reordering anything inside it. -->
       <aside class="sidebar">
         <div class="panel">
           <h2 class="panel-title">
@@ -260,16 +263,16 @@
             <span class="panel-dot dot-people"></span
             ><span class="panel-title-text">People</span>
           </h2>
-          <!-- Column header for the score in each row's .person-meta --
-             hidden by js/panels/people.js whenever the list is the
-             "No identified persons" empty state, so it never sits
-             above nothing.
+          <!-- Column header for the score in each row's .person-meta —
+               hidden by js/panels/people.js whenever the list is the
+               "No identified persons" empty state, so it never sits
+               above nothing.
 
-             A button, not a bare div with a title: what the number
-             means was reachable only by hovering, which leaves it out
-             of reach of a keyboard and off a touch screen entirely.
-             The title stays for the mouse; the disclosure below is the
-             copy everyone else can get to. -->
+               A button, not a bare div with a title: what the number
+               means was reachable only by hovering, which leaves it out
+               of reach of a keyboard and off a touch screen entirely.
+               The title stays for the mouse; the disclosure below is
+               the copy everyone else can get to. -->
           <div class="person-legend" id="personLegend" style="display: none">
             <button
               type="button"
@@ -277,7 +280,7 @@
               aria-expanded="false"
               aria-controls="personLegendHelp"
               aria-label="What match confidence means"
-              title="Confidence that this person's face identity and voice identity recordings were fused into one identity correctly -- no relation to their emotion readings."
+              title="Confidence that this person's face identity and voice identity recordings were fused into one identity correctly — no relation to their emotion readings."
             >
               <span>match confidence</span>
               <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">
@@ -312,14 +315,15 @@
             <span class="panel-dot dot-cross"></span
             ><span class="panel-title-text">Also appears in</span>
           </h2>
-          <!-- Same column-header idiom as #personLegend above, naming the
-             number at the end of each row -- here that's the
-             global-identity job's cross-video match, not the import
-             pipeline's face/voice one, so the tooltip text differs even
-             though the visible label doesn't. No hide/show logic is
-             needed here the way #personLegend has: this whole panel is
-             hidden by js/panels/crossVideo.js whenever there are no
-             rows, so the legend is never left over nothing. -->
+          <!-- Same column-header idiom as #personLegend above, naming
+               the number at the end of each row — here that's the
+               global-identity job's cross-video match, not the import
+               pipeline's face/voice one, so the tooltip text differs
+               even though the visible label doesn't. No hide/show logic
+               is needed here the way #personLegend has: this whole
+               panel is hidden by js/panels/crossVideo.js whenever there
+               are no rows, so the legend is never left over nothing.
+               -->
           <div class="person-legend">
             <button
               type="button"
@@ -327,7 +331,7 @@
               aria-expanded="false"
               aria-controls="crossVideoLegendHelp"
               aria-label="What match confidence means"
-              title="Confidence that this person and their lookalike in another video are the same person -- cosine distance (0 = identical, 2 = opposite) between their face-embedding centroids, from the global-identity job. Lower is a more confident match; this is not the import pipeline's face/voice confidence score."
+              title="Confidence that this person and their lookalike in another video are the same person — cosine distance (0 = identical, 2 = opposite) between their face-embedding centroids, from the global-identity job. Lower is a more confident match; this is not the import pipeline's face/voice confidence score."
             >
               <span>match confidence</span>
               <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">

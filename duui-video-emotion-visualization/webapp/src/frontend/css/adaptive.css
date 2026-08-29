@@ -1,17 +1,21 @@
-/* ---------------- Adaptive rendering ----------------
+/* --- Adaptive rendering --------------------------------------------- */
+
+/*
    How the app answers the display preferences the user sets outside it:
    forced colours, a request for more contrast, a request for less
    motion. Distinct from responsive.css, which is only about viewport
-   width -- these fire at any size.
+   width — these fire at any size.
 
    Imported last so its overrides land on top of everything else.
 ------------------------------------------------------------------ */
 
-/* ---- Reduced motion ----
+/* --- Reduced motion ------------------------------------------------- */
+
+/*
    Every transition in the app is decorative (colour fades on hover,
    the width tween on emotion fills) and nothing depends on an
    animation finishing, so all of it can simply stop. The one
-   animation that carries meaning -- the Ask button's spinner -- is
+   animation that carries meaning — the Ask button's spinner — is
    backed by #askStatus announcing "Thinking…", so losing it costs
    nothing. Moved here from responsive.css, which is about width. */
 @media (prefers-reduced-motion: reduce) {
@@ -21,10 +25,11 @@
   }
 }
 
-/* ---- Forced colours (Windows High Contrast and friends) ----
+/* --- Forced colours (Windows High Contrast and friends) ------------- */
 
+/*
    Forced-colours mode replaces every author colour with one from the
-   user's own small system palette, and -- the part that matters here --
+   user's own small system palette, and — the part that matters here —
    *removes background images and most backgrounds outright*. For an app
    whose data is drawn almost entirely as coloured boxes, that deletes
    the readings while leaving the layout perfectly intact: the emotion
@@ -40,7 +45,7 @@
   /* The two text inputs suppress their outline and draw a box-shadow
      ring instead (see .ask-input:focus, .video-combobox-input:focus).
      Box shadows are dropped here, so without this the app's two most
-     important controls would have no focus indicator at all -- the one
+     important controls would have no focus indicator at all — the one
      forced-colours regression that is invisible until someone tries to
      use it. */
   .ask-input:focus,
@@ -49,7 +54,7 @@
     outline-offset: 2px;
   }
 
-  /* Everything else already uses `outline`, which survives -- but the
+  /* Everything else already uses `outline`, which survives — but the
      colour has to come from the system palette rather than --signal. */
   .skip-link:focus,
   .ask-submit:focus-visible,
@@ -65,7 +70,7 @@
 
   /* The emotion read-outs. The groove needs an edge to still read as a
      track once its fill is gone, and the two things inside it are the
-     measurement itself -- a bar whose length is the value, and the mark
+     measurement itself — a bar whose length is the value, and the mark
      showing the whole-video average. Highlight and CanvasText are
      guaranteed to differ from Canvas and from each other. */
   .emo-track {
@@ -101,7 +106,7 @@
      information: it is what ties a name in the sidebar to a stroked box
      on the video, and the video is a <canvas>, which forced colours do
      not touch at all. Substituting a system colour here would break the
-     match while looking fine. So this opts out -- and takes a real
+     match while looking fine. So this opts out — and takes a real
      border, because the ring that normally supplies its boundary is a
      box-shadow and would otherwise be dropped. */
   .person-swatch {
@@ -141,18 +146,19 @@
   }
 
   /* The subtitle box sits over video rather than over the page, so it
-     keeps its own translucent backdrop -- a system Canvas fill here
+     keeps its own translucent backdrop — a system Canvas fill here
      would paint an opaque block over the picture. */
   .subtitle-box {
     forced-color-adjust: none;
   }
 }
 
-/* ---- More contrast ----
+/* --- More contrast -------------------------------------------------- */
 
+/*
    Token overrides only. Every value below is one that passes its WCAG
    threshold but sits closest to it, so this is the same palette with
-   its narrowest margins widened -- not a second theme. If this block
+   its narrowest margins widened — not a second theme. If this block
    ever needs a per-rule change, that means a colour is being set
    somewhere outside the token layer, and the fix is to move it in
    rather than to add exceptions here. */

@@ -1,28 +1,27 @@
-/* ---------------------------------------------------------------
-   Design tokens -- a port of the DUUI Gateway's Skeleton "theme-blue"
-   (DUUIWeb/static/themes/theme-blue.ts) into plain custom properties,
-   so this app reads as part of the same ecosystem without taking on
-   Svelte, Tailwind or Skeleton.
-
-   Light mode only. The Gateway ships both and defaults to dark; this
-   viewer stays light, so every ramp below is resolved at its light-mode
-   value -- where the Gateway writes `bg-surface-50-900-token`, we take
-   surface-50 and nothing else.
-
-   Two layers, and the split matters when you edit this file:
-     1. The raw theme ramps. Verbatim from theme-blue.ts. Don't tune
-        these -- if the Gateway's theme changes, they get replaced
-        wholesale.
-     2. The semantic aliases the rest of the stylesheets actually use.
-        Every name here predates the port and is referenced across
-        base/topbar/sidebar/stage/ask/jobs/emotions.css, which is why
-        they kept their names: re-pointing them was the whole migration.
------------------------------------------------------------------- */
+/*
+ * Design tokens — a port of the DUUI Gateway's Skeleton "theme-blue"
+ * (DUUIWeb/static/themes/theme-blue.ts) into plain custom properties,
+ * so this app reads as part of the same ecosystem without taking on
+ * Svelte, Tailwind or Skeleton.
+ *
+ * Light mode only. The Gateway ships both and defaults to dark; this
+ * webapp stays light, so every ramp below is resolved at its
+ * light-mode value. Where the Gateway writes
+ * `bg-surface-50-900-token`, this takes surface-50 and nothing else.
+ *
+ * Two layers, and the split matters when you edit this file: 1. The raw
+ * theme ramps. Verbatim from theme-blue.ts. Don't tune these — if the
+ * Gateway's theme changes, they get replaced wholesale. 2. The semantic
+ * aliases the rest of the stylesheets actually use. Every name here
+ * predates the port and is referenced across
+ * base/topbar/sidebar/stage/ask/jobs/emotions.css, which is why they
+ * kept their names: re-pointing them was the whole migration.
+ */
 
 :root {
   /* ============ 1. theme-blue ramps (verbatim) ============ */
 
-  /* primary | #006c98 -- interactive, focus, selection, brand */
+  /* primary | #006c98 — interactive, focus, selection, brand */
   --primary-50: #d9e9f0;
   --primary-100: #cce2ea;
   --primary-200: #bfdae5;
@@ -39,7 +38,7 @@
   --secondary-500: #00bcff;
   --secondary-700: #008dbf;
 
-  /* tertiary | #e99b26 -- the Gateway's accent. Nothing in the UI takes
+  /* tertiary | #e99b26 — the Gateway's accent. Nothing in the UI takes
      it any more (the emotion read-outs it briefly carried moved onto
      the primary ramp); tertiary-100 survives only as the warm end of
      the page wash in base.css. Kept whole because these ramps are a
@@ -70,7 +69,7 @@
   --error-700: #bb4343;
   --error-800: #953535;
 
-  /* surface | #242735 -- 50..300 are the light-mode greys, 400+ are the
+  /* surface | #242735 — 50..300 are the light-mode greys, 400+ are the
      dark blue-greys the Gateway uses for dark mode. We only reach past
      400 for hairlines and dimmed text. */
   --surface-50: #f2f2f2;
@@ -92,7 +91,8 @@
 
   /* Surfaces. --bg is the page floor under .gradient (see base.css);
      --surface is every card, panel and bar; --surface-alt is anything
-     recessed into one -- track grooves, input fills, table row hovers. */
+     recessed into one — track grooves, input fills, table row hovers.
+     */
   --bg: var(--surface-50);
   --surface: #fff;
   --surface-alt: var(--surface-100);
@@ -111,7 +111,7 @@
      would only reach 2.35 and is not enough. */
   --border-input: var(--surface-400);
 
-  /* The Gateway's .bordered-soft -- surface-400 at 20%. Used where a
+  /* The Gateway's .bordered-soft — surface-400 at 20%. Used where a
      border should register as an edge without drawing a line. */
   --border-soft: rgba(102, 104, 114, 0.2);
 
@@ -119,15 +119,15 @@
      body copy is #000 rather than the near-black this file used to
      carry. --text-dim is the Gateway's .dimmed (surface-400).
 
-     --text-strong is one step past that -- surface-600, the value
+     --text-strong is one step past that — surface-600, the value
      Endpoint.svelte pairs with its smallest caption text rather than
      .dimmed's surface-400. For the handful of small, continuously-read
      data fields (.emo-label, .job-detail, .ask-sql) where --text-dim's
      5.5:1 reads as weak at 11-14px. --text-faint (surface-300) used to
-     sit here too, at #a7a9ae -- 2.35:1 on white, an outright AA
-     failure -- and had exactly one caller (.time-sep). Retired rather
-     than fixed in place: a token that light has no safe use as text on
-     this palette. */
+     sit here too, at #a7a9ae — 2.35:1 on white, an outright AA failure
+     — and had exactly one caller (.time-sep). Retired rather than fixed
+     in place: a token that light has no safe use as text on this
+     palette. */
   --text: #000;
   --text-dim: var(--surface-400);
   --text-strong: var(--surface-600);
@@ -137,7 +137,7 @@
 
      --text-dim reads 5.54:1 on the card and 4.95:1 on the page floor,
      but placeholders sit on the recessed --surface-alt fill, where the
-     same colour lands at 4.48:1 -- close enough to look fine and still
+     same colour lands at 4.48:1 — close enough to look fine and still
      be an AA failure. There is no step between surface-400 and
      surface-500 (#242735, which would read as filled-in text rather
      than as a prompt), so this is surface-400 nudged just past the
@@ -155,7 +155,7 @@
   --signal-hover: var(--primary-600);
 
   /* Emotion read-outs, and the base every sidebar panel accent derives
-     from. This was the theme's tertiary amber -- which is a theme-blue
+     from. This was the theme's tertiary amber — which is a theme-blue
      colour, but reads as foreign next to everything else on the page,
      so the read-outs now sit on the primary ramp like the rest of the
      app. Still split by role: 500 for the bar fills, 700 for the
@@ -168,7 +168,7 @@
   --emotion: var(--primary-700);
   --emotion-fill: var(--primary-500);
 
-  /* Sits on the video, not on white -- needs to go lighter, not darker. */
+  /* Sits on the video, not on white: lighter, not darker. */
   --emotion-on-dark: var(--primary-300);
 
   /* Panel accents, keyed off --accent-emotion. Spreading them along the
@@ -177,8 +177,8 @@
      instead of just lighter/darker: to the theme's secondary, and to
      its signature surface charcoal. Closest pair is now 126.
 
-     "On screen now" is the one deliberate outsider. It is an alert --
-     someone is on screen at this instant -- and error-500 is the only
+     "On screen now" is the one deliberate outsider. It is an alert —
+     someone is on screen at this instant — and error-500 is the only
      colour on the page that says so. */
   --accent-emotion: var(--primary-500);
   --accent-people: var(--secondary-500);
@@ -192,7 +192,8 @@
      channel and the 3:1 rule does not reach it. tests/contrast_check.py
      records them as INFO for the same reason.
 
-     This stops being true the moment a dot appears without its label. */
+     This stops being true the moment a dot appears without its label.
+     */
 
   /* Status. Error only: the app has nothing that reports success as a
      colour any more (the topbar's "Live sync" chip was the sole user of
@@ -203,9 +204,9 @@
   --danger-text: var(--error-700);
   --danger-soft: var(--error-100);
 
-  /* Elevation -- Tailwind's defaults, which is what Skeleton's
-     shadow-md resolves to. The indigo --glow-signal is gone; nothing in
-     the Gateway glows. */
+  /* Elevation — Tailwind's defaults, which is what Skeleton's shadow-md
+     resolves to. The indigo --glow-signal is gone; nothing in the
+     Gateway glows. */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
@@ -222,32 +223,27 @@
   /* Oxanium for everything, per DUUIWeb/src/app.postcss, which
      overrides theme-blue's system-ui for both base and heading.
 
-     Mono is Ubuntu Mono -- the font DUUIWeb bundles, self-hosted here
+     Mono is Ubuntu Mono — the font DUUIWeb bundles, self-hosted here
      from the official ubuntu-font-family-0.83 release so the real Bold
      and Italic faces come with it (see the @font-face block in
-     base.css). Only the generic `monospace`
-     backs it up: every other name in that default stack is either
-     platform-specific or, in the case of ui-monospace, unsupported by
-     Chrome on Linux -- so they matched nothing here and only decided
-     which fallback won on other machines. With a self-hosted face the
-     fallback is a network-failure path, not the normal one. */
+     base.css). Only the generic `monospace` backs it up: every other
+     name in that default stack is either platform-specific or, in the
+     case of ui-monospace, unsupported by Chrome on Linux — so they
+     matched nothing here and only decided which fallback won on other
+     machines. With a self-hosted face the fallback is a network-failure
+     path, not the normal one. */
 
-  /* ---- Type scale ----
-
-     rem, not px, and that is the whole point: a `px` font-size ignores
-     the browser's own font-size setting -- the control a low-vision
-     reader actually reaches for, and the one that does not reflow the
-     layout the way full-page zoom does. Page zoom scales px fine; this
-     setting does not touch it. WCAG 1.4.4.
-
-     Centralised rather than written at each call site, where `14px`
-     appeared eighteen times and `12px` fourteen with nothing tying them
-     together. The comment on each step is the px value at a default
-     16px root, which is what the design was drawn at -- not a promise
-     about what it renders as.
-
-     Nothing may set font-size on :root or html; every value below is
-     relative to it. */
+  /* Type scale. * * * rem, not px, and that is the whole point: a `px`
+     font-size ignores * the browser's own font-size setting — the
+     control a low-vision * reader actually reaches for, and the one
+     that does not reflow the * layout the way full-page zoom does. Page
+     zoom scales px fine; this * setting does not touch it. WCAG 1.4.4.
+     * * Centralised rather than written at each call site, where `14px`
+     * appeared eighteen times and `12px` fourteen with nothing tying
+     them * together. The comment on each step is the px value at a
+     default * 16px root, which is what the design was drawn at — not a
+     promise * about what it renders as. * * Nothing may set font-size
+     on :root or html; every value below is * relative to it. */
   --text-2xs: 0.625rem; /* 10 */
   --text-xs: 0.75rem; /* 12 */
   --text-sm: 0.875rem; /* 14 */
@@ -256,7 +252,7 @@
   --text-xl: 1.3125rem; /* 21 */
 
   /* The caption track sizes itself off the viewport rather than off the
-     scale -- it sits over the picture, so it has to stay proportionate
+     scale — it sits over the picture, so it has to stay proportionate
      to the frame as well as to the reader's preference. Tokens, not
      literals, so responsive.css can re-point them at its narrow
      breakpoint instead of restating the rules. */
@@ -266,7 +262,7 @@
   --font-mono: "Ubuntu Mono", monospace;
 
   /* Roboto, for the subtitle track alone (.subtitle-text in stage.css)
-     -- prose sourced from the video's own transcript, not UI chrome, so
+     — prose sourced from the video's own transcript, not UI chrome, so
      it doesn't inherit --font-ui. See the @font-face block in base.css
      for why. */
   --font-subtitle: "Roboto", system-ui, sans-serif;

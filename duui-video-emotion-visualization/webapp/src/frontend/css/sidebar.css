@@ -1,11 +1,13 @@
-/* ---------------- Sidebar panels ----------------
+/* --- Sidebar panels ------------------------------------------------- */
+
+/*
    Each panel is the Gateway's .section-wrapper: rounded-base, hairline
-   border, shadow-md, flat surface fill. Static -- panels are read, not
+   border, shadow-md, flat surface fill. Static — panels are read, not
    clicked, so they do not respond to the cursor at all. The rows inside
    them still do.
 ------------------------------------------------------------------ */
 
-/* --- Panel shell ------------------------------------------------------------ */
+/* --- Panel shell ---------------------------------------------------- */
 
 .panel {
   position: relative;
@@ -17,7 +19,7 @@
   overflow: hidden;
 }
 
-/* Flat accent, one per modality -- the panels are otherwise identical
+/* Flat accent, one per modality — the panels are otherwise identical
    and the titles alone are easy to skim past. Kin to the Gateway's
    border-l-8 toast accents, moved to the top edge. */
 .panel::before {
@@ -89,13 +91,13 @@
   color: var(--accent-cross);
 }
 
-/* --- Match-confidence legend ------------------------------------------------ */
+/* --- Match-confidence legend ---------------------------------------- */
 
 /* Names the .person-meta column before any row does, the same idiom
-   .emo-legend uses for the emotion panels' now/avg columns -- so what
+   .emo-legend uses for the emotion panels' now/avg columns — so what
    the number means is on the page whether or not anyone hovers
-   anything. Right edge matches .person-row's padding so the label
-   sits over the percentages it's naming. */
+   anything. Right edge matches .person-row's padding so the label sits
+   over the percentages it's naming. */
 .person-legend {
   position: absolute;
   top: 17px;
@@ -113,7 +115,7 @@
 }
 
 /* The header is the disclosure control. It used to be a bare div whose
-   only route to the fuller explanation was `title` -- no keyboard could
+   only route to the fuller explanation was `title` — no keyboard could
    open it and no touch screen showed it at all, which is the wrong
    place for the only written description of what the number means.
 
@@ -162,7 +164,7 @@
 }
 
 /* The legend is absolutely positioned and so doesn't reserve any space
-   in flow -- fine for "People", short enough to never reach it, but
+   in flow — fine for "People", short enough to never reach it, but
    "Also appears in" is long enough to run underneath it once the
    sidebar narrows past the tablet breakpoint (.sidebar .panel can get
    as tight as 240px). Reserve the legend's width on the title and
@@ -173,7 +175,8 @@
   /* Room for the absolutely-positioned .person-legend beside the title.
      em rather than px for the same reason as the emotion grid: it is
      reserving space for a piece of text, and text is no longer a fixed
-     number of pixels wide. 11em is the 132px this was at a 12px title. */
+     number of pixels wide. 11em is the 132px this was at a 12px title.
+     */
   padding-right: 11em;
 }
 
@@ -181,7 +184,8 @@
    overflow:hidden on .panel-title itself would clip .panel-dot's
    box-shadow ring, which paints outside the dot's own tiny box.
    min-width: 0 overrides the flex item's content-based floor so it can
-   actually shrink to the truncation width instead of pushing past it. */
+   actually shrink to the truncation width instead of pushing past it.
+   */
 .panel:has(> .person-legend) .panel-title-text {
   min-width: 0;
   overflow: hidden;
@@ -189,7 +193,7 @@
   white-space: nowrap;
 }
 
-/* --- Person lists and rows -------------------------------------------------- */
+/* --- Person lists and rows ------------------------------------------ */
 
 .person-list,
 .active-list {
@@ -201,9 +205,9 @@
   gap: 6px;
 }
 
-/* The People rows are buttons (they filter the emotion panels), the
-   "on screen now" rows are not -- so the row styling lives on the
-   button there and on the li here. */
+/* The People rows are buttons (they filter the emotion panels), the "on
+   screen now" rows are not — so the row styling lives on the button
+   there and on the li here. */
 .person-row,
 .active-list li {
   display: flex;
@@ -218,7 +222,7 @@
   /* surface-50, not the surface-100 that inputs and track grooves take:
      still visibly recessed against the panel, but light enough to keep
      the dimmed .person-meta above 4.5:1. On surface-100 it lands at
-     4.48 -- close enough to look fine and still be a fail. */
+     4.48 — close enough to look fine and still be a fail. */
   background: var(--surface-50);
   transition:
     background-color var(--transition),
@@ -227,7 +231,7 @@
 }
 
 /* variant-soft-primary on hover, variant-filled-primary when selected
-   -- the Gateway's two states for the same control, so a row that is
+   — the Gateway's two states for the same control, so a row that is
    merely under the cursor never reads as the active filter. */
 .person-row:hover,
 .active-list li:not(.empty-hint):hover {
@@ -268,7 +272,7 @@
   outline-offset: 2px;
 }
 
-/* --- Selected-person filter chip -------------------------------------------- */
+/* --- Selected-person filter chip ------------------------------------ */
 
 /* Names the person the emotion panels are filtered to; empty (and so
    collapsed) whenever nothing is selected. The Gateway's .tag: a
@@ -305,17 +309,17 @@
   visibility: hidden;
 }
 
-/* --- "Also appears in" rows ------------------------------------------------- */
+/* --- "Also appears in" rows ----------------------------------------- */
 
 /*
    The other two person lists fit on one line, so they are flex rows
    with the meta pushed right. These carry a comma-joined list of other
-   videos instead, which is far too long for that -- so they are a
+   videos instead, which is far too long for that — so they are a
    two-row grid: swatch and name on top, the video list underneath and
    aligned to the name rather than to the swatch.
 
    Without this the rows inherit `.person-list li { display: block }`,
-   which leaves .person-swatch as an inline span -- and an inline span
+   which leaves .person-swatch as an inline span — and an inline span
    ignores width and height, so the colour never renders at all. */
 .cross-list li {
   display: grid;
@@ -340,7 +344,7 @@
 }
 
 /* Each "other video/person" entry is a row of its own so the match
-   distance can sit flush against the right edge of the panel --
+   distance can sit flush against the right edge of the panel —
    `margin-left: auto` on the badge below pushes it there regardless of
    how short the label text is, instead of trailing right after it. */
 .cross-list .cross-video {
@@ -352,8 +356,8 @@
 /* Per-entry cross-video match distance, at the end of each "other
    video/person" entry. Same font and colour as the People panel's
    match-score badge (.person-meta) so the two read as one convention;
-   the number is a cosine distance, not the import pipeline's
-   confidence score, which the tooltip spells out. */
+   the number is a cosine distance, not the import pipeline's confidence
+   score, which the tooltip spells out. */
 .cross-list .cross-video-distance {
   margin-left: auto;
   flex-shrink: 0;
@@ -378,14 +382,14 @@
 
 /* Overrides the shared .person-meta: no `margin-left: auto` (it is not
    sharing a line any more), wraps instead of ellipsing, and steps from
-   --text-dim up to the theme charcoal -- these filenames are the point
+   --text-dim up to the theme charcoal — these filenames are the point
    of the panel, not a footnote. */
 .cross-list .person-meta {
   grid-column: 2;
   grid-row: 2;
   margin-left: 0;
 
-  /* One appearance per line -- see crossVideo.js. A column rather than
+  /* One appearance per line — see crossVideo.js. A column rather than
      plain block elements so the gap between entries is separate from
      the line-height inside a single wrapped one. */
   display: flex;
@@ -398,19 +402,19 @@
   overflow-wrap: anywhere;
 }
 
-/* --- Shared row parts ------------------------------------------------------- */
+/* --- Shared row parts ----------------------------------------------- */
 
-/* Per-person identity colours -- set inline from js/state.js and
+/* Per-person identity colours — set inline from js/state.js and
    deliberately outside the theme, since they have to stay mutually
-   distinguishable rather than on-brand. tests/cvd_check.py is what keeps
-   them distinguishable under colour-vision deficiency, which matters
-   here because this swatch is the only thing tying a name in this list
-   to a stroked box on the video.
+   distinguishable rather than on-brand. tests/cvd_check.py is what
+   keeps them distinguishable under colour-vision deficiency, which
+   matters here because this swatch is the only thing tying a name in
+   this list to a stroked box on the video.
 
    Two shadows, and the inner one is load-bearing. The palette cannot
    supply its own boundary: the same colours are drawn over arbitrary
    footage, where they have to stay bright, which leaves them at
-   1.2-3.5:1 against these light rows -- and darkening them to fix that
+   1.2-3.5:1 against these light rows — and darkening them to fix that
    would break the other use. The 1px ring carries the 3:1 instead,
    without touching a hue. The 3px halo outside it is the original soft
    edge, unchanged. */
@@ -424,7 +428,7 @@
     0 0 0 3px color-mix(in srgb, currentcolor 16%, transparent);
 }
 
-/* --border-input against --signal is 1.05:1 -- all but the same colour.
+/* --border-input against --signal is 1.05:1 — all but the same colour.
    White is 5.84:1 on it. */
 .person-row.is-selected .person-swatch {
   box-shadow:

@@ -30,9 +30,9 @@ CODE_WIDTH = 88
 BANNER_WIDTH = 74
 
 # A well-formed section banner, per the style guide: `# --- Name ------`.
-# The name may hold anything but a dash run, so an apostrophe or a plus
-# sign is fine.
-BANNER_OK = re.compile(r"^([ \t]*)# --- [A-Z][^-]* -+$")
+# The name may hold anything that is not a run of dashes, so a hyphen,
+# an apostrophe or a plus sign is all fine.
+BANNER_OK = re.compile(r"^([ \t]*)# --- [^\s-].*? -{3,}$")
 # Anything meant to be one. Dashes at *both* ends, which is what tells a
 # banner from a comment opening with a CSS custom property or a CLI flag
 # (`# --factory because ...`).
@@ -85,7 +85,7 @@ CHECKED_NAMES = ("Dockerfile", ".dockerignore", "requirements.txt")
 SKIP_PARTS = ("__pycache__", "resources", "fonts", "a11y-baseline", "legacy")
 
 # The same, in the C-comment languages: `/* --- Name --- */`.
-CSS_BANNER_OK = re.compile(r"^/\* --- [A-Z][^-]* -+ \*/$")
+CSS_BANNER_OK = re.compile(r"^/\* --- [^\s-].*? -{3,} \*/$")
 CSS_BANNER_ANY = re.compile(r"^\s*/\*\s*-{3,}.*-{3,}\s*(\*/)?\s*$")
 
 
@@ -215,7 +215,7 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
         if number in prose:
             # Between words, or left dangling at a line break — both
             # are the legacy form.
-            if re.search(r"(?<=\S) -- (?=\S)|(?<=\S) --\s*$", line):
+            if re.search(r"(?<=\S) -- (?=\S)|(?<=\S) --\s*$|^\s*-- (?=\S)", line):
                 found.append((number, "emdash", "'--' as an em dash; write '—'"))
             # A colour value lists numbers the way a grouped thousand
             # is written, so it is not a corpus figure.

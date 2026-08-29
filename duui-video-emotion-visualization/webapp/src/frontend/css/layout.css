@@ -1,4 +1,4 @@
-/* ---------------- Layout ---------------- */
+/* --- Layout --------------------------------------------------------- */
 
 .layout {
   display: grid;
@@ -20,8 +20,8 @@
      reflow. The binding item is .transport: at a 200% root its play
      button, CC toggle and clock come to more than a 320px screen, and
      without this the grid grew to fit them instead of letting the row
-     wrap -- which is exactly what its own flex-wrap is there to do.
-     Same fix .scrub carries in responsive.css, one level up. */
+     wrap — which is exactly what its own flex-wrap is there to do. Same
+     fix .scrub carries in responsive.css, one level up. */
   min-width: 0;
 }
 
@@ -43,8 +43,8 @@
 
 .sidebar {
   /* Same reason as .stage above: a grid item's default floor is its own
-     min-content, so this column would widen the page rather than let its
-     panels reflow. */
+     min-content, so this column would widen the page rather than let
+     its panels reflow. */
   min-width: 0;
   display: flex;
   flex-direction: column;

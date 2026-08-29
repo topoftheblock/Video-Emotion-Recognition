@@ -1,4 +1,6 @@
-/* ---------------- Top bar ----------------
+/* --- Top bar -------------------------------------------------------- */
+
+/*
    The Gateway's <AppBar background="bg-surface-50-900-token"
    class="border-b border-color">: flat fill, one hairline underneath,
    no shadow and no blur. It reads as a bar against the page only
@@ -36,13 +38,13 @@
   padding: 4px 9px;
 }
 
-/* No direct Gateway precedent -- its nav brand is Logo.svg, an image,
+/* No direct Gateway precedent — its nav brand is Logo.svg, an image,
    not text. Nearest real Tailwind step to what was already here.
 
    An <h1>, and the page's only one: headings used to start at <h2>, so
    heading navigation dropped into the middle of a hierarchy with no
    document-level anchor above it. It is styled as brand text rather
-   than as a heading, which is what the three resets below are for --
+   than as a heading, which is what the three resets below are for —
    `margin` in particular, since the UA's 0.67em block margin would
    otherwise push the whole topbar around. --font-ui is already
    inherited from body, but the UA also sets its own family on h1, so
@@ -64,10 +66,10 @@
   color: var(--text-dim);
 }
 
-/* The Gateway's .input-wrapper: recessed surface fill, soft border,
-   and a 2px primary ring on focus rather than a coloured glow. The
-   combobox wraps a text input that doubles as the search field and a
-   list of matches that drops beneath it. */
+/* The Gateway's .input-wrapper: recessed surface fill, soft border, and
+   a 2px primary ring on focus rather than a coloured glow. The combobox
+   wraps a text input that doubles as the search field and a list of
+   matches that drops beneath it. */
 .video-combobox {
   position: relative;
   display: flex;
@@ -77,7 +79,7 @@
   background: var(--surface-alt);
   color: var(--text);
 
-  /* See .ask-input in ask.css -- same field, same reason. */
+  /* See .ask-input in ask.css — same field, same reason. */
   border: var(--theme-border-base) solid var(--border-input);
   border-radius: var(--radius-sm);
   padding: 7px 12px;
