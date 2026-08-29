@@ -226,3 +226,48 @@ Found while planning, all Phase 5 misses:
    at the end of the phase, but nothing gates on the number: a floor
    invites tests written to raise a percentage rather than to catch a
    bug.
+
+---
+
+## 6.9 Outcome
+
+Done 2026-08-29. Suite **188 passing**, from 162 at the start of the
+phase. All 19 checkers green.
+
+### Coverage
+
+| | Before | After |
+| --- | --- | --- |
+| **Total** | **48%** | **83%** |
+| `importer/pipeline.py` | 16% | 78% |
+| `importer/parsers/*` | 22–47% | 82–100% |
+| `importer/job_runs.py` | 22% | 90% |
+| `identity/job_runs.py` | **0%** | 90% |
+| `identity/db.py` | 0% | 100% |
+| `importer/cas/typesystem.py` | 25% | 89% |
+| `backend/queries/persons.py` | 33% | 100% |
+
+No floor gates on that number, by decision. It is recorded so a later
+reader can see whether it moved and ask why.
+
+### What is deliberately still uncovered
+
+| Module | Cover | Why |
+| --- | --- | --- |
+| `identity/__main__.py` | 0% | An entry point whose body is the real job: connect, recompute the whole corpus, print. Driving it in a test means running the linker, which `test_linking.py` already covers piece by piece. |
+| `backend/__main__.py` | 0% | Six statements that call `uvicorn.run`. Testing it would test uvicorn. |
+| `query_agent/agent.py` | 26% | The tool-use loop against a language model. Covering it means stubbing the client and asserting against a conversation this project does not control. Worth doing, and larger than the rest of this phase — it is the one gap left open on purpose. |
+| `routes/videos.py` | 53% | The uncovered half is the payload route against a video that exists, which needs a populated database. Reachable now that the end-to-end import exists, and worth a follow-up. |
+
+### The sample's one blind spot
+
+The end-to-end test asserts `voice_embeddings == 0`, because the shipped
+sample carries none. That branch of `parsers/embedding.py` is the only
+parser path the sample cannot reach, and the file says so where the
+number is written.
+
+### Deviations from this plan
+
+- **Testcontainers dropped** (§6.1), answered before execution.
+- **The support modules were not moved** (§6.4). The reasoning, and what
+  was done instead, is recorded there.
