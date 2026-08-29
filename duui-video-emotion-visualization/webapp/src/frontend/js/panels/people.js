@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The two person lists in the sidebar: everyone the importer identified
  * in this video, and whoever is on screen right now.
@@ -68,7 +69,7 @@ export function renderPersonList(persons) {
       // it from.
       const scoreTitle =
         p.audio_video_match_score != null
-          ? `Face/voice match confidence: ${score} — how sure the import pipeline was that this person's face and voice recordings are the same person.`
+          ? `Face/voice match confidence: ${score} — how sure the pipeline was that this person's face and voice belong to the same person.`
           : "";
       // Without this the button's accessible name — computed from its
       // contents — comes out as "person_1100%", which a screen reader

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The three per-modality emotion panels: text, audio and video.
  *

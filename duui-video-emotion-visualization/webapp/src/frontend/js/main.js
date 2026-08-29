@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * DUUI video review frontend — entry point.
  *

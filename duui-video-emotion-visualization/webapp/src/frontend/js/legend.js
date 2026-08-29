@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The two match-confidence legends in the sidebar, as disclosures.
  *

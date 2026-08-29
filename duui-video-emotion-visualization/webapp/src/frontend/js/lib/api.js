@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Every call to the backend, with one error policy.
  *

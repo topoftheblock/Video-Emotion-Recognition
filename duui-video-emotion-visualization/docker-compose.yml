@@ -1,5 +1,5 @@
-# Convenience wrapper around the four images (each of which can also be
-# built and run on its own — see README "Running without compose").
+# Convenience wrapper around the four images, each of which can also be
+# built and run on its own.
 #
 #   docker compose up -d          # database and webapp, no import
 #
@@ -31,7 +31,7 @@
 #   echo "DUUI_INPUT_XMI_DIR=/absolute/path/to/xmi" >> .env
 #   echo "DUUI_INPUT_VIDEO_DIR=/absolute/path/to/videos" >> .env
 #
-# See README "Where do my .xmi files and videos have to be?".
+# See docs/configuration.md, "Input and output paths".
 
 # Pinned explicitly instead of being derived from the directory name:
 # two checkouts of this stack in differently-named folders would

@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The banner under the header: "an import is running, here is how far
  * it has got".

@@ -606,13 +606,58 @@ modules is the last cheap sample before a hundred more.
 
 ## 5.9 Exit criteria
 
-- [ ] Every code file documented to the guide, sub-project by sub-project
-- [ ] 140 of 140 functions annotated; `mypy` strict on all three packages
-- [ ] 16 of 16 JS modules under `// @ts-check`, `tsc` clean and in the lint service
-- [ ] All seven ledger items (D4, D5, D7, D8, D10, D12, D15) resolved
-- [ ] The `job_runs.py` pair diffed and its prose identical
-- [ ] `viewer` gone from prose; glossary terminology throughout, including log lines
-- [ ] **E501 exemption removed** from `run-lint.sh` and the hook; lint green
-      with it enforced
-- [ ] The unverified-rationale list delivered and answered
-- [ ] Suite 150/150, all 13 checkers green, corpus row counts unchanged
+- [x] Every code file documented to the guide, sub-project by sub-project
+- [x] Every function annotated (376 of 376, tests included); `mypy` strict
+      on all three packages, with their tests
+- [x] 16 of 16 JS modules under `// @ts-check`, `tsc` clean and in the lint
+      service
+- [x] All seven ledger items resolved — see below
+- [x] The `job_runs.py` pair diffed and its prose identical (2 diff lines,
+      the log prefix)
+- [x] `viewer` gone from prose, identifiers **and user-facing strings**;
+      glossary terminology throughout, including log lines
+- [x] **E501 exemption removed** from `run-lint.sh` and the hook; lint green
+      with it enforced, and verified to fail on an over-long line
+- [x] The unverified-rationale list delivered and answered — see below
+- [x] Suite 150/150, all 19 checkers green, corpus row counts unchanged
+
+### The seven ledger items
+
+| Item | Outcome |
+| --- | --- |
+| D4 — no `connect_timeout` | **Deferred by decision** to between Phase 5 and 6, on its own branch (Q7). The only item not closed here. |
+| D5 — the importer announces work it then skips | Fixed. The file is now announced as *read* before the skip decision, and the CAS load is announced where it happens. |
+| D7 — a rationale contradicted by the data | Fixed. The overstating word is gone from `linking.py`. |
+| D8 — `replace` does not preserve `video_id` | Documented in `docs/database.md`. |
+| D10 — `accessibility.md` uses retired terminology | Fixed. |
+| D12 — 17 code references to moved documentation | Fixed. No in-code pointer to a moved or replaced document remains. |
+| D15 — three project names | Fixed. The browser tab now says what the decision named; the heading and the OpenAPI title already did. |
+
+### The unverified rationales
+
+Two, both in `global-identity-linker/src/identity/config.py`, both written
+into the file as unverified rather than invented:
+
+1. **The 0.30 face and 0.35 voice distance thresholds.** No derivation is
+   recorded anywhere in the repository. They are the values the linker has
+   always used, and the model that produced a given embedding is recorded
+   per row in `models`, so a future derivation is possible — but it would
+   be new work, not recovery.
+2. **The placeholder database credentials.** Whether defaulting to values
+   that cannot connect is deliberate — fail rather than reach an
+   unintended database — or simply an unfinished template is not recorded.
+   The one known consequence is stated in the file: on a host with no
+   `DUUI_DB_*` set, every database-backed test skips instead of running.
+
+**Neither needs an answer to close the phase.** Both are recorded honestly
+where a reader meets them, which is what rule 3 asks for when the reason
+is missing rather than merely unwritten.
+
+### What the checker learned at the end
+
+The exit criteria caught three user-facing strings still saying "viewer",
+which the checker could not see: it read comments and identifiers, and
+those are string literals. §9 of the guide puts user-facing output under
+the same rules, so the checker now reads string literals too — which
+immediately found three more, including "identity" used as a noun in a
+tooltip the user reads.

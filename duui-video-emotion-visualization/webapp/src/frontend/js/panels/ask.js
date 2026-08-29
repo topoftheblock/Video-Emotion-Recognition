@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The natural-language "Ask" panel.
  *

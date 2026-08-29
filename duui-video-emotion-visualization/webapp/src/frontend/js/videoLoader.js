@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Choosing and loading a video: the dropdown, the payload fetch, and
  * the panels that refresh once per video rather than once per frame.
@@ -41,7 +42,7 @@ export async function loadVideoList() {
   } catch (err) {
     console.error("Could not load the video list", err);
     showEmptyState(
-      "Could not reach the viewer's API",
+      "Could not reach the webapp's API",
       "The page loaded, but /api/videos did not answer. The container is probably up without a working database connection — check its log:",
       LOGS_COMMAND,
     );
@@ -54,7 +55,7 @@ export async function loadVideoList() {
   if (!videos.length) {
     showEmptyState(
       "No videos imported yet",
-      "The viewer and the database are running fine — the database is simply empty. Run the import job, then reload this page:",
+      "The webapp and the database are running fine — the database is simply empty. Run the importer, then reload this page:",
       IMPORT_COMMAND,
     );
     return;
@@ -266,7 +267,7 @@ export async function loadVideo(videoId) {
     console.error(`Could not load video ${videoId}`, err);
     showEmptyState(
       "Could not load this video's data",
-      `The viewer asked for video #${videoId} and the request failed, so there is nothing to render. Check the viewer's log:`,
+      `The webapp asked for video #${videoId} and the request failed, so there is nothing to render. Check its log:`,
       LOGS_COMMAND,
     );
     return;
@@ -288,7 +289,7 @@ export async function loadVideo(videoId) {
   if (listed && listed.video_file_available === false) {
     showEmptyState(
       "Video file missing",
-      `The database has data for "${data.video.filename}", but that file is not in the video store, so there is nothing to play. Re-run the import job with the video next to its .xmi, then reload:`,
+      `The database has data for "${data.video.filename}", but that file is not in the video store, so there is nothing to play. Re-run the importer with the video beside its .xmi, then reload:`,
       IMPORT_COMMAND,
     );
   } else {

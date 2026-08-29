@@ -278,6 +278,19 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
             for pattern, flags, message in GLOSSARY:
                 if re.search(pattern, spaced, flags):
                     found.append((node.lineno, "name", f"{node.name}: {message}"))
+
+    # And it binds user-facing output, which is a string literal rather
+    # than a comment: §9 of the style guide puts log lines, error
+    # messages and anything the reader sees under the same rules. Three
+    # of these reached the browser before this check existed.
+    for number, line in enumerate(lines, start=1):
+        if number in prose or not re.search(r"[\"'`]", line):
+            continue
+        for text in re.findall(r"\"([^\"]{12,})\"|'([^']{12,})'|`([^`]{12,})`", line):
+            literal = next(part for part in text if part)
+            for pattern, flags, message in GLOSSARY:
+                if re.search(pattern, literal, flags):
+                    found.append((number, "term", f"in a string: {message}"))
     return found
 
 

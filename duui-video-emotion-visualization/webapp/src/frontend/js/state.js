@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The one mutable object the panels share.
  *

@@ -121,7 +121,10 @@ def run(
             job.update(phase="loading typesystem")
         typesystem = load_merged_typesystem()
 
-    print(f"Loading CAS data from {xmi_file}...")
+    # Announced as reading, not as loading: whether the CAS is loaded at
+    # all is decided a few lines down, and a message must not claim work
+    # that has not happened yet.
+    print(f"Reading {xmi_file}...")
     # Read the XML and take the media payloads out of it before cassis
     # ever sees them — `cas/sofas.py` explains why that is the
     # difference between an import that fits in memory and one that
@@ -165,6 +168,7 @@ def run(
     # export it is usually the longest phase of the import. The phase
     # name plus the elapsed time the webapp shows is the whole of what
     # can honestly be said about it.
+    print(f"Loading CAS data from {xmi_file}...")
     if job is not None:
         job.update(phase=f"parsing {Path(xmi_file).name}")
     with loading_cas_quietly():

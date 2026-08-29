@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The subtitle bar over the video — and `coveredBy`, the "which rows
  * are live at this instant" helper every time-synced panel shares.

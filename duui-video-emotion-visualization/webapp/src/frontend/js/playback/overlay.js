@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The canvas laid over the video: one box per face/person detection
  * near the current instant, tagged with that person's video-modality

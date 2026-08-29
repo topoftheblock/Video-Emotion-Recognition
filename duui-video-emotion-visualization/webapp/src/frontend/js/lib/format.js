@@ -1,3 +1,4 @@
+// @ts-check
 /** Display formatting, shared by the transport and the Ask panel. */
 
 /** Seconds as m:ss.s — the precision the frame-level data warrants.

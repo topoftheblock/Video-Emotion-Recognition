@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * "Also appears in": for each person in this video, every *other* video
  * that global-identity-linker/src/identity/linking.py linked them to.

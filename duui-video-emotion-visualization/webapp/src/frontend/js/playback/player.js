@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Playback: the transport controls, and the render loop everything else
  * hangs off.
