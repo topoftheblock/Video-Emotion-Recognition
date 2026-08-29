@@ -708,7 +708,7 @@ this is the index.
 | — | Commit attribution | **None.** No AI/Claude attribution in commits, comments or docs — see §5. |
 | — | Authority of existing comments | **None.** Unverified and possibly wrong, including about intent. Verify independently or discard; ask rather than assume. Only the frontend style/accessibility material reflects real decisions, and it is kept because it is test-verifiable. |
 | — | How provenance is described | **Never name AI as the author anywhere in the repository.** Say *legacy*, *outdated*, *unverified*, *possibly wrong*. Recorded in §5 and nowhere else. |
-| — | The root README and `data_schema_with_types.md` | **Quarantined to `docs/legacy/`**, not verified and not rewritten now. A short, true README replaces the root one. Phase 7 uses the quarantined files as a topic checklist, moves the database content into `docs/database.md`, then deletes them. |
+| — | The root README and `data_schema_with_types.md` | **Quarantined to `docs/legacy/`**, not verified and not rewritten. A short, true README replaces the root one. **Superseded 2026-08-29:** Phase 7 does *not* mine them for topics or content. They are stale and largely wrong, so nothing may be taken from them; the topics come from the code, the schema and the compose file. Phase 7 deletes them. |
 | — | `/api/stats` (D9) | **Keep for now**, and keep it registered as a discrepancy. |
 | — | `docs/todo.md` | A scratchpad for **post-cleanup** work — see §5. |
 | — | `docs/` skeleton | **Built in Phase 1**, not Phase 7, so Phase 5 has real pages to move rationale into. Phase 7 becomes an editing job. |

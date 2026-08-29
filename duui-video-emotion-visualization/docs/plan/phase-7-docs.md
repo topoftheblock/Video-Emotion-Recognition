@@ -118,7 +118,7 @@ activate it.**
 | 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication |
 | 10 | Rewrite the `a11y-ci.yml` header (§7.3); retitle `a11y-verification.md` |
 | 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licences alongside |
-| 12 | Rewrite the three references into `docs/legacy/` (§7.8), then delete it |
+| 12 | Delete `docs/legacy/` — its three live references are already gone (§7.8) |
 | 13 | Verify — see §7.6 |
 
 ## 7.6 Verification
@@ -150,29 +150,35 @@ activate it.**
    input-path variables a first run with real data must set, and a link
    to `configuration.md` for the rest.
 
-## 7.8 Deleting `docs/legacy/` orphans three live references
+## 7.8 The three references into `docs/legacy/` — already removed
 
-Found before agreeing to the deletion, not after. Outside the plan
-folder — where references to it are historical record and stay — three
-files point into `docs/legacy/`:
+Found while planning, and dealt with immediately rather than left for
+execution, because two of them cited the legacy document as **evidence
+for a decision**. That is the one thing it may never be.
 
-| File | What it says |
-| --- | --- |
-| `cas-to-postgres-importer/src/importer/cas/types.py` | "The design mapping (`docs/legacy/data-schema-design.md`) specifies the bare `annotation.MetaData` type here" |
-| `webapp/src/backend/query_agent/schema_context.py` | Names it as one of three sources the schema semantics were cross-checked against |
-| `docs/database.md` | An opening paragraph distinguishing itself from it |
+| File | Was | Now |
+| --- | --- | --- |
+| `cas/types.py` | "The design mapping (`docs/legacy/…`) specifies the bare `annotation.MetaData` type here" | States the hierarchy the code itself declares, and why narrowing the name would break later |
+| `query_agent/schema_context.py` | Named it as one of three sources the semantics were cross-checked against | Names the two sources that can actually be checked — the parsers and a populated database — and tells the reader to check before trusting |
+| `docs/database.md` | A paragraph distinguishing itself from it | Deleted; it existed only to make that contrast |
 
-Two of those cite the document as **evidence for a decision**. That is
-the awkward part: the deletion is justified precisely because the
-document is unreliable, so migrating its claims into a surviving page
-would carry the unreliability forward.
+**The claim in `types.py` was verified rather than deleted**, because it
+turned out to be true and checkable without the document:
 
-**The rule for this phase:** do not move a claim out of a legacy
-document. Restate what the *code* shows and drop the citation. For
-`types.py` that means saying what the importer selects and why —
-selecting the bare type picks up its subtypes, which is checkable. For
-`schema_context.py` it means listing the sources that still exist. The
-paragraph in `database.md` exists only to contrast with the legacy file
-and goes with it.
+- `INJECTED_FALLBACK_TYPES`, in the same file, declares
+  `model.MetaData` extending the bare `annotation.MetaData`, and
+  `model.HuggingfaceMetaData` extending `model.MetaData`. The comment
+  had said both extend the bare type directly, which is one step wrong
+  for the second.
+- Loading the shipped sample against the merged typesystem and
+  selecting the bare type returns **only subtype instances** — three
+  `model.MetaData` and two `model.HuggingfaceMetaData`, matching the
+  five model rows the import writes. Not one instance is the bare type
+  itself, which is precisely why the bare name has to be the one
+  selected.
 
-Step 12 therefore reads: rewrite those three, then delete.
+**The rule this sets for the rest of the phase:** never move a claim out
+of a legacy document. Establish it from the code, the schema or the
+database, or drop it.
+
+Step 12 is therefore only the deletion.
