@@ -1,4 +1,4 @@
-"""Check a sub-project against the documentation style guide and glossary.
+"""Check a sub-project against the style guide and the glossary.
 
     python3 tests/stylecheck.py <dir> [--exempt <path suffix>...]
 
@@ -9,8 +9,8 @@ are not enabled, missing docstrings, and references to the current
 corpus.
 
 Every one of these is a rule in docs/documentation-style.md or
-docs/glossary.md that `ruff` and `mypy` say nothing about. Phase 5
-found 212 prose lines wrapped at the wrong width in a sub-project whose
+docs/glossary.md that `ruff` and `mypy` say nothing about. Phase 5 found
+212 prose lines wrapped at the wrong width in a sub-project whose
 rewrite was otherwise finished, which is why this exists rather than
 being left to review.
 
@@ -29,9 +29,9 @@ PROSE_WIDTH = 72
 CODE_WIDTH = 88
 BANNER_WIDTH = 74
 
-# A well-formed section banner, per the style guide: `# --- Name ------`.
-# The name may hold anything that is not a run of dashes, so a hyphen,
-# an apostrophe or a plus sign is all fine.
+# A well-formed section banner, per the style guide: `# --- Name
+# ------`. The name may hold anything that is not a run of dashes, so a
+# hyphen, an apostrophe or a plus sign is all fine.
 BANNER_OK = re.compile(r"^([ \t]*)# --- [^\s-].*? -{3,}$")
 # Anything meant to be one. Dashes at *both* ends, which is what tells a
 # banner from a comment opening with a CSS custom property or a CLI flag
@@ -43,8 +43,9 @@ BANNER_ANY = re.compile(r"^[ \t]*#\s*-{3,}.*-{3,}\s*$")
 # implies the project runs a check it does not.
 SELECTED_RULES = ("E", "F", "I")
 
-# (pattern, flags, message). Case matters: "a CAS" is correct, "a cas"
-# is not, so those patterns are deliberately case-sensitive.
+# (pattern, flags, message). Case matters for some of these: an acronym
+# is wrong in lower case but right in upper, so those patterns are
+# deliberately case-sensitive.
 GLOSSARY = [
     (r"\bviewer\b", re.I, "'viewer' is retired — say 'the webapp'"),
     (r"global identit(y|ies)", re.I, "'identity' as a noun — say 'global person'"),
@@ -77,8 +78,10 @@ CORPUS = [
     (r"(?<!\d)\d{1,3},\d{3}(?!\d)", 0, "no corpus figures"),
 ]
 
-CHECKED_SUFFIXES = (".py", ".toml", ".js", ".css", ".html")
+CHECKED_SUFFIXES = (".py", ".toml", ".js", ".css", ".html", ".sh", ".yml")
 CHECKED_NAMES = ("Dockerfile", ".dockerignore", "requirements.txt")
+# `Dockerfile.tests` and the like: same comment syntax, same rules.
+CHECKED_PREFIXES = ("Dockerfile.",)
 
 # Not source: vendored font licences, and recorded measurements that are
 # data rather than prose anyone wrote.
@@ -205,20 +208,23 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
                     found.append(
                         (number, "width", f"prose {len(line)} > {PROSE_WIDTH}")
                     )
-            # Code width in the C-comment languages belongs to prettier
-            # and stylelint, which are configured and run beside this.
-            # Two checkers disagreeing about one line helps nobody.
-            elif path.suffix not in (".js", ".css", ".html"):
-                if len(line) > CODE_WIDTH:
+            # Code width belongs to the tool that already owns it:
+            # prettier and stylelint for the C-comment languages,
+            # yamllint for YAML — which exempts an unbreakable inline
+            # value on purpose. Two checkers disagreeing helps nobody.
+            elif path.suffix not in (".js", ".css", ".html", ".yml"):
+                # A URL is one token and cannot be broken, so the width
+                # rule has nothing to offer there.
+                if len(line) > CODE_WIDTH and not re.search(r"https?://\S", line):
                     found.append((number, "width", f"code {len(line)} > {CODE_WIDTH}"))
 
         if number in prose:
-            # Between words, or left dangling at a line break — both
-            # are the legacy form.
+            # Between words, or left dangling at a line break — both are
+            # the legacy form.
             if re.search(r"(?<=\S) -- (?=\S)|(?<=\S) --\s*$|^\s*-- (?=\S)", line):
                 found.append((number, "emdash", "'--' as an em dash; write '—'"))
-            # A colour value lists numbers the way a grouped thousand
-            # is written, so it is not a corpus figure.
+            # A colour value lists numbers the way a grouped thousand is
+            # written, so it is not a corpus figure.
             colourish = re.search(r"rgba?\(", line) is not None
             for pattern, flags, message in GLOSSARY + CORPUS:
                 if colourish and "corpus figures" in message:
@@ -292,7 +298,11 @@ def main() -> int:
         for path in pathlib.Path(args.root).rglob("*")
         if path.is_file()
         and not any(part in SKIP_PARTS for part in path.parts)
-        and (path.suffix in CHECKED_SUFFIXES or path.name in CHECKED_NAMES)
+        and (
+            path.suffix in CHECKED_SUFFIXES
+            or path.name in CHECKED_NAMES
+            or path.name.startswith(CHECKED_PREFIXES)
+        )
     )
 
     by_kind: dict[str, list[str]] = {}

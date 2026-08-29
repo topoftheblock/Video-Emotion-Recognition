@@ -1,13 +1,14 @@
 #!/bin/sh
-# Every checker, in one pass. Reports all failures rather than stopping at the
-# first, so one run tells you everything that is wrong.
+# Every checker, in one pass. Reports all failures rather than stopping
+# at the first, so one run tells you everything that is wrong.
 #
 #     docker compose run --rm lint
 #
-# Read-only: nothing here rewrites a file. `ruff format` and `ruff check --fix`
-# are deliberately not run, so this is safe in CI and safe to run while editing.
-# Every tool that caches needs somewhere writable: the source is mounted
-# read-only on purpose, so that a checker can never rewrite what it is checking.
+# Read-only: nothing here rewrites a file. `ruff format` and `ruff check
+# --fix` are deliberately not run, so this is safe in CI and safe to run
+# while editing. Every tool that caches needs somewhere writable: the
+# source is mounted read-only on purpose, so that a checker can never
+# rewrite what it is checking.
 export RUFF_CACHE_DIR=/tmp/ruff-cache
 export SQLFLUFF_CACHE_DIR=/tmp/sqlfluff-cache
 
@@ -30,29 +31,33 @@ report() {
 run "ruff format"  ruff format --check .
 # E501 is deliberately outside the gate until Phase 5.
 #
-# All 48 findings are prose -- comments and docstrings written wider than the
-# style guide's 72 columns for prose. Phase 5 rewrites every one of them, so they
-# clear as a side effect and rewrapping them now would be work thrown away.
+# All 48 findings are prose — comments and docstrings written wider than
+# the style guide's 72 columns for prose. Phase 5 rewrites every one of
+# them, so they clear as a side effect and rewrapping them now would be
+# work thrown away.
 #
-# They are excluded from the gate rather than from the run because a check that
-# is red on its first day stops being read, and then it cannot report the next
-# real failure either. Everything else -- undefined names, unused imports, type
-# errors, malformed Dockerfiles -- still fails the build.
+# They are excluded from the gate rather than from the run because a
+# check that is red on its first day stops being read, and then it
+# cannot report the next real failure either. Everything else —
+# undefined names, unused imports, type errors, malformed Dockerfiles —
+# still fails the build.
 #
-# REMOVE THIS EXEMPTION WHEN PHASE 5 CLOSES. The line below and the report line
-# under it both go, leaving a plain `ruff check .`.
+# REMOVE THIS EXEMPTION WHEN PHASE 5 CLOSES. The line below and the
+# report line under it both go, leaving a plain `ruff check .`.
 run    "ruff lint"        ruff check --extend-ignore E501 .
 report "ruff line length" ruff check --select E501 --statistics .
-# One mypy invocation per sub-project, because each owns a `tests/conftest.py`
-# and mypy identifies a module by its name: pass all three paths at once and it
-# sees three different files claiming to be `conftest`, then stops on the
-# duplicate rather than checking anything. The sub-projects do not share files by
-# design, so they are checked the way they are built -- separately.
+# One mypy invocation per sub-project, because each owns a
+# `tests/conftest.py` and mypy identifies a module by its name: pass all
+# three paths at once and it sees three different files claiming to be
+# `conftest`, then stops on the duplicate rather than checking anything.
+# The sub-projects do not share files by design, so they are checked the
+# way they are built — separately.
 
 # Every sub-project is now held to the full standard: `tests` is checked
-# alongside `src`, and every function carries annotations. The list stays a list
-# rather than collapsing into one invocation because the three `tests/conftest.py`
-# files still collide as duplicate modules if passed together.
+# alongside `src`, and every function carries annotations. The list
+# stays a list rather than collapsing into one invocation because the
+# three `tests/conftest.py` files still collide as duplicate modules if
+# passed together.
 for project in global-identity-linker cas-to-postgres-importer webapp; do
   run "mypy ($project)" mypy --cache-dir="/tmp/mypy-cache-$project" \
     --disallow-untyped-defs "$project/src" "$project/tests"
@@ -60,7 +65,13 @@ done
 
 run "sqlfluff"     sqlfluff lint --dialect postgres pgvector-db/schema.sql
 run "yamllint"     yamllint docker-compose.yml webapp/docs/a11y-ci.yml
-run "hadolint"     hadolint cas-to-postgres-importer/Dockerfile webapp/Dockerfile global-identity-linker/Dockerfile pgvector-db/Dockerfile tests/Dockerfile.tests tests/Dockerfile.lint
+run "hadolint"     hadolint \
+  cas-to-postgres-importer/Dockerfile \
+  global-identity-linker/Dockerfile \
+  webapp/Dockerfile \
+  pgvector-db/Dockerfile \
+  tests/Dockerfile.tests \
+  tests/Dockerfile.lint
 run "eslint"       eslint .
 # The frontend's JSDoc types. No build step: this emits nothing and only
 # checks that a DOM lookup is used as the element it actually is, which
@@ -81,14 +92,15 @@ for project in global-identity-linker cas-to-postgres-importer webapp; do
     --exempt cas/types.py query_agent/schema_context.py
 done
 
-# The only workflow-shaped file inside this project. The real workflow lives in
-# the repository root's .github/workflows, one directory above -- outside the
-# mount, and outside the project, which is the same reason it does not travel
-# with the code. Check it by hand from the repository root:
+# The only workflow-shaped file inside this project. The real workflow
+# lives in the repository root's .github/workflows, one directory above
+# — outside the mount, and outside the project, which is the same reason
+# it does not travel with the code. Check it by hand from the repository
+# root:
 #
 #     docker run --rm -v "$PWD":/w -w /w \
 #       duui-video-emotion-visualization/lint:latest \
-#       actionlint .github/workflows/duui-video-emotion-visualization.yml
+#     actionlint .github/workflows/duui-video-emotion-visualization.yml
 run "actionlint"   actionlint webapp/docs/a11y-ci.yml
 
 printf '\n'
