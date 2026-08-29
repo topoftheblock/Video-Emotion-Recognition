@@ -132,12 +132,32 @@ would slow every run on a machine with no database.
   is an operations decision, not this fix.
 - **Pooling.** Untouched; `db.py` explains why there is none.
 
-## 7. Open questions
+## 7. Questions, answered
 
-1. **Ten seconds, or shorter?** Ten matches the existing precedent and
-   tolerates a slow network. A shorter value fails faster but risks a
-   false failure on a cold or loaded database. Ten unless you prefer
-   otherwise.
-2. **One variable, or one per service?** One (`DUUI_DB_CONNECT_TIMEOUT`)
-   is proposed: all three read the same `DUUI_DB_*` settings today, and
-   splitting them would be the first exception to that.
+1. **Ten seconds, or shorter?** **Ten** (2026-08-29). Matches the
+   existing precedent in `tests/ensure_test_db.py` and tolerates a slow
+   or cold database.
+2. **One variable, or one per service?** **One**, `DUUI_DB_CONNECT_TIMEOUT`
+   (2026-08-29). All three services already read the same `DUUI_DB_*`
+   settings; splitting them would be the first exception to that.
+
+## 8. Judgment calls made without asking
+
+Recorded because each could reasonably have gone the other way.
+
+1. **The value is stored as an `int`, and the annotation widens.**
+   `identity/config.py` annotates `DB_CONFIG` as `dict[str, str]`, which
+   an int value breaks under strict `mypy`; it becomes
+   `dict[str, str | int]`. The alternative — keeping it a string, which
+   libpq parses just as happily, leaving the dict homogeneous — was not
+   taken: `ensure_test_db.py` already stores an int, and
+   `int(os.environ.get(...))` is how every other numeric setting in this
+   project is read.
+2. **`tests/ensure_test_db.py` reads the variable too.** It currently
+   hardcodes 10. Leaving it would give the project two values that can
+   drift; reading the same variable keeps one knob.
+3. **Compose passes the variable through.** Every other `DUUI_*` knob is
+   passed to each service explicitly, so this one is too — in the
+   importer anchor, the linker, the webapp and the test runner. Inside
+   Compose the database answers immediately and the timeout never fires,
+   but a value set in `.env` should reach the code that reads it.
