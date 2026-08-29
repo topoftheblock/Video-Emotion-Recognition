@@ -1,4 +1,6 @@
-/* ---------------- Ask panel ----------------
+/* --- Ask panel ------------------------------------------------------ */
+
+/*
    The one AI-adjacent surface in the app. Before the port it announced
    itself with a gradient border sheen; the Gateway has no such thing,
    so it is now an ordinary .section-wrapper card and lets the filled
@@ -70,19 +72,19 @@
   gap: 8px;
 }
 
-/* The Gateway's .input-wrapper: recessed fill, soft border, 2px
-   primary ring on focus. */
+/* The Gateway's .input-wrapper: recessed fill, soft border, 2px primary
+   ring on focus. */
 .ask-input {
   flex: 1;
 
   /* A flex item's floor is its intrinsic width, and an <input> carries
-     a default `size` of 20 characters -- so this refuses to shrink below
+     a default `size` of 20 characters — so this refuses to shrink below
      roughly twenty characters' worth of its own font. At the default
      size that fits anywhere; at a 200% root it is over 400px, which is
-     wider than the phone it is sitting on, and it alone pushed the whole
-     page into horizontal scroll. `min-width: 0` is what lets a flex item
-     be narrower than its content, the same fix .scrub already carries in
-     responsive.css. */
+     wider than the phone it is sitting on, and it alone pushed the
+     whole page into horizontal scroll. `min-width: 0` is what lets a
+     flex item be narrower than its content, the same fix .scrub already
+     carries in responsive.css. */
   min-width: 0;
   background: var(--surface-alt);
   color: var(--text);
@@ -142,7 +144,7 @@
 }
 
 /* Keyed off aria-disabled rather than :disabled, because the button is
-   never really disabled while a question is out -- see the comment on
+   never really disabled while a question is out — see the comment on
    setPending() in js/panels/ask.js for why it stays focusable. The look
    is identical either way; only the selector changed. */
 .ask-submit[aria-disabled="true"] {
@@ -172,8 +174,8 @@
 }
 
 /* .button-neutral: soft border at rest, fills solid primary on hover.
-   The Gateway's default for any control that is not the primary
-   action on its surface. */
+   The Gateway's default for any control that is not the primary action
+   on its surface. */
 .ask-reset {
   background: transparent;
   color: var(--text-dim);
@@ -214,7 +216,7 @@
   animation: none;
 }
 
-/* Matches PipelineCard's own description paragraph -- no size override
+/* Matches PipelineCard's own description paragraph — no size override
    there, which inherits Tailwind's text-base default. */
 .ask-explanation {
   font-size: var(--text-base);
@@ -225,8 +227,8 @@
 /* surface-50 rather than the surface-100 of --surface-alt: this block
    and the segment rows below carry dimmed text, which lands at 4.48:1
    on surface-100. Grooves and inputs, which don't, keep surface-100.
-   --text-strong (surface-600), not --text-dim: a query's SQL is read
-   in full, not skimmed. */
+   --text-strong (surface-600), not --text-dim: a query's SQL is read in
+   full, not skimmed. */
 .ask-sql {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
@@ -237,9 +239,10 @@
   padding: 10px 12px;
   white-space: pre-wrap;
 
-  /* overflow-wrap, not `word-break: break-word` -- that spelling is a
+  /* overflow-wrap, not `word-break: break-word` — that spelling is a
      non-standard WebKit alias for exactly this and is deprecated. Same
-     behaviour: break a long token only when it would otherwise overflow. */
+     behaviour: break a long token only when it would otherwise
+     overflow. */
   overflow-wrap: break-word;
 }
 
@@ -274,15 +277,15 @@
 }
 
 /* Each row is a <button>, not the <li>. These seek the player, and a
-   click handler on a list item is reachable by pointer only -- the
+   click handler on a list item is reachable by pointer only — the
    sidebar's .person-row is the same control in the same situation and
    was already built this way, so this is that idiom rather than a
    second one.
 
    Everything the row looks like moved onto the button with it: an
    affordance drawn on the <li> would sit one element away from the
-   thing that actually takes focus, and the ring would outline the
-   wrong box. The <li> keeps nothing but its place in the list. */
+   thing that actually takes focus, and the ring would outline the wrong
+   box. The <li> keeps nothing but its place in the list. */
 .ask-segment-list button {
   width: 100%;
   background: var(--surface-50);
@@ -325,16 +328,16 @@
 }
 
 /* A result table's width is whatever the columns the model picked
-   happen to need -- four ordinary ones already come to ~395px, which
-   is wider than a phone and, being a table, will not wrap. Scrolling
-   it inside its own box is the only way it cannot push the page
-   sideways. `min-width: 0` is what actually lets the box be narrower
-   than the table inside it: .ask-results is a flex column, so this
-   wrapper's default floor is its own content's width.
+   happen to need — four ordinary ones already come to ~395px, which is
+   wider than a phone and, being a table, will not wrap. Scrolling it
+   inside its own box is the only way it cannot push the page sideways.
+   `min-width: 0` is what actually lets the box be narrower than the
+   table inside it: .ask-results is a flex column, so this wrapper's
+   default floor is its own content's width.
 
-   Not scoped to a breakpoint -- a wide enough result overflows a
-   desktop card too, and overflow-x: auto costs nothing when the table
-   already fits. */
+   Not scoped to a breakpoint — a wide enough result overflows a desktop
+   card too, and overflow-x: auto costs nothing when the table already
+   fits. */
 .ask-table-wrap {
   min-width: 0;
   overflow-x: auto;

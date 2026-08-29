@@ -1,4 +1,6 @@
-"""The natural-language "Ask" panel: question -> SQL -> playable segments."""
+"""The "Ask" panel: a question, turned into SQL and playable spans."""
+
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -9,18 +11,28 @@ router = APIRouter(prefix="/api", tags=["ask"])
 
 
 class AskRequest(BaseModel):
+    """One natural-language question from the panel."""
+
     question: str
 
 
-def _playable_segments(result):
-    """
-    Turn agent result rows into clips the frontend can jump to.
+def _playable_segments(result: dict[str, Any]) -> list[dict[str, Any]]:
+    """Turn the agent's rows into spans the frontend can jump to.
 
-    Only rows carrying video_id + start_time + end_time can be played,
-    so a result without those columns yields no segments at all and the
-    frontend falls back to rendering a plain table. Everything else on
-    the row rides along as `meta`, which is what the segment list shows
-    underneath each timestamp.
+    Only a row carrying a video and a start time can be played, so a
+    result without those columns yields nothing and the frontend falls
+    back to a plain table. Everything else on the row rides along as
+    `meta`, which is what the list shows under each timestamp.
+
+    A row with no end time collapses to a zero-length span at its
+    start, rather than being dropped: the moment is still worth jumping
+    to even when its extent is unknown.
+
+    Args:
+        result: The agent's result, with `columns` and `rows`.
+
+    Returns:
+        One entry per playable row; empty if none are.
     """
     if not {"video_id", "start_time", "end_time"} <= set(result["columns"]):
         return []
@@ -46,13 +58,22 @@ def _playable_segments(result):
 
 
 @router.post("/ask")
-def ask_question(payload: AskRequest):
-    """
-    Natural-language question -> SQL agent. Runs the question through
-    the LLM-backed NL->SQL agent (backend.query_agent), which explores
-    the schema, writes a query, and picks which display overlays
-    (transcript/bounding boxes/emotion modalities) the frontend should
+def ask_question(payload: AskRequest) -> dict[str, Any]:
+    """Answer one question by way of the query agent.
+
+    The agent explores the schema, writes a query, runs it under the
+    read-only guard, and chooses which overlays the frontend should
     show for the results.
+
+    Args:
+        payload: The question to answer.
+
+    Returns:
+        The agent's result, plus the spans the frontend can play.
+
+    Raises:
+        HTTPException: 400 if the question is empty, 422 if the agent
+            could not answer it.
     """
     question = payload.question.strip()
     if not question:

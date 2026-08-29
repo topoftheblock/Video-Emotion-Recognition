@@ -1,6 +1,7 @@
-/* ---------------- Responsive ----------------
+/* --- Responsive ----------------------------------------------------- */
 
-   Two breakpoints, and a floor of 320px -- the narrowest viewport the
+/*
+   Two breakpoints, and a floor of 320px — the narrowest viewport the
    web still broadly supports (iPhone SE/5, the Galaxy Fold's cover
    screen), and what "must not break" means in practice. Nothing below
    that is designed for.
@@ -12,8 +13,8 @@
 -------------------------------------------------------------------- */
 
 @media (max-width: 860px) {
-  /* One column: the stage -- player, transport, then the three emotion
-     panels -- stacks above the sidebar's three person panels. That
+  /* One column: the stage — player, transport, then the three emotion
+     panels — stacks above the sidebar's three person panels. That
      ordering falls out of source order, so neither group needs
      reordering here; the sidebar just stops being a side bar. It keeps
      wrapping as a row so two person panels can still share a line on a
@@ -55,9 +56,9 @@
 }
 
 @media (max-width: 560px) {
-  /* Gutters. 12px rather than the tablet 16: at 320px every pixel
-     given back to the panels shows up in the emotion tracks, which are
-     the narrowest thing on the page. */
+  /* Gutters. 12px rather than the tablet 16: at 320px every pixel given
+     back to the panels shows up in the emotion tracks, which are the
+     narrowest thing on the page. */
   .layout {
     padding: 12px 12px 32px;
     gap: 16px;
@@ -74,7 +75,7 @@
 
      Done with flex-basis rather than `order`: the buttons drop because
      the input now fills the line, so the DOM order (input, Ask, Reset
-     view) still matches the visual order -- and therefore the tab order.
+     view) still matches the visual order — and therefore the tab order.
      Moving them with `order` would have looked identical and left a
      keyboard user tabbing through the form in a sequence that no longer
      matches what they can see, which is the trap this change is one
@@ -110,15 +111,15 @@
   }
 
   /* The transport is the one row that genuinely cannot fit: the range
-     input alone has a 129px intrinsic minimum, and play + CC + the
-     time read-out claim ~160px before it. Below ~410px viewport that
-     sum overflowed the grid column and dragged the video frame, the
-     overlay canvas and all three emotion panels off-screen with it --
-     the single cause of the page's horizontal scroll.
+     input alone has a 129px intrinsic minimum, and play + CC + the time
+     read-out claim ~160px before it. Below ~410px viewport that sum
+     overflowed the grid column and dragged the video frame, the overlay
+     canvas and all three emotion panels off-screen with it — the single
+     cause of the page's horizontal scroll.
 
      So the scrubber takes a line of its own. `order: 3` is belt and
-     braces (it is already last in source), and `flex: 1 0 100%` is
-     what forces the wrap rather than merely allowing it. `min-width: 0`
+     braces (it is already last in source), and `flex: 1 0 100%` is what
+     forces the wrap rather than merely allowing it. `min-width: 0`
      defeats the flex item's content-based floor, which is that same
      129px. */
   .transport {
@@ -137,9 +138,9 @@
     margin-left: auto;
   }
 
-  /* Comfortable enough to hit with a thumb. Not the full 44px the
-     touch guidelines ask for -- these are dense read-out rows, and 44
-     would change what the panels are; 36-40 is the compromise. */
+  /* Comfortable enough to hit with a thumb. Not the full 44px the touch
+     guidelines ask for — these are dense read-out rows, and 44 would
+     change what the panels are; 36-40 is the compromise. */
   .transport-toggle {
     height: 36px;
     padding: 0 13px;
@@ -151,25 +152,25 @@
   }
 
   /* The legend is absolutely positioned into the title's row, which
-     works only while the title has somewhere to sit beside it. At
-     320px the reserved 132px leaves ~120px for "Also appears in" --
-     it fits, but by five pixels. Drop it onto its own line instead,
-     where neither has to shrink. It sits between the title and the
-     list in source order, so no reordering is needed. */
+     works only while the title has somewhere to sit beside it. At 320px
+     the reserved 132px leaves ~120px for "Also appears in" — it fits,
+     but by five pixels. Drop it onto its own line instead, where
+     neither has to shrink. It sits between the title and the list in
+     source order, so no reordering is needed. */
   .panel:has(> .person-legend) .panel-title {
     padding-right: 0;
   }
 
   /* The emotion rows keep both value columns at full width (they hold
-     "-1.00", which does not shrink) and take the space out of the
-     label column and the gaps instead, so the track -- the only part
-     of the row that is read at a glance rather than by number -- does
-     not end up thinner than the numbers beside it.
+     "-1.00", which does not shrink) and take the space out of the label
+     column and the gaps instead, so the track — the only part of the
+     row that is read at a glance rather than by number — does not end
+     up thinner than the numbers beside it.
 
      4.5em is the floor, not a round number: the longest labels in the
      three model vocabularies ("Happiness", "dominance", "disgusted",
      "surprised") are 9 characters, and Ubuntu Mono advances 0.5em per
-     character -- so nine of them is exactly 4.5em, whatever the reader
+     character — so nine of them is exactly 4.5em, whatever the reader
      has set their font size to. Stated as a ratio rather than as the
      63px it happens to be at a 16px root, because that number stopped
      being fixed when the type scale moved to rem. */
@@ -180,7 +181,7 @@
   }
 
   /* A 16:9 frame is only ~166px tall at 320px wide, which is less than
-     the empty state's own title + explanation + command need -- and
+     the empty state's own title + explanation + command need — and
      .stage-frame is `overflow: hidden`, so the command someone is
      supposed to copy is exactly what gets cut off.
 
@@ -189,8 +190,8 @@
      frame's own box (drawBox() in js/overlay.js), which is the video's
      content box only while the two share an aspect ratio. When the
      empty state is up there is no video and no detections to misplace,
-     which is why this hangs off .is-empty -- set by showEmptyState()
-     in js/videoLoader.js -- rather than off the frame itself. */
+     which is why this hangs off .is-empty — set by showEmptyState() in
+     js/videoLoader.js — rather than off the frame itself. */
   .stage-frame.is-empty {
     aspect-ratio: auto;
     min-height: 280px;
@@ -233,10 +234,10 @@
 
 /* Note for anyone hitting this later: the emotion row was, briefly,
    given a `@media (max-width: 19em)` block that stacked its label onto
-   its own line. It turned out not to be needed -- the horizontal scroll
-   it was meant to fix came from three grid/flex items refusing to shrink
-   below their own content (.stage, .sidebar, .ask-input), not from the
-   row -- and it was removed rather than shipped unverified.
+   its own line. It turned out not to be needed — the horizontal scroll
+   it was meant to fix came from three grid/flex items refusing to
+   shrink below their own content (.stage, .sidebar, .ask-input), not
+   from the row — and it was removed rather than shipped unverified.
 
    Worth knowing if it ever is needed: `em` in a *media query* is
    relative to the browser's default font size, not to anything the page

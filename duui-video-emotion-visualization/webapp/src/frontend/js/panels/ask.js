@@ -1,12 +1,13 @@
+// @ts-check
 /**
  * The natural-language "Ask" panel.
  *
  * A question goes to POST /api/ask; the agent answers with SQL, an
  * explanation, the rows, and which overlays it thinks are relevant.
- * Rows that carry a video_id and a time come back as `segments` --
- * those render as a clickable list that seeks the player, and opening
- * one narrows the visible overlays to what the agent picked. "Reset
- * view" puts every overlay back.
+ * Rows that carry a video_id and a time come back as `segments` — those
+ * render as a clickable list that seeks the player, and opening one
+ * narrows the visible overlays to what the agent picked. "Reset view"
+ * puts every overlay back.
  */
 
 import { askQuestion } from "../lib/api.js";
@@ -21,7 +22,7 @@ import { loadVideo } from "../videoLoader.js";
  *
  * The submit button is marked aria-disabled while one is, rather than
  * actually disabled. `disabled` is simpler but removes the button from
- * the tab order the instant it is set -- so a keyboard user who has just
+ * the tab order the instant it is set — so a keyboard user who has just
  * pressed Enter or Space on it loses focus to the document body
  * mid-request, and has to tab in from the top of the page to reach the
  * answer they asked for. aria-disabled keeps the button where it is,
@@ -127,7 +128,9 @@ function renderAskResults(result) {
   // handling of their own.
   el.askResults.querySelectorAll(".ask-segment-list").forEach((list) => {
     list.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-index]");
+      const button = /** @type {HTMLElement} */ (
+        /** @type {Element} */ (event.target).closest("[data-index]")
+      );
       if (!button) return;
       jumpToSegment(result.segments[Number(button.dataset.index)], result.overlays);
     });
@@ -141,7 +144,8 @@ async function jumpToSegment(seg, overlays) {
   if (needsVideoSwitch) {
     await loadVideo(seg.video_id);
     // Sync the picker's display to the jumped-to video (the setter only
-    // updates the visible value; loadVideo above did the actual switch).
+    // updates the visible value; loadVideo above did the actual
+    // switch).
     el.videoSelect.value = String(seg.video_id);
     seekOnceLoaded(seg.start_time);
   } else {
@@ -153,19 +157,19 @@ async function jumpToSegment(seg, overlays) {
 export function initAskPanel() {
   el.askForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    // aria-disabled stops nothing by itself -- this is the line that
+    // aria-disabled stops nothing by itself — this is the line that
     // actually refuses a second question while the first is still out.
-    // It also covers Enter from inside the input, which submits the form
-    // without going near the button at all.
+    // It also covers Enter from inside the input, which submits the
+    // form without going near the button at all.
     if (pending) return;
 
     const question = el.askInput.value.trim();
     if (!question) return;
 
-    // #askStatus is role="status" and announces "Thinking…", which is the
-    // actual notification; setPending also marks the control itself busy,
-    // so the state is discoverable by someone who navigates back to it
-    // rather than only at the instant the live region fires.
+    // #askStatus is role="status" and announces "Thinking…", which is
+    // the actual notification; setPending also marks the control itself
+    // busy, so the state is discoverable by someone who navigates back
+    // to it rather than only at the instant the live region fires.
     setPending(true);
     setAskStatus("Thinking…");
     el.askResults.innerHTML = "";

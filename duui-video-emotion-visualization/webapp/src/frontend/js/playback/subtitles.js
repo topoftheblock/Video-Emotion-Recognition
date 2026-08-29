@@ -1,5 +1,6 @@
+// @ts-check
 /**
- * The subtitle bar over the video -- and `coveredBy`, the "which rows
+ * The subtitle bar over the video — and `coveredBy`, the "which rows
  * are live at this instant" helper every time-synced panel shares.
  */
 
@@ -23,7 +24,7 @@ export function coveredBy(rows, t) {
  *
  * The sub-second gaps between sentences are an artefact of the token
  * timings the transcript is rebuilt from, not real silence. Without
- * this the caption blinks out between sentences -- and, worse, a video
+ * this the caption blinks out between sentences — and, worse, a video
  * sitting at 0:00 falls before the first sentence (which typically
  * starts a few hundredths in), so switching subtitles on at the
  * position every video opens at would show an empty bar.
@@ -85,7 +86,7 @@ export function renderSubtitle(data, t) {
 
   // The two lines share one background now (see .subtitle-box in
   // stage.css), so hiding an empty line can no longer take its
-  // background with it via :empty -- both overlays can be on and still
+  // background with it via :empty — both overlays can be on and still
   // land here with nothing to show for this instant (no sentence, or no
   // text-emotion reading, covering time t). Without this the box would
   // render as a blank translucent card.

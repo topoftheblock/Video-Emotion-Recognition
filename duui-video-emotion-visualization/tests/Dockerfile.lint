@@ -1,9 +1,9 @@
 # Every linter and checker, in one image.
 #
-# A sibling of Dockerfile.tests and for the same reason: the tools have to run
-# somewhere reproducible, and installing eight of them on each machine is not a
-# habit anyone keeps. CI runs this identical image, so a clean run here means a
-# clean run there.
+# A sibling of Dockerfile.tests and for the same reason: the tools have
+# to run somewhere reproducible, and installing eight of them on each
+# machine is not a habit anyone keeps. CI runs this identical image, so
+# a clean run here means a clean run there.
 FROM python:3.14-slim
 
 # hadolint and actionlint ship as static binaries rather than on PyPI.
@@ -15,31 +15,31 @@ RUN chmod 755 /usr/local/bin/hadolint \
     && tar -xzf /tmp/actionlint.tar.gz -C /usr/local/bin actionlint \
     && rm /tmp/actionlint.tar.gz
 
-# Node, for the JavaScript, CSS, HTML and Markdown checkers. Copied from the
-# official image rather than installed from a distribution repository, so the
-# version is the one package.json's `engines` field names. Both images are
-# Debian trixie, so the runtime linking matches.
+# Node, for the JavaScript, CSS, HTML and Markdown checkers. Copied from
+# the official image rather than installed from a distribution
+# repository, so the version is the one package.json's `engines` field
+# names. Both images are Debian trixie, so the runtime linking matches.
 COPY --from=node:24-trixie-slim /usr/local/bin/node /usr/local/bin/node
 COPY --from=node:24-trixie-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
-# Pinned like every other dependency in this project: floor at the tested
-# version, ceiling at the next major.
+# Pinned like every other dependency in this project: floor at the
+# tested version, ceiling at the next major.
 RUN pip install --no-cache-dir \
       "ruff>=0.14,<1.0" \
       "mypy>=1.18,<2" \
       "sqlfluff>=3.4,<4" \
       "yamllint>=1.37,<2"
 
-# The Node tools, installed into the image so a run needs no network and the
-# read-only source mount never needs a node_modules written into it.
+# The Node tools, installed into the image so a run needs no network and
+# the read-only source mount never needs a node_modules written into it.
 WORKDIR /opt/tooling
 COPY package.json ./
 RUN npm install --no-audit --no-fund && npm cache clean --force
 ENV PATH="/opt/tooling/node_modules/.bin:${PATH}"
-# require() in eslint.config.cjs resolves through this: the config lives in the
-# read-only source mount, the modules do not.
+# require() in eslint.config.cjs resolves through this: the config lives
+# in the read-only source mount, the modules do not.
 ENV NODE_PATH=/opt/tooling/node_modules
 
 WORKDIR /app

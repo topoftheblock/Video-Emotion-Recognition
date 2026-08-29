@@ -1,30 +1,32 @@
-"""The UIMA vocabulary this importer reads: type names and fallback definitions.
+"""The UIMA vocabulary this importer reads.
 
-Domain constants, not settings — nothing here varies per deployment, which is
-what separates this module from `config.py`. Split out of it so that
-configuration is the small file it sounds like.
+Type names and fallback type definitions: domain constants, not
+settings. Nothing here varies per deployment, which is what separates
+this module from `config.py`, and why it was split out of it.
+
+The XML strings below are data. They are exempt from the line limit and
+are not rewrapped — see docs/plan/phase-5-documentation.md, Q6.
 """
 
 # --- UIMA type names ----------------------------------------------------
 # Centralising these means a type-system rename only touches this file.
-# Only types some parser step actually `select`s by name are listed.
-# Types this parser reads but never selects -- Embedding,
-# AnnotationComment, HuggingfaceMetaData -- are reached by following a
-# feature off an annotation that *was* selected, so they need a
-# definition (see INJECTED_FALLBACK_TYPES below) but no entry here.
+# Only types some parser step selects by name are listed. Types this
+# importer reads but never selects — Embedding, AnnotationComment,
+# HuggingfaceMetaData — are reached by following a feature off an
+# annotation that *was* selected, so they need a definition (see
+# INJECTED_FALLBACK_TYPES below) but no entry here.
 
 TYPES = {
     "multimedia_element": "org.texttechnologylab.annotation.type.MultimediaElement",
     "document_meta_data": "de.tudarmstadt.ukp.dkpro.core.api.metadata.type.DocumentMetaData",
-    # NOTE: this lives under the `.model` subpackage, not directly under
-    # `.annotation` -- confirmed against real DUUI-video-emotion output.
-    # NOTE: canonical mapping doc (data_schema_with_types.md) specifies
+    # Lives under the `.model` subpackage, not directly under
+    # `.annotation` — confirmed against real pipeline output.
+    # The design mapping (docs/legacy/data-schema-design.md) specifies
     # the bare `annotation.MetaData` type here, not `.model.MetaData`.
     # Since `model.MetaData`/`model.HuggingfaceMetaData` both extend
     # this bare type (see INJECTED_FALLBACK_TYPES), selecting the bare
-    # type already picks up every concrete subtype instance too --
-    # cassis's select() includes descendants -- so this single type
-    # name covers all real Model rows without a second select.
+    # type already picks up every concrete subtype instance too, since
+    # select() includes descendants. One name covers every Model row.
     "model_meta_data": "org.texttechnologylab.annotation.MetaData",
     "shot": "org.texttechnologylab.annotation.video.Shot",
     "speaker_sentence": "org.texttechnologylab.annotation.audio.SpeakerSentence",
@@ -44,14 +46,14 @@ TYPES = {
     "person_detection": "org.texttechnologylab.annotation.video.PersonDetection",
     "emotion": "org.texttechnologylab.annotation.emotion.Emotion",
     # Text-based GoEmotions analysis is a *different* type from the
-    # per-frame video/audio Emotion above -- it lives directly under
+    # per-frame video and audio Emotion above: it lives directly under
     # `.annotation`, not `.annotation.emotion`.
     "goemotions_emotion": "org.texttechnologylab.annotation.Emotion",
 }
 
-# Fallback type descriptions for types this parser depends on that are
-# missing from the provided typesystem files entirely -- confirmed
-# against the real Bundestag video-emotion typesystem files:
+# Fallback descriptions for types this importer depends on that are
+# missing from the provided typesystem files entirely — confirmed
+# against the real typesystem files:
 # `MultimediaElement`, `AudioToken`, the bare `MetaData`, and
 # `Embedding` are all referenced (as a supertype or a feature's
 # range/element type) but never actually defined in any of the three
@@ -62,8 +64,8 @@ TYPES = {
 # `MultimediaElement` matters most: it's the supertype of most
 # time-bounded annotations in this pipeline (Shot, PersonTrack,
 # Detection, SpeakerSegment, SpeakerSentence, Emotion), and those
-# subtypes don't redeclare `timeStart`/`timeEnd` themselves -- they
-# inherit them. Confirmed against the real CAS: those fields *are*
+# subtypes do not redeclare `timeStart` and `timeEnd` themselves —
+# they inherit them. Confirmed against the real CAS: those fields *are*
 # present on real instances, so the fallback here must declare them or
 # every subtype fails to load with an "unexpected keyword argument"
 # error.
@@ -71,8 +73,8 @@ TYPES = {
 # The GoEmotions-style raw multi-label classification (a distinct
 # `annotation.Emotion` + `AnnotationComment` pair, not the same type as
 # the richer per-frame `annotation.emotion.Emotion` defined in the
-# provided files) isn't part of these three files at all -- it
-# apparently comes from a separate annotator component's own
+# provided files) is not part of these files at all. It comes from a
+# separate annotator component's own
 # typesystem. Its shape here is empirically confirmed against the real
 # CAS data rather than any typesystem document.
 #
@@ -187,17 +189,17 @@ INJECTED_FALLBACK_TYPES = {
 """,
 }
 
-# Types a real CAS carries that this importer deliberately does not read.
+# Types a real CAS carries that this importer does not read.
 #
-# The DUUI pipeline runs an NLP stage over the transcript sofa and stamps
-# provenance on everything it touches, so the .xmi references DKPro's
-# text-layer types and TTLab's annotator-metadata types. None of them is
-# in TYPES above and no parser step selects them: the transcript comes
-# from `DiarizedAudioToken` (the audio layer), and POS/NER are taken from
-# the DiarizedAudioToken features themselves where present.
+# The DUUI pipeline runs an NLP stage over the transcript sofa and
+# stamps provenance on everything it touches, so the CAS references
+# DKPro's text-layer types and TTLab's annotator-metadata types. None
+# is in TYPES above and no parser step selects them: the transcript
+# comes from `DiarizedAudioToken`, the audio layer, and POS and NER are
+# taken from that type's own features where present.
 #
-# cassis warns once per unknown type while loading the XMI and skips the
-# annotation -- correct behaviour, but for these twelve it is noise that
+# cassis warns once per unknown type while loading the CAS and skips
+# the annotation. That is correct behaviour, but here it is noise that
 # buries anything real, so `loading_cas_quietly` filters exactly these
 # messages. Declaring them here instead of stubbing them in
 # INJECTED_FALLBACK_TYPES is deliberate: a featureless stub would make
@@ -208,7 +210,7 @@ INJECTED_FALLBACK_TYPES = {
 # a typesystem file was dropped or renamed still warns loudly.
 IGNORED_ABSENT_TYPES = frozenset(
     {
-        # DKPro text layer -- tokens/POS/NER on the transcript sofa.
+        # DKPro text layer: tokens, POS and NER on the transcript sofa.
         "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Sentence",
         "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Token",
         "de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma",
@@ -217,7 +219,7 @@ IGNORED_ABSENT_TYPES = frozenset(
         "de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.Dependency",
         "de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency.ROOT",
         "de.tudarmstadt.ukp.dkpro.core.api.ner.type.NamedEntity",
-        # TTLab provenance -- who annotated what, with which tool version.
+        # TTLab provenance: who annotated what, with which version.
         "org.texttechnologylab.duui.ReproducibleAnnotation",
         "org.texttechnologylab.annotation.DocumentModification",
         "org.texttechnologylab.annotation.AnnotatorMetaData",

@@ -1,45 +1,48 @@
-# Convenience wrapper around the four images (each of which can also be
-# built and run on its own -- see README "Running without compose").
+# Convenience wrapper around the four images, each of which can also be
+# built and run on its own.
 #
-#   docker compose up -d          # pgvector-db -> viewer (no import)
+#   docker compose up -d          # database and webapp, no import
 #
-# ...then open http://localhost:8010. That single command starts the
-# database and the viewer but imports NOTHING -- so a fresh start shows
-# an empty dropdown until you run an import. To import (whole dir or a
-# single file), without restarting anything:
+# ...then open http://localhost:8010. That one command starts the
+# database and the webapp but imports nothing, so a fresh start shows an
+# empty dropdown until an import has run. To import a whole directory or
+# a single file, without restarting anything:
 #
 #   docker compose run --rm cas-to-postgres-importer
-#   docker compose run --rm cas-to-postgres-importer /data/input/xmi/one_file.xmi
+#   docker compose run --rm cas-to-postgres-importer \
+#       /data/input/xmi/one.xmi
 #
 # Two jobs are NOT part of `up` and have to be asked for:
 #
-#   1. The importer (`cas-to-postgres-importer`, profile "import") -- loads .xmi files
-#      into Postgres. Run it whenever you have files to load.
-#   2. Cross-video person identity (`global-identity-linker`, profile
-#      "identity") -- computed over the whole corpus at once rather than
-#      per file. Run it after importing, whenever you want the viewer's
-#      "Also appears in" panel to reflect the videos currently loaded:
+#   1. The importer (`cas-to-postgres-importer`, profile "import") —
+#      loads CAS files into Postgres. Run it whenever you have files to
+#      load.
+#   2. The identity linker (`global-identity-linker`, profile
+#      "identity") — works out which people appear in more than one
+#      video, over the whole corpus at once rather than per file. Run it
+#      after importing, whenever you want the webapp's "Also appears in"
+#      panel to reflect the videos currently loaded:
 #
 #   docker compose run --rm global-identity-linker
 #
 # The ONE thing you normally need to set is where your CAS files and
-# videos already live. You do NOT move them -- point at them in place:
+# videos already live. You do NOT move them — point at them in place:
 #
 #   echo "DUUI_INPUT_XMI_DIR=/absolute/path/to/xmi" >> .env
 #   echo "DUUI_INPUT_VIDEO_DIR=/absolute/path/to/videos" >> .env
 #
-# See README "Where do my .xmi files and videos have to be?".
+# See docs/configuration.md, "Input and output paths".
 
 # Pinned explicitly instead of being derived from the directory name:
 # two checkouts of this stack in differently-named folders would
 # otherwise get different projects (surprising), and two folders with
-# the SAME name would silently share containers and volumes (worse --
-# you end up debugging one while running the other).
+# the SAME name would silently share containers and volumes (worse — you
+# end up debugging one while running the other).
 name: duui-video-emotion-visualization
 
 # Shared by `cas-to-postgres-importer` (profile "import") and anything
-# else that needs to
-# run the cas-to-postgres-importer job, so the two can never drift apart.
+# else that needs to run the cas-to-postgres-importer job, so the two
+# can never drift apart.
 x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
   build:
     context: ./cas-to-postgres-importer
@@ -52,8 +55,8 @@ x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
     # Container-side paths (what the mounts below land on). Same names
     # as the host-side settings in .env, deliberately: .env decides
     # which host folders get mounted, these fix where they land inside
-    # the container, and a native (non-Docker) run reads the .env
-    # values directly.
+    # the container, and a native (non-Docker) run reads the .env values
+    # directly.
     DUUI_INPUT_XMI_DIR: /data/input/xmi
     DUUI_INPUT_VIDEO_DIR: /data/input/videos
     DUUI_VIDEO_DIR: /data/videos
@@ -61,47 +64,47 @@ x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
     # from the CAS instead of a file. Passed through from .env so
     # setting it there actually reaches the importer.
     DUUI_VIDEO_VIEW: ${DUUI_VIDEO_VIEW:-_InitialView}
-    # What to do with a .xmi whose video is already imported (matched
-    # by filename). `skip` is why re-running the importer is now
-    # nearly free -- it does not even load the CAS. Set `replace` (or
-    # pass `--on-existing replace`) to rebuild a video's rows from a
+    # What to do with a .xmi whose video is already imported (matched by
+    # filename). `skip` is why re-running the importer is now nearly
+    # free — it does not even load the CAS. Set `replace` (or pass
+    # `--on-existing replace`) to rebuild a video's rows from a
     # re-exported CAS.
     DUUI_ON_EXISTING: ${DUUI_ON_EXISTING:-skip}
   volumes:
     # INPUT (read-only): your existing folder of .xmi files + their
-    # videos, mounted in place. Nothing here is ever modified, hence
-    # :ro -- your pipeline output is safe.
+    # videos, mounted in place. Nothing here is ever modified, hence :ro
+    # — your pipeline output is safe.
     #
     # `z` is the SELinux share flag. On a labelling distro (openSUSE,
     # Fedora, RHEL) the container runs as container_t and simply may not
     # read files labelled user_home_t, so without this the importer sees
-    # an unreadable /data/input/xmi and reports "No .xmi files found" --
+    # an unreadable /data/input/xmi and reports "No .xmi files found" —
     # even running as root. `z` relabels this directory's contents to
     # container_file_t with a SHARED category, so both importer services
     # can read it. It is a no-op where SELinux isn't enforcing.
     #
-    # Note it relabels RECURSIVELY: keep these pointed at a data
-    # folder, never at $HOME or a system directory.
+    # Note it relabels RECURSIVELY: keep these pointed at a data folder,
+    # never at $HOME or a system directory.
     #
-    # Two separate mounts: the .xmi files and the videos they
-    # reference. Point both at the same folder for the side-by-side
-    # layout -- mounting one host directory twice is fine.
+    # Two separate mounts: the .xmi files and the videos they reference.
+    # Point both at the same folder for the side-by-side layout —
+    # mounting one host directory twice is fine.
     #
     # The video mount falls back to DUUI_INPUT_XMI_DIR before it falls
     # back to the demo folder: setting only the .xmi directory then
     # means "the videos are in there too" (the side-by-side case),
-    # instead of silently looking for your videos in the shipped
-    # sample. Only with neither set does the demo pair apply.
+    # instead of silently looking for your videos in the shipped sample.
+    # Only with neither set does the demo pair apply.
     - ${DUUI_INPUT_XMI_DIR:-./cas-to-postgres-importer/src/resources/sample-input}:/data/input/xmi:ro,z
     - ${DUUI_INPUT_VIDEO_DIR:-${DUUI_INPUT_XMI_DIR:-./cas-to-postgres-importer/src/resources/sample-input}}:/data/input/videos:ro,z
     # OUTPUT (read-write): the video store. The importer copies each
     # CAS's companion video here, named exactly as the `videos.filename`
-    # row it just wrote -- which is how the webapp (same store, mounted
-    # read-only) knows which file belongs to which database rows.
-    # No `z` here: by default this is a named volume, which Docker
-    # already labels container_file_t. If you point DUUI_VIDEO_STORE at
-    # a host path on an SELinux system, add `,z` here and on the
-    # webapp's copy of this mount.
+    # row it just wrote — which is how the webapp (same store, mounted
+    # read-only) knows which file belongs to which database rows. No `z`
+    # here: by default this is a named volume, which Docker already
+    # labels container_file_t. If you point DUUI_VIDEO_STORE at a host
+    # path on an SELinux system, add `,z` here and on the webapp's copy
+    # of this mount.
     - ${DUUI_VIDEO_STORE:-video_media}:/data/videos
 
 services:
@@ -118,17 +121,18 @@ services:
       # The database itself. schema.sql is baked into the image and runs
       # automatically the first time this volume is created (empty).
       #
-      # Mounted at /var/lib/postgresql, NOT /var/lib/postgresql/data. Postgres 18
-      # changed the layout: data now lives in a major-version subdirectory
-      # (/var/lib/postgresql/18/docker), so the image treats a mount on the old
-      # path as an unused volume and refuses to start. Mounting the parent is
-      # what the image expects, and it is also what makes `pg_upgrade --link`
-      # possible later, since both versions then sit inside one mount.
+      # Mounted at /var/lib/postgresql, NOT /var/lib/postgresql/data.
+      # Postgres 18 changed the layout: data now lives in a
+      # major-version subdirectory (/var/lib/postgresql/18/docker), so
+      # the image treats a mount on the old path as an unused volume and
+      # refuses to start. Mounting the parent is what the image expects,
+      # and it is also what makes `pg_upgrade --link` possible later,
+      # since both versions then sit inside one mount.
       - db_data:/var/lib/postgresql
     ports:
-      # Host port only -- the other containers reach Postgres as
-      # pgvector-db:5432 on the compose network regardless of this. Change it if
-      # you already run Postgres locally on 5432.
+      # Host port only — the other containers reach Postgres as
+      # pgvector-db:5432 on the compose network regardless of this.
+      # Change it if you already run Postgres locally on 5432.
       - "${DUUI_DB_HOST_PORT:-5432}:5432"
     healthcheck:
       test:
@@ -140,19 +144,20 @@ services:
 
   # The cas-to-postgres-importer job. Deliberately NOT part of `up` (the
   # "import" profile keeps it out), so a fresh stack starts with an
-  # empty viewer rather than auto-importing. Run it when you have files
+  # empty webapp rather than auto-importing. Run it when you have files
   # to load, without touching the running stack (paths are container
-  # paths -- the .xmi directory is /data/input/xmi in here, whatever it
+  # paths — the .xmi directory is /data/input/xmi in here, whatever it
   # is on the host):
-  #   docker compose run --rm cas-to-postgres-importer                # whole xmi dir
+  #   # every CAS in the directory:
+  #   docker compose run --rm cas-to-postgres-importer
   #   # a single file:
   #   docker compose run --rm cas-to-postgres-importer \
   #       /data/input/xmi/one_file.xmi
   #
   # Importing is idempotent (rows are upserted, already-placed videos
-  # are left alone), so re-running is harmless. It is not a dependency of
-  # `webapp`: if one CAS in a batch fails, you still want the viewer up
-  # for everything that did import.
+  # are left alone), so re-running is harmless. It is not a dependency
+  # of `webapp`: if one CAS in a batch fails, the webapp should still be
+  # up for everything that did import.
   cas-to-postgres-importer:
     <<: *cas-to-postgres-importer-common
     profiles: ["import"]
@@ -161,20 +166,20 @@ services:
       pgvector-db:
         condition: service_healthy
 
-  # Cross-video person identity: works out which people in different
-  # videos are the same person, by comparing the face/voice embeddings
-  # the importer already loaded (pgvector cosine distance). Fills
-  # `global_persons` + `persons.global_person_id`, which is what the
-  # viewer's "Also appears in" panel reads. Nothing else populates
-  # those two -- the importer deliberately leaves them empty.
+  # The identity linker: works out which people in different videos are
+  # the same person, by comparing the face and voice embeddings the
+  # importer already loaded. Fills `global_persons` and
+  # `persons.global_person_id`, which is what the webapp's "Also appears
+  # in" panel reads. Nothing else populates those two — the importer
+  # deliberately leaves them empty.
   #
   # Deliberately NOT part of `up`, and deliberately not a `depends_on`
   # of anything. Two reasons:
   #
-  #   1. It is corpus-wide, not per-file. Each run CLEARS every
-  #      existing global identity and recomputes the whole set from
+  #   1. It is corpus-wide, not per-file. Each run clears every
+  #      existing global person and recomputes the whole set from
   #      scratch, so the result depends only on what is in the database
-  #      and not on the order videos were imported in -- which is
+  #      and not on the order videos were imported in — which is
   #      exactly what running it automatically per import could not
   #      give you.
   #   2. It gets more accurate the more videos are loaded, so the point
@@ -183,10 +188,11 @@ services:
   # The "identity" profile keeps it out of `up`; `run` starts it anyway:
   #   docker compose run --rm global-identity-linker
   #
-  # It takes no arguments, and its own thresholds are the only tuning
-  # (see .env.example / README "Cross-video person identity"). Re-running
-  # it is always safe: the clear-then-rebuild is one transaction, so an
-  # interrupted run leaves the previous identities untouched.
+  # It takes no arguments; its matching thresholds are the only tuning,
+  # and they are documented in .env.example.
+  # Re-running it is always safe: the clear-then-rebuild is one
+  # transaction, so an interrupted run leaves the previous identities
+  # untouched.
   global-identity-linker:
     build:
       context: ./global-identity-linker
@@ -207,15 +213,15 @@ services:
       # No volumes at all: this job never touches the .xmi input or the
       # video store. The database is its entire input and output.
 
-  # --- Lint ---------------------------------------------------------------
+  # --- Lint -------------------------------------------------------------
   # Every checker in one pass:
   #
   #     docker compose run --rm lint
   #
-  # Read-only -- nothing here rewrites a file, so it is safe in CI and safe to
-  # run mid-edit. Needs no database and no application dependencies, which is
-  # what keeps it fast and stops an unrelated dependency break from masking a
-  # lint failure.
+  # Read-only — nothing here rewrites a file, so it is safe in CI and
+  # safe to run mid-edit. Needs no database and no application
+  # dependencies, which is what keeps it fast and stops an unrelated
+  # dependency break from masking a lint failure.
   lint:
     profiles: ["lint"]
     build:
@@ -226,17 +232,17 @@ services:
       - ./:/app:ro
 
   # --- Tests ------------------------------------------------------------
-  # Runs every suite against the same interpreter the images use. Profiled, so
-  # `docker compose up` never starts it:
+  # Runs every suite against the same interpreter the images use.
+  # Profiled, so `docker compose up` never starts it:
   #
   #     docker compose run --rm tests
   #     docker compose run --rm tests webapp/tests -k contrast
   #
   # Anything after `tests` is passed through to pytest.
   #
-  # This is the supported way to run the suite. There is no local environment to
-  # run it from -- the project's Python is not installable everywhere, which is
-  # the whole reason this service exists.
+  # This is the supported way to run the suite. There is no local
+  # environment to run it from — the project's Python is not installable
+  # everywhere, which is the whole reason this service exists.
   tests:
     profiles: ["test"]
     build:
@@ -248,21 +254,24 @@ services:
         condition: service_healthy
     environment:
       DUUI_DB_HOST: pgvector-db
-      # A database of its own, empty and schema-only. The DB-backed tests assume
-      # they are the only writer; several fail rather than skip against a
-      # populated corpus, so pointing this at duui_video_emotion would report
-      # three failures that are not defects.
+      # A database of its own, empty and schema-only. The DB-backed
+      # tests assume they are the only writer; several fail rather than
+      # skip against a populated corpus, so pointing this at
+      # duui_video_emotion would report three failures that are not
+      # defects.
       DUUI_DB_NAME: ${DUUI_TEST_DB_NAME:-duui_video_emotion_test}
       DUUI_DB_USER: ${DUUI_DB_USER:-duui}
       DUUI_DB_PASSWORD: ${DUUI_DB_PASSWORD:-duui}
-    # The image already runs as a non-root user, which is what keeps the suite
-    # at 150 rather than 149 + 1 skipped -- see Dockerfile.tests. This override
-    # exists only for a host whose ids differ and which needs the container to
-    # write into the mounted source; it is not needed to run the tests.
+    # The image already runs as a non-root user, which is what keeps the
+    # suite at 150 rather than 149 + 1 skipped — see Dockerfile.tests.
+    # This override exists only for a host whose ids differ and which
+    # needs the container to write into the mounted source; it is not
+    # needed to run the tests.
     user: "${DUUI_TEST_UID:-1000}:${DUUI_TEST_GID:-1000}"
     volumes:
-      # Read-write because pytest writes nothing but the source has to be live;
-      # bytecode is disabled in the image so nothing lands back on the host.
+      # Read-write because pytest writes nothing but the source has to
+      # be live; bytecode is disabled in the image so nothing lands back
+      # on the host.
       - ./:/app
 
   webapp:
@@ -285,9 +294,9 @@ services:
       DUUI_QUERY_BASE_URL: ${DUUI_QUERY_BASE_URL:-https://lehre.llm.texttechnologylab.org/api}
       DUUI_QUERY_MODEL: ${DUUI_QUERY_MODEL:-gondor.qwen3-vl:32b}
     volumes:
-      # Same video store as the importer, read-only: the viewer only ever
-      # plays videos the importer already placed, and never touches your
-      # input folder at all.
+      # The same video store as the importer, read-only: the webapp
+      # only ever plays videos the importer already placed, and never
+      # touches the input directory at all.
       - ${DUUI_VIDEO_STORE:-video_media}:/data/videos:ro
     ports:
       - "${DUUI_WEBAPP_HOST_PORT:-8010}:8000"

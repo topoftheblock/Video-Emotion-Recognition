@@ -1,9 +1,7 @@
 [tool.pytest.ini_options]
-# `src` is the source root (not a package), so putting it on the path
-# is what makes `import backend` resolve the same way it does inside
-# the container (where it is copied to /app/src and exported as
-# PYTHONPATH). Lets `cd webapp &&
-# pytest` work on its own; the stack root's pyproject.toml runs this
-# suite together with the importer's.
+# `src` is the source root rather than a package, so putting it on the
+# path makes `import backend` resolve exactly as it does in the
+# container. This lets the suite run from this directory alone; the
+# project root's pyproject.toml runs all three suites together.
 pythonpath = ["src"]
 testpaths = ["tests"]

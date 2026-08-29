@@ -1,8 +1,10 @@
-"""Tests for src/importer/inputs.py -- pure path logic, no database and no
-CAS parsing involved."""
+"""Tests for `inputs.py`: path logic only, no database, no CAS."""
 
 import importlib
 import os
+from collections.abc import Iterator
+from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -10,9 +12,19 @@ from importer import config
 from importer.inputs import describe_missing_inputs, resolve_xmi_paths
 
 
-def _config_with_env(monkeypatch, **env):
-    """Re-read config.py under a patched environment. Reloaded again at
-    teardown so the module-level values other tests see are restored."""
+def _config_with_env(monkeypatch: pytest.MonkeyPatch, **env: str | None) -> ModuleType:
+    """Re-read `config.py` under a patched environment.
+
+    Reloaded again at teardown, so the module-level values other tests
+    see are restored.
+
+    Args:
+        monkeypatch: The pytest fixture doing the patching.
+        **env: Variables to set, or None to unset.
+
+    Returns:
+        The freshly reloaded config module.
+    """
     for name, value in env.items():
         if value is None:
             monkeypatch.delenv(name, raising=False)
@@ -22,16 +34,20 @@ def _config_with_env(monkeypatch, **env):
 
 
 @pytest.fixture(autouse=True)
-def _restore_config():
+def _restore_config() -> Iterator[None]:
+    """Undo any environment-driven reload once the test has finished."""
     yield
     importlib.reload(config)
 
 
-def test_video_dir_defaults_to_the_xmi_dir(monkeypatch):
-    """An unset DUUI_INPUT_VIDEO_DIR means "next to the .xmi files",
-    not some fixed folder -- so pointing the importer at one directory
-    of pipeline output takes one setting rather than two. Mirrors the
-    nested default on the host-side mount in docker-compose.yml."""
+def test_video_dir_defaults_to_the_xmi_dir(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unset, the video directory follows the CAS directory.
+
+    It means "wherever the CAS files are" rather than some fixed
+    default, so pointing the importer at one directory of pipeline
+    output takes one setting instead of two. This mirrors the nested
+    default on the host-side mount in docker-compose.yml.
+    """
     reloaded = _config_with_env(
         monkeypatch,
         DUUI_INPUT_XMI_DIR="/pipeline/output",
@@ -41,7 +57,8 @@ def test_video_dir_defaults_to_the_xmi_dir(monkeypatch):
     assert reloaded.INPUT_VIDEO_DIR == "/pipeline/output"
 
 
-def test_video_dir_is_independent_when_set(monkeypatch):
+def test_video_dir_is_independent_when_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Set explicitly, the two directories stay independent."""
     reloaded = _config_with_env(
         monkeypatch,
         DUUI_INPUT_XMI_DIR="/pipeline/xmi",
@@ -52,7 +69,8 @@ def test_video_dir_is_independent_when_set(monkeypatch):
     assert reloaded.INPUT_VIDEO_DIR == "/pipeline/videos"
 
 
-def test_directory_expands_to_its_xmi_files(tmp_path):
+def test_directory_expands_to_its_xmi_files(tmp_path: Path) -> None:
+    """A directory contributes its CAS files, sorted, alone."""
     (tmp_path / "b.xmi").touch()
     (tmp_path / "a.xmi").touch()
     (tmp_path / "video.mp4").touch()  # companion video, not an input
@@ -63,7 +81,8 @@ def test_directory_expands_to_its_xmi_files(tmp_path):
     assert [p.name for p in result] == ["a.xmi", "b.xmi"]  # sorted, .xmi only
 
 
-def test_directory_is_not_recursive(tmp_path):
+def test_directory_is_not_recursive(tmp_path: Path) -> None:
+    """Only the top level is read, so nothing unrelated is swept in."""
     (tmp_path / "top.xmi").touch()
     nested = tmp_path / "nested"
     nested.mkdir()
@@ -74,14 +93,16 @@ def test_directory_is_not_recursive(tmp_path):
     assert [p.name for p in result] == ["top.xmi"]
 
 
-def test_explicit_file_is_taken_as_is(tmp_path):
+def test_explicit_file_is_taken_as_is(tmp_path: Path) -> None:
+    """Naming a file imports it, whatever its extension."""
     odd = tmp_path / "export.cas"
     odd.touch()
 
     assert resolve_xmi_paths([odd]) == [odd]
 
 
-def test_mix_of_files_and_directories(tmp_path):
+def test_mix_of_files_and_directories(tmp_path: Path) -> None:
+    """Files and directories can be given together, in one run."""
     loose = tmp_path / "loose.xmi"
     loose.touch()
     folder = tmp_path / "folder"
@@ -93,37 +114,42 @@ def test_mix_of_files_and_directories(tmp_path):
     assert [p.name for p in result] == ["loose.xmi", "inner.xmi"]
 
 
-def test_deduplicates_same_file_named_twice(tmp_path):
+def test_deduplicates_same_file_named_twice(tmp_path: Path) -> None:
+    """A file reachable two ways is still imported once."""
     target = tmp_path / "dup.xmi"
     target.touch()
 
-    # Named directly AND picked up via its directory -- must import once.
+    # Named directly, and picked up through its directory.
     result = resolve_xmi_paths([target, tmp_path])
 
     assert result == [target]
 
 
-def test_empty_directory_yields_nothing(tmp_path):
+def test_empty_directory_yields_nothing(tmp_path: Path) -> None:
+    """An empty directory is not an error, it is simply no input."""
     assert resolve_xmi_paths([tmp_path]) == []
 
 
-# describe_missing_inputs -- the three causes that all look identical
-# to resolve_xmi_paths must come back as distinguishable reasons.
+# `describe_missing_inputs`: the three causes that look identical to
+# `resolve_xmi_paths` must come back as distinguishable reasons.
 
 
-def test_missing_path_is_reported_as_nonexistent(tmp_path):
+def test_missing_path_is_reported_as_nonexistent(tmp_path: Path) -> None:
+    """A path that is not there says so."""
     (reason,) = describe_missing_inputs([tmp_path / "nope"])
 
     assert "does not exist" in reason
 
 
-def test_empty_directory_is_reported_as_empty(tmp_path):
+def test_empty_directory_is_reported_as_empty(tmp_path: Path) -> None:
+    """An empty directory is distinguished from a missing one."""
     (reason,) = describe_missing_inputs([tmp_path])
 
     assert "is empty" in reason
 
 
-def test_directory_without_xmi_lists_what_it_does_hold(tmp_path):
+def test_directory_without_xmi_lists_what_it_does_hold(tmp_path: Path) -> None:
+    """A directory holding the wrong files names some of them."""
     (tmp_path / "video.mp4").touch()
     (tmp_path / "notes.txt").touch()
 
@@ -134,7 +160,14 @@ def test_directory_without_xmi_lists_what_it_does_hold(tmp_path):
 
 
 @pytest.mark.skipif(os.geteuid() == 0, reason="root bypasses directory permissions")
-def test_unreadable_directory_is_reported_as_a_permission_problem(tmp_path):
+def test_unreadable_directory_is_reported_as_a_permission_problem(
+    tmp_path: Path,
+) -> None:
+    """An unreadable directory is named as a permission problem.
+
+    This is the failure `Path.glob` hides, by reporting it exactly as
+    it reports an empty directory.
+    """
     locked = tmp_path / "locked"
     locked.mkdir()
     (locked / "present.xmi").touch()

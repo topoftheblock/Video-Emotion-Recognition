@@ -1,9 +1,9 @@
-"""Check that every relative Markdown link points at something that exists.
+"""Check that every relative Markdown link points at something real.
 
-Relative links only. External URLs are deliberately not fetched: link rot is
-real, but a checker that needs the network fails for reasons that have nothing
-to do with the change being checked, and a check that fails at random stops
-being read.
+Relative links only. External URLs are deliberately not fetched: link
+rot is real, but a checker that needs the network fails for reasons that
+have nothing to do with the change being checked, and a check that fails
+at random stops being read.
 """
 
 import pathlib
@@ -15,6 +15,11 @@ SKIP_DIRS = {".git", "node_modules", "__pycache__"}
 
 
 def main() -> int:
+    """Check every relative link, and report the broken ones.
+
+    Returns:
+        A process exit status: non-zero if any link is broken.
+    """
     root = pathlib.Path(".")
     broken: list[str] = []
     checked = 0

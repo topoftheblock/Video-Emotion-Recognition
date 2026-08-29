@@ -1,6 +1,7 @@
-/** Display formatting shared by the transport readout and the Ask panel. */
+// @ts-check
+/** Display formatting, shared by the transport and the Ask panel. */
 
-/** Seconds as m:ss.s -- the precision the frame-level data warrants.
+/** Seconds as m:ss.s — the precision the frame-level data warrants.
  * Used for segment ranges in the Ask panel, where the tenth is what
  * tells two adjacent segments apart. The transport uses formatClock. */
 export function formatTime(seconds) {
@@ -10,7 +11,7 @@ export function formatTime(seconds) {
   return `${m}:${s}`;
 }
 
-/** Seconds as m:ss, for the transport readout -- a digit that changes
+/** Seconds as m:ss, for the transport readout — a digit that changes
  * ten times a second is motion, not information.
  *
  * Floors rather than rounds: at 59.7s into the minute, rounding the
@@ -24,7 +25,7 @@ export function formatClock(seconds) {
   return `${m}:${s}`;
 }
 
-/** The non-time columns of an agent result row, as one readable line. */
+/** The non-time columns of a result row, as one readable line. */
 export function formatMeta(meta) {
   return Object.entries(meta)
     .filter(([, v]) => v !== null && v !== undefined && v !== "")

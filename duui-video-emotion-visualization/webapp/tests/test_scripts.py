@@ -3,7 +3,7 @@ Two script-level invariants, both guarding bugs that actually shipped.
 
 Neither is the kind of thing a linter catches: one is a missing space in
 a template literal, the other a font family that was never bundled. Both
-were invisible in the running app -- the first only in what a screen
+were invisible in the running app — the first only in what a screen
 reader says, the second only in which typeface the canvas silently fell
 back to.
 
@@ -19,7 +19,7 @@ from pathlib import Path
 FRONTEND = Path(__file__).resolve().parent.parent / "src" / "frontend"
 
 
-def test_person_rows_separate_the_name_from_the_metadata():
+def test_person_rows_separate_the_name_from_the_metadata() -> None:
     """
     A person row's accessible name is computed from its contents.
 
@@ -36,14 +36,14 @@ def test_person_rows_separate_the_name_from_the_metadata():
     )
 
 
-def test_canvas_text_uses_a_font_the_app_actually_ships():
+def test_canvas_text_uses_a_font_the_app_actually_ships() -> None:
     """
     Canvas text takes no part in the cascade: whatever family string is
     passed to ctx.font is used verbatim, and an unbundled name falls
     silently back to a generic.
 
-    This asked for 'IBM Plex Mono' for a long time -- a family this app
-    has never shipped -- so every on-video label rendered in the default
+    This asked for 'IBM Plex Mono' for a long time — a family this app
+    has never shipped — so every on-video label rendered in the default
     monospace and nobody could see it from the page.
     """
     overlay = (FRONTEND / "js" / "playback" / "overlay.js").read_text(encoding="utf-8")
@@ -66,11 +66,12 @@ def test_canvas_text_uses_a_font_the_app_actually_ships():
         )
 
 
-def test_canvas_label_size_is_derived_from_the_root_font_size():
+def test_canvas_label_size_is_derived_from_the_root_font_size() -> None:
     """
-    Canvas text cannot inherit the rem scale, so it has to be recomputed.
-    A literal pixel size here would make the one piece of type sitting
-    *on* the data the only piece that ignores the reader's setting.
+    Canvas text cannot inherit the rem scale, so it has to be
+    recomputed. A literal pixel size here would make the one piece of
+    type sitting *on* the data the only piece that ignores the reader's
+    setting.
     """
     overlay = (FRONTEND / "js" / "playback" / "overlay.js").read_text(encoding="utf-8")
     assert "documentElement" in overlay and "fontSize" in overlay, (
@@ -82,12 +83,12 @@ def test_canvas_label_size_is_derived_from_the_root_font_size():
         )
 
 
-def test_the_on_video_label_colour_comes_from_the_shared_decision():
+def test_the_on_video_label_colour_comes_from_the_shared_decision() -> None:
     """
     The tag drawn over each bounding box picks its text colour the same
-    way the filter chip does. It used to hardcode a near-black -- a
-    second, independent copy of the same decision, which happened to pass
-    but had nothing keeping it passing when the palette changed.
+    way the filter chip does. It used to hardcode a near-black — a
+    second, independent copy of the same decision, which happened to
+    pass but had nothing keeping it passing when the palette changed.
     """
     overlay = (FRONTEND / "js" / "playback" / "overlay.js").read_text(encoding="utf-8")
     assert "readableTextColor" in overlay, (

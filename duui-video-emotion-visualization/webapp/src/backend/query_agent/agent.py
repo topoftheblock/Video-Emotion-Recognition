@@ -1,24 +1,21 @@
-"""
-The natural-language -> SQL agent.
+"""The agent that turns a question into SQL.
 
-`answer_question(question)` runs a tool-use loop against an
-OpenAI-compatible chat-completions endpoint (configured via
-QUERY_AGENT_BASE_URL/QUERY_AGENT_MODEL -- this project points it at a
-university-hosted Qwen3-VL gateway, not Anthropic): the model explores
-the schema by calling `run_sql` (getting back a small
-preview + row count so it can sanity-check and fix its own query),
-then finalizes with `submit_answer` once it's confident. We then
-re-execute that final SQL ourselves (never trusting rows the model
-claims to have seen) to build the actual response returned to the
-frontend.
+`answer_question` runs a tool-use loop against an OpenAI-compatible
+chat-completions endpoint. The model explores the schema by calling
+`run_sql`, which hands back a short preview so it can check and correct
+its own query, and finishes by calling `submit_answer`.
 
-Splitting "the model writes the query" from "our code runs the query
-and serializes results" means a large result set never has to round
--trip through the model's context window, and the frontend never
-displays data the model merely claims exists.
+The final SQL is then re-executed here. Rows the model claims to have
+seen are never trusted, and never reach the frontend.
+
+Splitting "the model writes the query" from "this code runs it and
+serializes the result" means a large result never has to travel through
+the model's context, and the frontend never displays data that only the
+model asserts exists.
 """
 
 import json
+from typing import Any
 
 import openai
 
@@ -93,7 +90,9 @@ _TOOLS = [
                 "properties": {
                     "sql": {
                         "type": "string",
-                        "description": "A single SELECT (or WITH ... SELECT) statement.",
+                        "description": (
+                            "A single SELECT (or WITH ... SELECT) statement."
+                        ),
                     }
                 },
                 "required": ["sql"],
@@ -104,22 +103,34 @@ _TOOLS = [
         "type": "function",
         "function": {
             "name": "submit_answer",
-            "description": "Submit the final SQL query, explanation, and display overlays that answer the user's question.",
+            "description": (
+                "Submit the final SQL query, explanation, and display overlays that "
+                "answer the user's question."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "sql": {
                         "type": "string",
-                        "description": "The final SELECT/WITH query, following the output contract.",
+                        "description": (
+                            "The final SELECT/WITH query, following the output "
+                            "contract."
+                        ),
                     },
                     "explanation": {
                         "type": "string",
-                        "description": "One or two sentences describing what the query answers, in plain language.",
+                        "description": (
+                            "One or two sentences describing what the "
+                            "query answers, in plain language."
+                        ),
                     },
                     "overlays": {
                         "type": "array",
                         "items": {"type": "string", "enum": OVERLAY_CHOICES},
-                        "description": "Which display overlays the frontend should enable for these results.",
+                        "description": (
+                            "Which display overlays the frontend should enable for "
+                            "these results."
+                        ),
                     },
                 },
                 "required": ["sql", "explanation", "overlays"],
@@ -130,10 +141,23 @@ _TOOLS = [
 
 
 class QueryAgentError(RuntimeError):
-    pass
+    """Raised when the agent cannot produce a usable answer."""
 
 
-def _preview_tool_result(sql: str) -> dict:
+def _preview_tool_result(sql: str) -> dict[str, Any]:
+    """Run one exploratory query for the model, and report the outcome.
+
+    Capped to a short preview: the model needs the shape of a result,
+    not the result itself.
+
+    Args:
+        sql: The statement the model asked to run.
+
+    Returns:
+        The preview, or `{"ok": False, "error": ...}` when the guard
+        rejected the query. A rejection is handed back for the model to
+        correct, rather than raised.
+    """
     try:
         columns, rows, truncated = run_read_only(sql, row_limit=20)
         return {
@@ -147,20 +171,21 @@ def _preview_tool_result(sql: str) -> dict:
         return {"ok": False, "error": str(exc)}
 
 
-def answer_question(question: str) -> dict:
-    """
-    Run the agent loop for one user question. Returns:
-        {
-          "sql": str,
-          "explanation": str,
-          "overlays": [str, ...],
-          "columns": [str, ...],
-          "rows": [dict, ...],
-          "row_count": int,
-          "truncated": bool,
-        }
-    Raises QueryAgentError on failure (bad API key, model never
-    submitted an answer, final SQL invalid, etc).
+def answer_question(question: str) -> dict[str, Any]:
+    """Run the agent loop for one question, and return the answer.
+
+    Args:
+        question: The user's question, in natural language.
+
+    Returns:
+        The final `sql` and `explanation`, the `overlays` the frontend
+        should show, and the result itself as `columns`, `rows`,
+        `row_count` and `truncated`.
+
+    Raises:
+        QueryAgentError: If no API key is configured, the API call
+            fails, the model never submits an answer within the
+            allotted steps, or its final query fails validation.
     """
     if not QUERY_AGENT_API_KEY:
         raise QueryAgentError("DUUI_QUERY_API_KEY is not configured (set it in .env).")
@@ -180,18 +205,17 @@ def answer_question(question: str) -> dict:
                 messages=messages,
             )
         except openai.APIError as exc:
-            # Covers auth failures, rate limits, bad model name, and
-            # network-level errors alike -- all of these are questions
-            # about the API call itself, not about the user's question,
-            # so they surface as a clean QueryAgentError (-> HTTP 422)
+            # Auth failures, rate limits, a bad model name and network
+            # errors alike. All are faults of the API call rather than
+            # of the user's question, so they surface as a clean error
             # instead of an unhandled 500.
             raise QueryAgentError(f"LLM API call failed: {exc}") from exc
 
         message = response.choices[0].message
-        # Qwen3's "thinking" trace comes back as a separate
-        # reasoning_content field alongside content/tool_calls -- never
-        # part of the OpenAI response schema itself, so it's simply
-        # ignored here rather than fed back into the conversation.
+        # Only the content and the tool calls are carried back into the
+        # conversation. Any other field a provider returns alongside
+        # them is dropped rather than fed back, so the loop depends on
+        # nothing outside the documented response shape.
         messages.append(
             {
                 "role": "assistant",
@@ -201,8 +225,8 @@ def answer_question(question: str) -> dict:
         )
 
         if not message.tool_calls:
-            # Model responded with plain text instead of using a tool --
-            # nudge it back on track rather than failing outright.
+            # The model answered in prose instead of calling a tool.
+            # Nudge it back rather than failing outright.
             messages.append(
                 {
                     "role": "user",
@@ -237,7 +261,22 @@ def answer_question(question: str) -> dict:
     )
 
 
-def _finalize(submission: dict) -> dict:
+def _finalize(submission: dict[str, Any]) -> dict[str, Any]:
+    """Re-run the model's final query, and build the response.
+
+    An overlay not in `OVERLAY_CHOICES` is dropped rather than passed
+    on: the frontend switches on these names, so an unknown one would
+    silently enable nothing.
+
+    Args:
+        submission: The arguments the model gave `submit_answer`.
+
+    Returns:
+        The payload the route returns.
+
+    Raises:
+        QueryAgentError: If the final query fails validation.
+    """
     sql = submission.get("sql", "")
     explanation = submission.get("explanation", "")
     overlays = [o for o in submission.get("overlays", []) if o in OVERLAY_CHOICES]

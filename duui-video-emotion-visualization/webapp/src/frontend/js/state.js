@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * The one mutable object the panels share.
  *
@@ -14,7 +15,7 @@
  * entries that collapse into each other under a common deficiency make
  * two people indistinguishable with no text fallback to recover from.
  *
- * The previous palette had five such pairs -- teal/light-blue collapsed
+ * The previous palette had five such pairs — teal/light-blue collapsed
  * under tritanopia, teal/pink and orange/lime under deuteranopia, and
  * pink/grey under both red-green forms. These six hold a worst-case
  * separation of dE2000 11.1 across normal, protan, deutan and tritan
@@ -35,7 +36,7 @@ export const PERSON_COLORS = [
  * Light, not the mid-grey this used to be. Deficiency simulation leaves
  * lightness essentially intact while collapsing hue, so a grey in the
  * middle of the palette's lightness band is exactly where muted colours
- * land -- the old #8b94a3 sat at dE2000 2.6 from Okabe-Ito's mauve and
+ * land — the old #8b94a3 sat at dE2000 2.6 from Okabe-Ito's mauve and
  * 5.8 from the previous palette's pink. Separating it by lightness
  * instead is the one axis a deficiency cannot take away: this clears
  * every palette entry by 13.7.
@@ -43,9 +44,9 @@ export const PERSON_COLORS = [
 export const UNKNOWN_PERSON_COLOR = "#c8c8d0";
 
 export const state = {
-  /** Payload of the currently loaded video (GET /api/videos/:id/data). */
+  /** The loaded video's payload, from `/api/videos/:id/data`. */
   data: null,
-  /** GET /api/videos, kept so we can tell whether a file is playable. */
+  /** The video list, kept to tell whether a file is playable. */
   videos: [],
   /** GET /api/persons/global, fetched once and filtered per video. */
   globalPersonClusters: [],
@@ -62,8 +63,8 @@ export const state = {
   /**
    * null = the emotion panels describe everyone in the video (their
    * readings averaged together). Set by clicking a row in the People
-   * panel, which narrows all three panels -- live readings *and*
-   * whole-video averages -- to that one person's readings.
+   * panel, which narrows all three panels — live readings *and*
+   * whole-video averages — to that one person's readings.
    */
   selectedPersonId: null,
   /**
@@ -74,7 +75,7 @@ export const state = {
   activeOverlays: null,
 };
 
-/** True if `key` (one of the backend's OVERLAY_CHOICES) should render. */
+/** Whether the overlay named by `key` should render. */
 export function overlayEnabled(key) {
   return state.activeOverlays === null || state.activeOverlays.has(key);
 }
@@ -112,7 +113,7 @@ function contrastRatio(a, b) {
  *
  * Compares the two candidates and returns whichever actually contrasts
  * more. This used to threshold on luminance at `L > 0.45`, which is far
- * above the real crossover near L = 0.18 -- so four of the seven person
+ * above the real crossover near L = 0.18 — so four of the seven person
  * colours were handed white text at 2.2-3.1:1 on the emotion panels'
  * filter chip. A comparison has no threshold to get wrong and stays
  * correct if the palette changes, which is the point: it is called with
@@ -135,7 +136,7 @@ export function personName(person) {
 /**
  * Alphabetical comparator for the person lists in the sidebar (People,
  * "also appears in", "on screen now"). `numeric: true` makes it a
- * natural sort -- "person 2" before "person 10" -- rather than the
+ * natural sort — "person 2" before "person 10" — rather than the
  * lexicographic order plain string comparison would give.
  */
 export function compareNames(a, b) {

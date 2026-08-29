@@ -1,8 +1,7 @@
-"""
-Structural accessibility invariants for the viewer's index.html.
+"""Structural accessibility invariants for the page's markup.
 
-These guard Phases 1 and 2 of docs/accessibility.md. Every one of them
-corresponds to something that was actually wrong once -- an unlabelled
+See docs/accessibility.md. Every one of these corresponds to something
+that was actually wrong once — an unlabelled
 slider, a page with no `h1`, an `aria-expanded` on an element that could
 not carry it, an explanation reachable only by hovering. The point is
 that none of those can come back silently.
@@ -10,40 +9,46 @@ that none of those can come back silently.
 What this cannot see: anything CSS does, anything JavaScript renders,
 and what a screen reader actually announces. The person rows and Ask
 results are built at runtime and are covered by
-tests/a11y_browser_check.js instead; the announcement layer is covered by
-nothing automated and never will be (see "Known gaps" in the guide).
+tests/a11y_browser_check.js instead; the announcement layer is covered
+by nothing automated and never will be (see "Known gaps" in the guide).
 """
 
 from collections import Counter
 
 import pytest
-from markup_check import Document
+from markup_check import Document, Element
 
 HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 
 
 @pytest.fixture(scope="module")
-def doc():
+def doc() -> Document:
+    """The parsed page, read once for the whole module."""
     return Document()
 
 
-# ---------------- document structure ----------------
+# --- Document structure -------------------------------------------------
 
 
-def test_html_declares_a_language(doc):
+def test_html_declares_a_language(doc: Document) -> None:
+    """A page with no language is read aloud in the wrong one."""
     html = doc.find("html")
     assert html, "no <html> element"
     assert html[0].get("lang", "").strip(), "<html> needs a lang attribute"
 
 
-def test_exactly_one_h1(doc):
+def test_exactly_one_h1(doc: Document) -> None:
+    """One top-level heading: the document's actual title."""
     h1s = doc.find("h1")
     assert len(h1s) == 1, f"expected one <h1>, found {len(h1s)}"
 
 
-def test_heading_levels_do_not_skip(doc):
-    """A jump from h1 straight to h3 leaves a level with no parent, which
-    is what heading navigation walks."""
+def test_heading_levels_do_not_skip(doc: Document) -> None:
+    """Heading navigation walks the levels, so none may be missing.
+
+    A jump straight from one level to two below it leaves a heading
+    with no parent.
+    """
     levels = [int(e.tag[1]) for e in doc.elements if e.tag in HEADING_TAGS]
     assert levels, "no headings at all"
     assert levels[0] == 1, f"first heading is h{levels[0]}, not h1"
@@ -51,7 +56,7 @@ def test_heading_levels_do_not_skip(doc):
         assert current <= previous + 1, f"h{previous} is followed by h{current}"
 
 
-def test_ids_are_unique(doc):
+def test_ids_are_unique(doc: Document) -> None:
     """A repeated id makes every reference to it ambiguous, and the
     browser silently resolves to the first one."""
     counts = Counter(doc.ids)
@@ -59,7 +64,7 @@ def test_ids_are_unique(doc):
     assert not duplicates, f"duplicate ids: {duplicates}"
 
 
-def test_every_id_reference_resolves(doc):
+def test_every_id_reference_resolves(doc: Document) -> None:
     """`aria-controls`, `aria-labelledby`, `aria-describedby` and `for`
     pointing at nothing is worse than not being there: it silently
     removes the relationship rather than failing loudly."""
@@ -71,10 +76,10 @@ def test_every_id_reference_resolves(doc):
     assert not broken, "id references pointing at nothing:\n  " + "\n  ".join(broken)
 
 
-# ---------------- the tab order ----------------
+# --- The tab order ------------------------------------------------------
 
 
-def test_no_positive_tabindex(doc):
+def test_no_positive_tabindex(doc: Document) -> None:
     """A positive tabindex pulls an element out of document order and
     forces every other control on the page to be reasoned about
     relative to it. It is also what makes the source-order tab sweep in
@@ -92,15 +97,17 @@ def test_no_positive_tabindex(doc):
     assert not offenders, f"positive or malformed tabindex on {offenders}"
 
 
-def test_skip_link_is_the_first_focusable_element(doc):
+def test_skip_link_is_the_first_focusable_element(doc: Document) -> None:
+    """Anything before the skip link is something it cannot skip."""
     first = doc.focusable[0]
     assert "skip-link" in first.get("class", ""), (
-        f"first focusable element is {first!r}, not the skip link -- "
+        f"first focusable element is {first!r}, not the skip link — "
         "anything before it is something a keyboard user cannot skip"
     )
 
 
-def test_skip_link_targets_a_real_and_focusable_element(doc):
+def test_skip_link_targets_a_real_and_focusable_element(doc: Document) -> None:
+    """A skip link landing nowhere focusable just moves the scroll."""
     link = doc.find("a", **{"class": "skip-link"})[0]
     href = link.get("href", "")
     assert href.startswith("#"), f"skip link href is {href!r}"
@@ -112,17 +119,18 @@ def test_skip_link_targets_a_real_and_focusable_element(doc):
     )
 
 
-def test_every_focusable_element_is_inside_a_landmark(doc):
+def test_every_focusable_element_is_inside_a_landmark(doc: Document) -> None:
     """
     Content outside every landmark is skipped by landmark navigation.
 
     An unnamed <section> is *not* a landmark, which is what left the
-    whole Ask panel orphaned until it was given an aria-labelledby.
-    The skip link is the one legitimate exception: it belongs before
+    whole Ask panel orphaned until it was given an aria-labelledby. The
+    skip link is the one legitimate exception: it belongs before
     everything, including the landmarks.
     """
 
-    def is_landmark(element):
+    def is_landmark(element: Element) -> bool:
+        """Whether this is a landmark a screen reader announces."""
         if element.tag in ("header", "main", "nav", "aside", "footer"):
             return True
         if element.tag in ("section", "form"):
@@ -138,44 +146,53 @@ def test_every_focusable_element_is_inside_a_landmark(doc):
     assert not orphans, f"focusable elements outside every landmark: {orphans}"
 
 
-# ---------------- names ----------------
+# --- Names --------------------------------------------------------------
 
 
-def test_every_focusable_element_has_an_accessible_name(doc):
+def test_every_focusable_element_has_an_accessible_name(doc: Document) -> None:
+    """A control with no name is announced as its tag, and no more."""
     unnamed = [e for e in doc.focusable if doc.accessible_name_source(e) is None]
     assert not unnamed, f"focusable elements with no accessible name: {unnamed}"
 
 
-def test_no_control_is_named_only_by_its_placeholder(doc):
-    """A placeholder is a last-resort fallback, not a name: it vanishes
-    on the first keystroke, exactly when a name is still needed."""
+def test_no_control_is_named_only_by_its_placeholder(doc: Document) -> None:
+    """A placeholder is a fallback, not a name.
+
+    It vanishes on the first keystroke, which is exactly when the name
+    is still needed.
+    """
     offenders = [
         e for e in doc.focusable if doc.accessible_name_source(e) == "placeholder"
     ]
     assert not offenders, f"named only by placeholder: {offenders}"
 
 
-def test_no_control_is_named_only_by_its_title(doc):
-    """`title` is unreachable from a keyboard, unreliable in screen
-    readers, and invisible on touch. It is fine *alongside* a name."""
+def test_no_control_is_named_only_by_its_title(doc: Document) -> None:
+    """A title is unreachable by keyboard and invisible on touch.
+
+    It is fine *alongside* a name, never as the only one.
+    """
     offenders = [e for e in doc.focusable if doc.accessible_name_source(e) == "title"]
     assert not offenders, f"named only by title: {offenders}"
 
 
-def test_the_range_input_is_named_and_not_left_to_its_raw_value(doc):
+def test_the_range_input_is_named_and_not_left_to_its_raw_value(
+    doc: Document,
+) -> None:
+    """A slider announced as a bare number says nothing useful."""
     scrub = doc.by_id("scrub")
     assert scrub is not None and scrub.get("type") == "range"
     assert scrub.get("aria-label", "").strip(), "#scrub needs an aria-label"
 
 
-# ---------------- widget wiring ----------------
+# --- Widget wiring ------------------------------------------------------
 
 
-def test_combobox_state_lives_on_the_element_that_has_the_role(doc):
+def test_combobox_state_lives_on_the_element_that_has_the_role(doc: Document) -> None:
     """
     aria-expanded belongs to whatever carries role="combobox".
 
-    It used to sit on the wrapper <div>, which may not carry it at all --
+    It used to sit on the wrapper <div>, which may not carry it at all —
     invalid markup that also left the input permanently reading
     "collapsed". A plain div with aria-expanded is the signature of that
     bug returning.
@@ -194,7 +211,7 @@ def test_combobox_state_lives_on_the_element_that_has_the_role(doc):
     assert not stray, f"aria-expanded on elements that cannot carry it: {stray}"
 
 
-def test_disclosure_buttons_are_wired_both_ways(doc):
+def test_disclosure_buttons_are_wired_both_ways(doc: Document) -> None:
     """Each legend toggle must be a real button, declare its state, and
     point at the paragraph it opens."""
     toggles = [e for e in doc.elements if "person-legend-toggle" in e.get("class", "")]
@@ -210,7 +227,7 @@ def test_disclosure_buttons_are_wired_both_ways(doc):
         )
 
 
-def test_toggle_buttons_declare_their_pressed_state(doc):
+def test_toggle_buttons_declare_their_pressed_state(doc: Document) -> None:
     """The CC toggle is a two-state control; without aria-pressed it
     announces as a plain button and its state is invisible."""
     cc = doc.by_id("subtitleToggle")

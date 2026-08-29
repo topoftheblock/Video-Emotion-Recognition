@@ -1,9 +1,9 @@
-/* ---------------------------------------------------------------
-   The only stylesheet index.html links. Everything else is imported
-   from here, in cascade order -- tokens first, because every later
-   file reads the custom properties it defines, and responsive last,
-   because its overrides have to win.
------------------------------------------------------------------- */
+/*
+ * The only stylesheet index.html links. Everything else is imported
+ * from here, in cascade order — tokens first, because every later file
+ * reads the custom properties it defines, and responsive last, because
+ * its overrides have to win.
+ */
 @import "tokens.css";
 @import "base.css";
 @import "topbar.css";

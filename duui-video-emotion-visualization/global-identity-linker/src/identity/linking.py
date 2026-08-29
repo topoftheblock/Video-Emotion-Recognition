@@ -1,66 +1,56 @@
+"""Group people across videos into global persons, by distance.
+
+For every person without a `global_person_id`, this finds the closest
+person in a *different* video by cosine distance between embedding
+centroids, and either joins that person's existing global person or
+creates one shared by both.
+
+**Nothing else writes `persons.global_person_id`.** No shipped
+typesystem defines a `GlobalPerson` annotation and no parser sets the
+column, so without this job every video's people stay isolated from one
+another.
+
+The whole corpus is recomputed at once — existing global persons are
+cleared first, then rebuilt — so the result depends only on what is in
+the database and not on the order it arrived in. That is why the job is
+run explicitly rather than as a step of importing.
+
+**The result is a similarity heuristic, not a verified identity.** Treat
+a shared `global_person_id` as "probably the same person". Each person's
+nearest cross-video distance is kept in
+`persons.global_person_match_score` so the strength of a grouping can be
+inspected, and the thresholds in `config.py` have no derivation recorded
+in this repository — retune them against known duplicates before relying
+on the groupings for anything beyond suggestions.
 """
-Vector-based cross-video person identity.
 
-The schema has always had `global_persons`/`persons.global_person_id`
-for "the same person across multiple videos", but nothing in the
-importer populates it: the real Bundestag CAS never encodes a
-`GlobalPerson` link itself (confirmed empty in every real CAS this was
-run against, and the type isn't even present in the shipped
-typesystems), so without this job every video's persons stay
-permanently isolated from each other.
+from collections.abc import Callable
 
-This used to run as a parse step inside the importer, once per imported
-video, which made the result depend on import order: a person could
-only ever match against videos that happened to be imported before it.
-As a standalone job it instead does a full recompute over the whole
-corpus -- it wipes every existing global identity first, then rebuilds
-them from scratch -- so the outcome depends only on what is in the
-database, not on the order it arrived in. That is also why it must be
-run explicitly: it is corpus-wide, and re-running it after each import
-is a deliberate choice rather than a per-file side effect.
-
-For every person that doesn't yet have a global_person_id, it looks for
-the closest-matching person from any *other* video by pgvector cosine
-distance between embedding centroids, and either joins an existing
-global identity or mints a new one shared by both sides.
-
-This is a similarity heuristic, not a verified identity match --
-each linked person's nearest cross-video embedding-centroid distance is
-stored in `persons.global_person_match_score` (the minimum cosine
-distance to any person in another video, computed order-independently
-as a pure function of the centroids), so treat `global_person_id`
-groupings as "probably the same person", not ground truth, and retune
-the distance thresholds in config.py against real cross-video
-duplicates before relying on this for anything beyond suggestions or
-the query agent's own use.
-"""
+from psycopg2.extensions import cursor as Cursor
 
 from .config import (
     GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD,
     GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD,
 )
 
-# Average multiple embeddings per person into one centroid before
-# comparing (pgvector supports `avg()` over the vector type directly)
-# rather than doing a full N*M nearest-neighbor search across every
-# individual embedding row -- a person can have dozens of face
-# embeddings (one per detection frame), and the identity signal is the
-# same person's face across those frames, not any single frame.
+# A person, everywhere in this module.
+Person = tuple[int, int]
+
+# One centroid per person per modality, rather than a nearest-neighbour
+# search across individual embeddings: a person has one embedding per
+# detection frame, and the signal is their face across those frames
+# rather than any single one. pgvector averages the vector type
+# directly.
 #
-# Materialised into a TEMP TABLE once per run rather than recomputed as
-# a CTE inside every per-person lookup. While this ran per-import it
-# only ever executed for one video's handful of people; a full-corpus
-# recompute does one lookup per person in the database, and rebuilding
-# every centroid inside each of those means re-scanning the whole
-# embeddings table N times over.
+# Materialised into a temp table once per run rather than recomputed as
+# a CTE inside each lookup, because a recompute does one lookup per
+# person in the corpus and each would otherwise rescan the whole
+# embeddings table.
 #
-# A person is identified by (video_id, person_id), never by person_id
-# alone: person ids come from each CAS's own xmi:id counter, so two
-# videos routinely both have a "person 1" (see pgvector-db/schema.sql's identity
-# note). Every join and lookup in this module therefore carries the
-# pair, and the embeddings table carries `video_id` itself -- which is
-# also why this no longer joins back to `persons` just to find out
-# which video an embedding belongs to.
+# Keyed by (video_id, person_id) throughout, never person_id alone: a
+# person_id is an xmi:id, unique only within its own CAS, so the same
+# value names different people in different videos. See
+# docs/database.md.
 _BUILD_CENTROIDS_SQL = """
 CREATE TEMP TABLE {temp_table} AS
 SELECT e.video_id, e.person_id, avg(e.embedding) AS centroid
@@ -69,15 +59,13 @@ WHERE e.person_id IS NOT NULL
 GROUP BY e.video_id, e.person_id
 """
 
-# `global_person_id` is read live from `persons` rather than from the
-# temp table: the loop below assigns ids as it goes, and a candidate
-# matched earlier in this same run must be seen with the id it was just
+# `global_person_id` is read from `persons` rather than from the temp
+# table: the loop assigns ids as it goes, and a candidate matched
+# earlier in the same run must be seen with the id it has just been
 # given, not the NULL it started with.
 #
-# Comparing video_id alone is enough to exclude the person themselves
-# (a person belongs to exactly one video). A NULL video_id on either
-# side makes the comparison NULL and drops the row -- a person not
-# attached to any video can't be said to appear in a *different* one.
+# `c2.video_id != c1.video_id` is enough to exclude the person
+# themselves, since a person belongs to exactly one video.
 _MATCH_SQL = """
 SELECT c2.video_id, c2.person_id, p2.global_person_id,
        (c1.centroid <=> c2.centroid) AS distance
@@ -89,15 +77,16 @@ ORDER BY distance ASC
 LIMIT 1
 """
 
-# (temp table name, embeddings table it is built from, distance threshold).
-# Ordered: face is tried first, voice is the fallback -- a person with
-# no usable face embedding (never clearly on camera, or face embedding
-# extraction failed) can still be linked by voiceprint.
+# (temp table, the embeddings table it is built from, distance
+# threshold).
 #
-# Explicitly schema-qualified with `pg_temp` everywhere: unqualified,
-# both the DROP and the lookups would silently act on a permanent table
-# of the same name if the schema ever grew one, and dropping a real
-# table here would be a very bad way to find that out.
+# Order matters: face is tried first and voice is the fallback, so a
+# person with no usable face embedding can still be linked by voice.
+#
+# Schema-qualified with `pg_temp` deliberately. Unqualified, both the
+# DROP and the lookups would act on a permanent table of the same name
+# if one ever existed, and dropping a real table is a bad way to
+# discover that.
 _MODALITIES = (
     (
         "pg_temp.face_centroids",
@@ -112,21 +101,22 @@ _MODALITIES = (
 )
 
 
-def clear_global_identities(cursor):
-    """
-    Drop every existing global identity, so the recompute below starts
-    from a clean slate. Returns (persons_unlinked, identities_deleted).
+def clear_global_persons(cursor: Cursor) -> tuple[int, int]:
+    """Delete every global person and unlink every person from one.
 
-    `global_person_match_score` (computed by this job) is wiped alongside
-    `global_person_id`; `audio_video_match_score` is the importer's value
-    and is left untouched.
+    `global_person_match_score` is cleared with `global_person_id`, both
+    being this job's output. `audio_video_match_score` belongs to the
+    importer and is left alone.
 
-    Both statements are issued explicitly rather than leaning on
-    `persons.global_person_id`'s ON DELETE SET NULL: the FK would cover
-    the un-linking, but relying on it makes the wipe look like it only
-    touches one table when it in fact rewrites both, and the row counts
-    reported here are what tells the operator how much the previous run
-    had actually linked.
+    Both statements are issued explicitly rather than relying on the
+    foreign key's ON DELETE SET NULL, which would cover the unlinking:
+    the counts returned here are what the caller reports, and they
+    cannot be collected from a cascade.
+
+    Returns:
+        The number of persons that had been linked, and the number of
+            global
+        persons deleted.
     """
     cursor.execute("SELECT count(*) FROM persons WHERE global_person_id IS NOT NULL")
     persons_unlinked = cursor.fetchone()[0]
@@ -136,19 +126,17 @@ def clear_global_identities(cursor):
     )
 
     cursor.execute("DELETE FROM global_persons")
-    identities_deleted = cursor.rowcount
+    global_persons_deleted = cursor.rowcount
 
-    return persons_unlinked, identities_deleted
+    return persons_unlinked, global_persons_deleted
 
 
-def build_centroids(cursor):
-    """
-    Build the per-person face/voice embedding centroid temp tables this
-    run's lookups read from.
+def build_centroids(cursor: Cursor) -> None:
+    """Build the face and voice centroid temp tables this run reads.
 
-    Temp tables live for the session, so they go away when the job's
-    connection closes; the DROP makes calling this twice on one
-    connection work rather than failing on the second build.
+    Temp tables last for the session, so they disappear when the
+    connection closes. The DROP lets this be called twice on one
+    connection instead of failing on the second build.
     """
     for temp_table, source_table, _threshold in _MODALITIES:
         cursor.execute(f"DROP TABLE IF EXISTS {temp_table}")
@@ -157,20 +145,29 @@ def build_centroids(cursor):
                 temp_table=temp_table, source_table=source_table
             )
         )
-        # Without stats on a freshly created temp table the planner
-        # assumes a token row count and can pick a nested loop that is
-        # badly wrong once the corpus is real.
+        # A freshly created temp table has no statistics, so the planner
+        # assumes a token row count and can choose a nested loop that
+        # does not survive a real corpus.
         cursor.execute(f"ANALYZE {temp_table}")
 
 
-def _best_cross_video_match(cursor, person, temp_table, threshold):
-    """
-    Returns (candidate_person, candidate_global_person_id, distance)
-    for the closest other-video person by embedding centroid, or None
-    if there is no candidate at all or the closest one is farther than
-    `threshold` (pgvector cosine distance -- lower is more similar).
+def _best_cross_video_match(
+    cursor: Cursor, person: Person, temp_table: str, threshold: float
+) -> tuple[Person, int | None, float] | None:
+    """Find the closest person in another video, if one is close enough.
 
-    `person` and `candidate_person` are (video_id, person_id) pairs.
+    Args:
+        person: The person to match.
+        temp_table: The centroid table to search, from `_MODALITIES`.
+        threshold: Maximum cosine distance to accept. Lower is more
+            similar.
+
+    Returns:
+        The candidate, the global person it already belongs to if any,
+            and the
+        distance between them. None when there is no candidate, or the
+            closest
+        one is beyond `threshold`.
     """
     cursor.execute(_MATCH_SQL.format(temp_table=temp_table), person)
     row = cursor.fetchone()
@@ -186,22 +183,29 @@ def _best_cross_video_match(cursor, person, temp_table, threshold):
     )
 
 
-def _create_global_person(cursor):
+def _create_global_person(cursor: Cursor) -> int:
+    """Create an empty global person and return its id."""
     cursor.execute(
-        "INSERT INTO global_persons (real_name) VALUES (NULL) RETURNING global_person_id"
+        "INSERT INTO global_persons (real_name) VALUES (NULL) "
+        "RETURNING global_person_id"
     )
     return cursor.fetchone()[0]
 
 
-def _assign_global_person(cursor, person, global_person_id):
+def _assign_global_person(
+    cursor: Cursor, person: Person, global_person_id: int
+) -> None:
+    """Point one person at a global person."""
     video_id, person_id = person
     cursor.execute(
-        "UPDATE persons SET global_person_id = %s WHERE video_id = %s AND person_id = %s",
+        "UPDATE persons SET global_person_id = %s "
+        "WHERE video_id = %s AND person_id = %s",
         (global_person_id, video_id, person_id),
     )
 
 
-def _current_global_person_id(cursor, person):
+def _current_global_person_id(cursor: Cursor, person: Person) -> int | None:
+    """Read a person's global person id as it stands right now."""
     video_id, person_id = person
     cursor.execute(
         "SELECT global_person_id FROM persons WHERE video_id = %s AND person_id = %s",
@@ -211,19 +215,24 @@ def _current_global_person_id(cursor, person):
     return row[0] if row else None
 
 
-def link_person(cursor, person):
-    """
-    Link one person -- a (video_id, person_id) pair -- to a global
-    identity if a close enough person from another video exists.
-    Returns the global_person_id it ended up with, or None if it stays
-    unlinked.
+def link_person(cursor: Cursor, person: Person) -> int | None:
+    """Link one person to a global person, if a match is close enough.
 
-    Assumes `build_centroids` has already run on this cursor.
+    Face is tried first, then voice. A match to someone who already has
+    a global person joins it; a match to someone who does not creates
+    one and assigns it to both.
+
+    `build_centroids` must have run on this cursor first.
+
+    Returns:
+        The global person id this person ended up with, or None if it
+            stays
+        unlinked.
     """
-    # Re-read rather than trusting a snapshot taken before the loop: an
-    # earlier person in this run may have matched *this* one and
-    # already assigned it an id, and linking it a second time would
-    # split a group that was just joined.
+    # Read the current value rather than trusting one taken before the
+    # loop: an earlier person in this run may have matched this one and
+    # already assigned it an id, and linking it again would split a
+    # group that was just joined.
     if _current_global_person_id(cursor, person) is not None:
         return None
 
@@ -249,17 +258,18 @@ def link_person(cursor, person):
     return global_id
 
 
-def _write_match_scores(cursor):
-    """
-    Persist each person's nearest cross-video embedding-centroid distance
-    as `persons.global_person_match_score`.
+def _write_match_scores(cursor: Cursor) -> None:
+    """Record how close each person came to anyone in another video.
 
-    For every person with at least one face or voice centroid, this is the
-    minimum cosine distance (`<=>`) to any person in a *different* video;
-    face and voice are both tried and the smaller wins (NULL-safe). It is a
-    pure function of the centroids -- independent of the order persons were
-    linked in -- so it is identical on every recompute. Persons with no
-    embeddings in any modality are left NULL.
+    For a person with at least one centroid, the score is the smallest
+    cosine distance to any person in a different video, taking the
+    better of face and voice. A person with no embeddings in either
+    modality is left NULL.
+
+    Written for every person, linked or not, so an unlinked person can
+    be inspected for how near the threshold it fell. Being a pure
+    function of the centroids, it does not depend on the order persons
+    were linked in and is identical on every recompute.
     """
     cursor.execute(
         """
@@ -298,22 +308,31 @@ def _write_match_scores(cursor):
     )
 
 
-def recompute_global_identities(cursor, progress=None):
-    """
-    Wipe every global identity and rebuild them across the whole
-    corpus. Returns a dict of counts for the caller to report.
+def recompute_global_persons(
+    cursor: Cursor, progress: Callable[[int, int], None] | None = None
+) -> dict[str, int]:
+    """Clear every global person and rebuild them corpus-wide.
 
-    Persons are walked in (video_id, person_id) order purely so a run
-    is reproducible; because everything starts unlinked, the order
-    affects only which side of a pair mints the shared row, not who
-    ends up grouped with whom.
+    Persons are walked in `(video_id, person_id)` order so that a run is
+    reproducible. Since every person starts unlinked, that order decides
+    only which side of a pair creates the shared row, not who ends up
+    grouped with whom.
 
-    Takes a cursor rather than opening its own connection: the entire
-    run -- wipe included -- has to be one transaction, so that a
-    failure halfway through leaves the previous identities intact
-    instead of a corpus that has been cleared but not rebuilt.
+    Takes a cursor rather than opening its own connection, because the
+    clear and the rebuild have to be one transaction: a failure part way
+    through must leave the previous groupings intact rather than a
+    corpus that has been cleared and not rebuilt.
+
+    Args:
+        progress: Called with (index, total) after each person, for
+            reporting.
+
+    Returns:
+        Counts of persons seen, previously linked, and linked now, along
+            with
+        global persons deleted and created.
     """
-    persons_unlinked, identities_deleted = clear_global_identities(cursor)
+    persons_unlinked, global_persons_deleted = clear_global_persons(cursor)
 
     build_centroids(cursor)
 
@@ -330,13 +349,11 @@ def recompute_global_identities(cursor, progress=None):
         if progress is not None:
             progress(index, len(persons))
 
-    # Each person's nearest cross-video centroid distance, persisted as
-    # global_person_match_score (order-independent -- see _write_match_scores).
     _write_match_scores(cursor)
 
     # Counted from `persons` rather than from the loop's own tally: a
-    # match links both sides, so the candidate rows updated along the
-    # way are linked too without ever being the loop's current person.
+    # match links both sides, so a candidate updated along the way is
+    # linked without ever having been the loop's current person.
     cursor.execute("SELECT count(*) FROM persons WHERE global_person_id IS NOT NULL")
     persons_linked = cursor.fetchone()[0]
     cursor.execute("SELECT count(*) FROM global_persons")
@@ -345,7 +362,7 @@ def recompute_global_identities(cursor, progress=None):
     return {
         "persons_total": len(persons),
         "persons_unlinked": persons_unlinked,
-        "identities_deleted": identities_deleted,
+        "global_persons_deleted": global_persons_deleted,
         "persons_linked": persons_linked,
         "identities_created": identities_created,
     }

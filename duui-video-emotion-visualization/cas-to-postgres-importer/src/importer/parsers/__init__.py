@@ -1,31 +1,27 @@
-"""
-Parsers package: one module per CAS/DB entity family.
+"""One parser module per family of CAS annotations and database rows.
 
-Every module exposes a `parse(cas, cursor, context)` function with an
-identical signature, where `context` is a plain dict shared across all
-parsers for the current CAS (e.g. it carries `global_video_id` once
-the video parser has resolved it).
+Every module exposes a `parse(cas, cursor, context)` with an identical
+signature. The context is a plain dict shared across all parsers for
+the current CAS: it carries `global_video_id` once the video step has
+resolved it, and the person lookup maps once the person step has built
+them.
 
-No step gets the connection itself: the whole import is one
-transaction owned by pipeline.py, which commits once every step has
-run, so a step that could commit or roll back on its own would only be
-a way to break that guarantee.
+No step is given the connection. The whole import is one transaction
+owned by `pipeline.py`, which commits after every step has run, so a
+step able to commit or roll back on its own would only be a way to
+break that guarantee.
 
-`PARSE_STEPS` defines the order in which parsers must run -- this
-matters for two reasons: later steps depend on
-`context["global_video_id"]`/the face-voice-person maps being set by
-earlier steps, and the real Postgres schema has FK constraints (e.g.
-`segments.person_id -> persons.person_id`) that fail outright if a
-referenced row hasn't been inserted yet. `person` therefore runs right
-after `video`/`model`, before anything that can reference a person.
+`PARSE_STEPS` fixes the order, which matters twice over: later steps
+read what earlier ones put in the context, and the schema's foreign
+keys fail outright if a referenced row is not yet inserted. `person`
+therefore runs directly after `video` and `model`, ahead of anything
+that can reference a person.
 
-Every step here reads the CAS and writes what it found. Nothing in this
-package derives data the CAS doesn't contain: cross-video person
-identity (`global_persons`/`persons.global_person_id`) used to be a
+Every step reads the CAS and writes what it found. Nothing here derives
+data the CAS does not contain. Linking people across videos was once a
 step in this list, but it is corpus-wide rather than per-file, so it
-now lives in its own container and is run explicitly -- see
-global-identity-linker/. This importer never writes those
-two columns at all.
+now lives in `global-identity-linker/` and is run explicitly. This
+importer never writes `global_persons` or `persons.global_person_id`.
 """
 
 from . import (

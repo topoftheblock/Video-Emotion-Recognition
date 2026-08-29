@@ -1,7 +1,8 @@
-"""Tests for src/backend/query_agent/sql_guard.py -- the read-only
-guard the NL->SQL agent's queries run through. This is a real safety
-boundary (the agent's output is untrusted input), so it gets tested
-independently of whether the LLM behind it is configured at all."""
+"""Tests for the read-only guard the agent's queries run through.
+
+This is a real safety boundary — the model's output is untrusted input
+— so it is tested independently of whether a model is configured at all.
+"""
 
 import pytest
 
@@ -11,7 +12,8 @@ from backend.query_agent.sql_guard import (
     validate_select_only,
 )
 
-# ---------------- Pure validation (no DB needed) ----------------
+# --- Validation ---------------------------------------------------------
+# No database needed: this layer is pure text.
 
 
 @pytest.mark.parametrize(
@@ -25,7 +27,8 @@ from backend.query_agent.sql_guard import (
         "with x as (select 1) select * from x",
     ],
 )
-def test_validate_select_only_accepts(sql):
+def test_validate_select_only_accepts(sql: str) -> None:
+    """A single read-only query passes, and comes back trimmed."""
     assert validate_select_only(sql) == sql.strip().rstrip(";").strip()
 
 
@@ -44,22 +47,26 @@ def test_validate_select_only_accepts(sql):
         "not sql at all",
     ],
 )
-def test_validate_select_only_rejects(sql):
+def test_validate_select_only_rejects(sql: str) -> None:
+    """Anything writing, empty, or multi-statement is refused."""
     with pytest.raises(SQLGuardError):
         validate_select_only(sql)
 
 
-def test_validate_select_only_rejects_keyword_hidden_in_cte():
+def test_validate_select_only_rejects_keyword_hidden_in_cte() -> None:
+    """A write hidden inside a CTE is still a write."""
     with pytest.raises(SQLGuardError):
         validate_select_only(
             "WITH x AS (DELETE FROM videos RETURNING *) SELECT * FROM x"
         )
 
 
-# ---------------- run_read_only (needs a live DB) ----------------
+# --- Execution ----------------------------------------------------------
+# These need a live database, and skip without one.
 
 
-def test_run_read_only_executes_select(db_available):
+def test_run_read_only_executes_select(db_available: bool) -> None:
+    """A valid query runs, and its columns and rows come back."""
     if not db_available:
         pytest.skip("no DB reachable")
     columns, rows, truncated = run_read_only("SELECT 1 AS one, 'x' AS two")
@@ -68,7 +75,8 @@ def test_run_read_only_executes_select(db_available):
     assert truncated is False
 
 
-def test_run_read_only_caps_rows_and_reports_truncation(db_available):
+def test_run_read_only_caps_rows_and_reports_truncation(db_available: bool) -> None:
+    """The row cap holds, and says when it cut something off."""
     if not db_available:
         pytest.skip("no DB reachable")
     columns, rows, truncated = run_read_only(
@@ -78,9 +86,12 @@ def test_run_read_only_caps_rows_and_reports_truncation(db_available):
     assert truncated is True
 
 
-def test_run_read_only_blocks_writes_even_past_validation(db_available):
-    """Defense in depth: even if validate_select_only were somehow
-    bypassed, the READ ONLY transaction itself must reject a write."""
+def test_run_read_only_blocks_writes_even_past_validation(db_available: bool) -> None:
+    """The second layer holds on its own.
+
+    Even were the textual check bypassed, the read-only session must
+    still refuse a write.
+    """
     if not db_available:
         pytest.skip("no DB reachable")
     with pytest.raises(SQLGuardError):

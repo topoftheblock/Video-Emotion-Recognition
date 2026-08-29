@@ -44,6 +44,32 @@ answer it for you. A confident-sounding reason nobody verified is worse than no
 reason at all — the next reader cannot tell it apart from a real one, and that
 is precisely how the current comments became untrustworthy.
 
+### 4. Never describe the current corpus
+
+**Documentation describes the software, not the data that happens to be loaded.**
+
+Do not write row counts, id ranges, per-table totals, or "in the current corpus
+there are N of these". Every one of those is a measurement of one database on one
+day. It is stale the next time anything is imported, and a reader cannot tell a
+stale number from a live one.
+
+Write the **property** instead — the thing that stays true whatever is loaded:
+
+```text
+no    4,762 of the 40,323 distinct emotion ids occur in more than one video
+yes   the same xmi:id can occur in more than one video
+```
+
+```text
+no    all 7,068 tokens have a NULL segment_id
+yes   a token may carry no segment link
+```
+
+This does not weaken rule 1. A measurement is **evidence** — it belongs in the
+phase record that used it to decide something. A property is **documentation**,
+and it is verified by a test or by the schema, both of which stay true as the
+data changes.
+
 ### And write for a stranger
 
 A reader who has not seen this file before, looking for one specific thing.
@@ -340,7 +366,7 @@ CREATE TABLE persons (
 | **Language** | US English, everywhere, including code comments and log output |
 | **Code line width** | 88 (the formatter enforces this) |
 | **Prose line width** | 72 in comments and docstrings; 80 in Markdown |
-| **Em dash** | `—`, not `--`. Files are UTF-8. |
+| **Em dash** | `—`, not `--`. Files are UTF-8. Applies in code comments, docstrings, and user-facing strings alike — `--` was the legacy style. |
 | **Quotes in prose** | Straight `"` and `'` |
 | **Backticks** | Around identifiers, filenames, and literal values |
 | **File references** | Repo-relative: `webapp/src/backend/app.py`, not `app.py` |
@@ -348,6 +374,13 @@ CREATE TABLE persons (
 Prose wraps narrower than code on purpose: long lines of explanation are harder
 to read than long lines of code, and the codebase already wraps prose near 72
 (measured p90 = 71).
+
+**72 is the hard rule for comments and docstrings, not a target.** Applying the
+guide to the first sub-project produced 212 prose lines wrapped at 88 — every
+one of them written while the rule said 72. Nothing in the linter enforces it
+(`E501` fires at 88, and only for Python), so it holds only if it is checked
+deliberately. The one exception is a **section banner, which runs to column
+74**, matching the form in §7; it is a rule, not prose.
 
 ---
 

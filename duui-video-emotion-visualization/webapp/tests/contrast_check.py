@@ -1,51 +1,67 @@
-"""
-WCAG contrast checker for the viewer's frontend palette.
+"""A WCAG contrast checker for the frontend's palette.
 
-Phase 0.1 of docs/accessibility.md. Reads the committed colours out
-of css/tokens.css and js/state.js and reports the contrast ratio of every
-pair the app actually composites, so a palette change that breaks a
-threshold fails in CI rather than in someone's eyes.
+Reads the committed colours out of `css/tokens.css` and `js/state.js`
+and reports the contrast ratio of every pair the page actually
+composites, so a palette change that breaks a threshold fails a check
+rather than someone's eyes. See "Colour and contrast" in
+docs/accessibility.md.
 
-Two things make this more than `ratio(fg, bg)`:
+Two things make this more than a ratio between two colours:
 
-  * **Alpha.** Several of the app's colours are translucent -- the
-    subtitle box is rgba(0,0,0,0.85) over arbitrary video, the selected
-    person row's score is white at 75% over --signal, --border-soft is
-    surface-400 at 20%. Three of the audit's findings are invisible
-    until those are flattened against their real backdrop, which is why
-    every side of a pair here is a *stack* of layers rather than one
-    colour.
+- **Alpha.** Several of the colours are translucent: the subtitle box is
+  black at 85% over arbitrary video, the selected person's score is
+  white at 75% over the signal colour, and a soft border is a surface
+  tone at 20%. A pair like that is only measurable once flattened
+  against its real backdrop, which is why every side of a pair here is a
+  *stack* of layers rather than one colour.
 
-  * **Runtime-computed colours.** readableTextColor() in js/state.js
-    picks the filter chip's text colour per person at render time, so
-    the pair that matters is (whatever that function returns, that
-    person's colour) -- not anything written literally in a stylesheet.
-    _readable_text_color() below mirrors it from the parsed source.
+- **Colours computed at runtime.** `readableTextColor` in `state.js`
+  picks the filter chip's text colour per person as it renders, so the
+  pair that matters is whatever that function returns against that
+  person's colour, not anything written literally in a stylesheet.
+  `_readable_text_color_impl` mirrors it from the parsed source.
 
-The PAIRS registry is curated, not discovered: there is no way to know
-from the stylesheets alone which colours end up stacked on which. When a
-new colour combination is introduced, it has to be added here or it is
-not checked.
+The registry of pairs is curated rather than discovered: nothing in the
+stylesheets says which colours end up stacked on which. A new
+combination has to be added here, or it is not checked.
 
-Standalone report (stdlib only, no pytest needed):
+For a standalone report, needing nothing but the standard library:
 
     python3 tests/contrast_check.py
 
-Assertions live in tests/test_contrast.py.
+The assertions live in `test_contrast.py`.
 """
 
 import re
 from pathlib import Path
+from typing import Protocol
+
+#: One opaque colour, as 0-255 channels.
+RGB = tuple[int, int, int]
+
+
+class TextColorPicker(Protocol):
+    """A stand-in for `readableTextColor`, parsed out of the source.
+
+    Callable like the function it mirrors, and carrying a description of
+    *which* form was found, so a report can say what it measured.
+    """
+
+    description: str
+
+    def __call__(self, rgb: RGB) -> str:
+        """Return the text colour this picker would choose."""
+
 
 FRONTEND = Path(__file__).resolve().parent.parent / "src" / "frontend"
 TOKENS_CSS = FRONTEND / "css" / "tokens.css"
 STATE_JS = FRONTEND / "js" / "state.js"
 
-# WCAG 2.2 minimums. LARGE is >=18.66px bold or >=24px; UI is 1.4.11
-# (non-text contrast) for anything that conveys meaning or identifies a
-# control boundary. INFO records a pair without asserting on it -- used
-# for the decorative colours the audit deliberately exempted, so the
-# decision stays visible instead of turning into a silent omission.
+# WCAG 2.2 minimums. LARGE applies at 18.66px bold or 24px and above; UI
+# is the non-text minimum, for anything conveying meaning or marking a
+# control's boundary. INFO records a pair without asserting on it, for
+# colours deliberately exempted — so the decision stays visible rather
+# than becoming a silent omission.
 TEXT = 4.5
 LARGE = 3.0
 UI = 3.0
@@ -55,47 +71,65 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 
-# ---------------- colour maths ----------------
+# Colour maths.
 
 
-def _srgb_channel(value):
+def _srgb_channel(value: int) -> float:
+    """Linearize one 0-255 channel, as WCAG's formula defines it."""
     c = value / 255
     return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
 
 
-def luminance(rgb):
+def luminance(rgb: RGB) -> float:
+    """Return the relative luminance of an opaque colour."""
     r, g, b = (_srgb_channel(c) for c in rgb)
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
-def contrast(fg, bg):
-    """WCAG 2.x contrast ratio between two opaque colours."""
+def contrast(fg: RGB, bg: RGB) -> float:
+    """Return the contrast ratio between two opaque colours."""
     a, b = luminance(fg), luminance(bg)
     if a < b:
         a, b = b, a
     return (a + 0.05) / (b + 0.05)
 
 
-def composite(fg, alpha, bg):
-    """`fg` at `alpha` painted over opaque `bg` -- straight source-over."""
-    return tuple(round(f * alpha + b * (1 - alpha)) for f, b in zip(fg, bg))
+def composite(fg: RGB, alpha: float, bg: RGB) -> RGB:
+    """Paint `fg` at `alpha` over opaque `bg`, source-over."""
+    r, g, b = (
+        round(f * a + q * (1 - a))
+        for f, q, a in (
+            (fg[0], bg[0], alpha),
+            (fg[1], bg[1], alpha),
+            (fg[2], bg[2], alpha),
+        )
+    )
+    return (r, g, b)
 
 
-# ---------------- parsing the committed sources ----------------
+# Parsing the committed sources.
 
 _HEX = re.compile(r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 _RGB = re.compile(
     r"^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)\s*(?:[,/]\s*([\d.]+)\s*)?\)$"
 )
 _VAR = re.compile(r"^var\(\s*(--[\w-]+)\s*\)$")
-# Only whole-value declarations are colours we can use. A shadow
-# ("0 1px 2px rgba(...)"), a font stack or a length lands here too and is
-# skipped -- matching the *entire* value is what rejects them.
+# Only whole-value declarations are colours we can use. A shadow ("0 1px
+# 2px rgba(...)"), a font stack or a length lands here too and is
+# skipped — matching the *entire* value is what rejects them.
 _DECL = re.compile(r"^\s*(--[\w-]+)\s*:\s*([^;]+);", re.MULTILINE)
 
 
-def _parse_rgba(text):
-    """`text` -> ((r, g, b), alpha), or None if it isn't a plain colour."""
+def _parse_rgba(text: str) -> tuple[RGB, float] | None:
+    """Parse one colour value into its channels and its alpha.
+
+    Args:
+        text: A whole CSS value.
+
+    Returns:
+        The colour and its alpha, or None if the value is not a plain
+        colour — a shadow, a font stack or a length.
+    """
     text = text.strip()
 
     hex_match = _HEX.match(text)
@@ -103,34 +137,35 @@ def _parse_rgba(text):
         digits = hex_match.group(1)
         if len(digits) == 3:
             digits = "".join(c * 2 for c in digits)
-        return tuple(int(digits[i : i + 2], 16) for i in (0, 2, 4)), 1.0
+        r, g, b = (int(digits[i : i + 2], 16) for i in (0, 2, 4))
+        return (r, g, b), 1.0
 
     rgb_match = _RGB.match(text)
     if rgb_match:
-        r, g, b, a = rgb_match.groups()
-        return (round(float(r)), round(float(g)), round(float(b))), float(
-            a
-        ) if a else 1.0
+        red, green, blue, alpha = rgb_match.groups()
+        channels = (round(float(red)), round(float(green)), round(float(blue)))
+        return channels, float(alpha) if alpha else 1.0
 
     return None
 
 
-def load_tokens(path=TOKENS_CSS):
+def load_tokens(path: Path = TOKENS_CSS) -> dict[str, tuple[RGB, float]]:
     """
     Every custom property in tokens.css that resolves to a single
     colour, as {name: ((r, g, b), alpha)}.
 
     var() aliases are followed, which is the whole point: the semantic
-    half of tokens.css is almost entirely `--signal: var(--primary-500)`,
-    so a checker that only read literals would see none of the names the
-    stylesheets actually use.
+    half of tokens.css is almost entirely `--signal:
+    var(--primary-500)`, so a checker that only read literals would see
+    none of the names the stylesheets actually use.
     """
     source = path.read_text(encoding="utf-8")
     raw = {name: value.strip() for name, value in _DECL.findall(source)}
 
-    resolved = {}
+    resolved: dict[str, tuple[RGB, float]] = {}
 
-    def resolve(name, seen=()):
+    def resolve(name: str, seen: tuple = ()) -> tuple[RGB, float] | None:
+        """Follow one name to a colour, through any var() aliases."""
         if name in resolved:
             return resolved[name]
         if name in seen or name not in raw:
@@ -154,7 +189,7 @@ def load_tokens(path=TOKENS_CSS):
     return resolved
 
 
-def load_person_colours(path=STATE_JS):
+def load_person_colours(path: Path = STATE_JS) -> list[str]:
     """
     PERSON_COLORS plus UNKNOWN_PERSON_COLOR from js/state.js.
 
@@ -175,7 +210,7 @@ def load_person_colours(path=STATE_JS):
     return palette
 
 
-def _readable_text_color_impl(path=STATE_JS):
+def _readable_text_color_impl(path: Path = STATE_JS) -> TextColorPicker:
     """
     Mirror readableTextColor() from js/state.js.
 
@@ -183,24 +218,26 @@ def _readable_text_color_impl(path=STATE_JS):
     across Phase 3.1 (which replaces the luminance threshold with a real
     max-contrast comparison). Two shapes are understood:
 
-      * `L > <threshold> ? "<dark>" : "<light>"` -- today's implementation,
-        whose threshold of 0.45 sits far above the true black/white
-        crossover and is exactly what the Phase 3.1 finding is about.
-      * anything else -- assumed to be the fixed form, emulated as
-        "pick whichever of the function's two hex literals contrasts
-        better", which is what the replacement is specified to do.
+      * `L > <threshold> ? "<dark>" : "<light>"` — today's
+        implementation, whose threshold of 0.45 sits far above the true
+        black/white crossover and is exactly what the Phase 3.1 finding
+        is about.
+      * anything else — assumed to be the fixed form, emulated as "pick
+        whichever of the function's two hex literals contrasts better",
+        which is what the replacement is specified to do.
     """
     source = path.read_text(encoding="utf-8")
-    body = re.search(
+    match = re.search(
         r"export function readableTextColor\s*\([^)]*\)\s*\{(.*?)\n\}",
         source,
         re.DOTALL,
     )
-    body = body.group(1) if body else ""
+    body = match.group(1) if match else ""
 
     candidates = re.findall(r'"(#[0-9a-fA-F]{6})"', body)
     threshold = re.search(
-        r'return\s+L\s*>\s*([\d.]+)\s*\?\s*"(#[0-9a-fA-F]{6})"\s*:\s*"(#[0-9a-fA-F]{6})"',
+        r"return\s+L\s*>\s*([\d.]+)\s*\?\s*"
+        r'"(#[0-9a-fA-F]{6})"\s*:\s*"(#[0-9a-fA-F]{6})"',
         body,
     )
 
@@ -211,24 +248,34 @@ def _readable_text_color_impl(path=STATE_JS):
             threshold.group(3),
         )
 
-        def pick(rgb):
+        def pick(rgb: RGB) -> str:
+            """Choose by luminance, the way the threshold form does."""
             return dark if luminance(rgb) > cut else light
 
-        pick.description = f"threshold L > {cut}"
-        return pick
+        # The description rides on the function, which is what the
+        # report and the assertions read it from.
+        pick.description = f"threshold L > {cut}"  # type: ignore[attr-defined]
+        return pick  # type: ignore[return-value]
 
     options = candidates or ["#0b0e14", "#ffffff"]
 
-    def pick(rgb):
-        return max(
-            options, key=lambda hex_value: contrast(_parse_rgba(hex_value)[0], rgb)
-        )
+    def by_contrast(rgb: RGB) -> str:
+        """Choose whichever candidate contrasts better."""
 
-    pick.description = "max contrast of " + ", ".join(options)
-    return pick
+        def ratio(hex_value: str) -> float:
+            """The contrast of one candidate against this colour."""
+            parsed = _parse_rgba(hex_value)
+            assert parsed is not None
+            return contrast(parsed[0], rgb)
+
+        return max(options, key=ratio)
+
+    description = "max contrast of " + ", ".join(options)
+    by_contrast.description = description  # type: ignore[attr-defined]
+    return by_contrast  # type: ignore[return-value]
 
 
-# ---------------- the pair registry ----------------
+# The pair registry.
 
 
 class Layer:
@@ -236,15 +283,21 @@ class Layer:
     One side of a pair, as a stack of colours painted bottom-first.
 
     A single opaque token is the common case (`Layer("--signal")`), but
-    anything translucent needs what is underneath it to mean anything --
+    anything translucent needs what is underneath it to mean anything —
     `Layer("--signal", "rgba(255,255,255,0.75)")` is the selected person
     row's score text, and it is only 3.99:1 once flattened.
     """
 
-    def __init__(self, *specs):
+    def __init__(self, *specs: str) -> None:
+        """Record the layers, bottom-first."""
         self.specs = specs
 
-    def flatten(self, tokens, base=WHITE):
+    def flatten(self, tokens: dict[str, tuple[RGB, float]], base: RGB = WHITE) -> RGB:
+        """Paint the stack over `base` and return the resulting colour.
+
+        Raises:
+            KeyError: If a layer names a colour that cannot be resolved.
+        """
         rgb = base
         for spec in self.specs:
             colour = tokens[spec] if spec in tokens else _parse_rgba(spec)
@@ -254,12 +307,23 @@ class Layer:
             rgb = fg if alpha >= 1.0 else composite(fg, alpha, rgb)
         return rgb
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Describe the stack top-first, the way a reader reads it."""
         return " over ".join(reversed(self.specs))
 
 
 class Pair:
-    def __init__(self, area, label, foreground, background, requirement):
+    """One foreground-over-background pair, and what it must reach."""
+
+    def __init__(
+        self,
+        area: str,
+        label: str,
+        foreground: "Layer",
+        background: "Layer",
+        requirement: float | None,
+    ) -> None:
+        """Record the pair, and the minimum ratio it must meet."""
         self.area = area
         self.label = label
         self.foreground = foreground
@@ -267,14 +331,14 @@ class Pair:
         self.requirement = requirement
 
 
-def _static_pairs():
+def _static_pairs() -> list[Pair]:
     """
     Pairs written literally in the stylesheets. Grouped by the area of
     the UI they belong to so a failure names somewhere to go and look.
     """
     P = Pair
     return [
-        # ---- body copy on the two page surfaces ----
+        # Body copy on the two page surfaces.
         P("base", "--text on card", Layer("--text"), Layer("--surface"), TEXT),
         P("base", "--text on page floor", Layer("--text"), Layer("--bg"), TEXT),
         P("base", "--text-dim on card", Layer("--text-dim"), Layer("--surface"), TEXT),
@@ -300,9 +364,9 @@ def _static_pairs():
             Layer("--signal-soft"),
             TEXT,
         ),
-        # ---- text inputs (Ask + video combobox) ----
-        # The fill is recessed, so the placeholder's backdrop is
-        # --surface-alt and not the card behind it.
+        # Text inputs (Ask + video combobox). The fill is recessed, so
+        # the placeholder's backdrop is --surface-alt and not the card
+        # behind it.
         P(
             "input",
             "placeholder on input fill",
@@ -349,7 +413,7 @@ def _static_pairs():
             Layer("--surface"),
             UI,
         ),
-        # ---- buttons and chips ----
+        # Buttons and chips.
         P(
             "button",
             "primary button label",
@@ -372,10 +436,10 @@ def _static_pairs():
             TEXT,
         ),
         P("button", "focus ring on card", Layer("--signal"), Layer("--surface"), UI),
-        # .person-row:focus-visible sits on a selected (--signal) row, but
-        # outline-offset: 2px lifts the ring clear onto the panel behind
-        # it. That offset is load-bearing: without it the ring would be
-        # --signal on --signal.
+        # .person-row:focus-visible sits on a selected (--signal) row,
+        # but outline-offset: 2px lifts the ring clear onto the panel
+        # behind it. That offset is load-bearing: without it the ring
+        # would be --signal on --signal.
         P(
             "button",
             "focus ring clear of selected row",
@@ -390,7 +454,7 @@ def _static_pairs():
             Layer("--signal-soft"),
             TEXT,
         ),
-        # ---- sidebar person lists ----
+        # Sidebar person lists.
         P("sidebar", "panel title", Layer("--text-dim"), Layer("--surface"), TEXT),
         P(
             "sidebar",
@@ -413,10 +477,10 @@ def _static_pairs():
             Layer("--signal"),
             TEXT,
         ),
-        # Was the audit's 3.99:1 finding; 0.85 since Phase 3.2. The alpha
-        # is duplicated from css/sidebar.css rather than read from it --
-        # the one literal in this file that can drift from the stylesheet
-        # it describes, so the two have to move together.
+        # Was the audit's 3.99:1 finding; 0.85 since Phase 3.2. The
+        # alpha is duplicated from css/sidebar.css rather than read from
+        # it — the one literal in this file that can drift from the
+        # stylesheet it describes, so the two have to move together.
         P(
             "sidebar",
             "score on selected row",
@@ -432,7 +496,7 @@ def _static_pairs():
             TEXT,
         ),
         P("sidebar", "empty hint", Layer("--text-dim"), Layer("--surface"), TEXT),
-        # ---- emotion panels ----
+        # Emotion panels.
         P(
             "emotions",
             "dominant emotion label",
@@ -458,9 +522,9 @@ def _static_pairs():
             Layer("--surface-alt"),
             UI,
         ),
-        # The signed tracks' zero reference -- a value is read relative to
-        # it, so it is not decoration. Its backdrop is the groove fill,
-        # not the card (css/emotions.css:119).
+        # The signed tracks' zero reference — a value is read relative
+        # to it, so it is not decoration. Its backdrop is the groove
+        # fill, not the card (css/emotions.css:119).
         P(
             "emotions",
             "signed zero marker vs groove",
@@ -468,9 +532,9 @@ def _static_pairs():
             Layer("--surface-alt"),
             UI,
         ),
-        # Exempt, and deliberately so -- see the comment on .emo-track in
-        # css/emotions.css. Every row prints its live value and average as
-        # text beside the bar, so the track is a second reading of a
+        # Exempt, and deliberately so — see the comment on .emo-track in
+        # css/emotions.css. Every row prints its live value and average
+        # as text beside the bar, so the track is a second reading of a
         # number already written down rather than a graphic required to
         # understand anything. Recorded rather than deleted so the
         # decision stays visible.
@@ -481,10 +545,10 @@ def _static_pairs():
             Layer("--surface"),
             INFO,
         ),
-        # ---- the video stage ----
-        # Subtitles sit on rgba(0,0,0,0.85) over whatever the video is
-        # showing. White footage is the worst case for the box, so that
-        # is what is checked -- anything darker only helps.
+        # The video stage. Subtitles sit on rgba(0,0,0,0.85) over
+        # whatever the video is showing. White footage is the worst case
+        # for the box, so that is what is checked — anything darker only
+        # helps.
         P(
             "stage",
             "subtitle text over palest video",
@@ -529,7 +593,7 @@ def _static_pairs():
         ),
         P("stage", "CC toggle at rest", Layer("--text-dim"), Layer("--surface"), TEXT),
         P("stage", "CC toggle when on", Layer("#ffffff"), Layer("--signal"), TEXT),
-        # ---- status and jobs ----
+        # Status and jobs.
         P("status", "ask error text", Layer("--danger-text"), Layer("--surface"), TEXT),
         P(
             "status",
@@ -553,7 +617,7 @@ def _static_pairs():
             Layer("--surface-alt"),
             UI,
         ),
-        # ---- topbar ----
+        # Topbar.
         P(
             "topbar",
             "brand mark label",
@@ -572,10 +636,10 @@ def _static_pairs():
             TEXT,
         ),
         P("topbar", "missing-file note", Layer("--text-dim"), Layer("--surface"), TEXT),
-        # ---- decorative, recorded but not asserted ----
-        # Panel dots each sit beside a text label naming the same panel,
-        # so colour is not the sole channel and 1.4.11 does not apply.
-        # Recorded so the exemption is visible rather than assumed.
+        # Decorative, recorded but not asserted. Panel dots each sit
+        # beside a text label naming the same panel, so colour is not
+        # the sole channel and 1.4.11 does not apply. Recorded so the
+        # exemption is visible rather than assumed.
         P(
             "decorative",
             "dot-emotion on card",
@@ -605,7 +669,8 @@ def _static_pairs():
             INFO,
         ),
         # Panel and topbar hairlines separate regions that are already
-        # separated by spacing and fill -- purely decorative under 1.4.11.
+        # separated by spacing and fill — purely decorative under
+        # 1.4.11.
         P(
             "decorative",
             "panel border on card",
@@ -623,23 +688,23 @@ def _static_pairs():
     ]
 
 
-def _person_pairs(palette, pick_text):
+def _person_pairs(palette: list[str], pick_text: TextColorPicker) -> list[Pair]:
     """
     Where a person's colour carries meaning, and what actually has to
     clear a threshold for it to do so.
 
     Not the colours themselves. The same six are stroked over arbitrary
-    video, where they have to stay bright, which leaves them at 1.4-2.7:1
-    against the light rows in the sidebar -- and darkening them to fix
-    that would break the other use. Since Phase 3.5 the swatch's boundary
-    is a ring instead, so the ring is what is asserted here; the raw
-    colour-on-surface figures stay as INFO, because they are the reason
-    the ring exists and would otherwise look like an omission.
+    video, where they have to stay bright, which leaves them at
+    1.4-2.7:1 against the light rows in the sidebar — and darkening them
+    to fix that would break the other use. Since Phase 3.5 the swatch's
+    boundary is a ring instead, so the ring is what is asserted here;
+    the raw colour-on-surface figures stay as INFO, because they are the
+    reason the ring exists and would otherwise look like an omission.
 
     The overlay stroke over footage is not checked at all: its backdrop
-    is whatever the video is showing, so there is no ratio to compute --
-    only the palette's separability under colour-vision deficiency, which
-    is tests/cvd_check.py's job.
+    is whatever the video is showing, so there is no ratio to compute —
+    only the palette's separability under colour-vision deficiency,
+    which is tests/cvd_check.py's job.
     """
     pairs = [
         Pair(
@@ -683,7 +748,9 @@ def _person_pairs(palette, pick_text):
             )
         )
     for colour in palette:
-        rgb = _parse_rgba(colour)[0]
+        parsed = _parse_rgba(colour)
+        assert parsed is not None, f"palette entry is not a colour: {colour}"
+        rgb = parsed[0]
         pairs.append(
             Pair(
                 "person",
@@ -696,23 +763,30 @@ def _person_pairs(palette, pick_text):
     return pairs
 
 
-# ---------------- running the check ----------------
+# Running the check.
 
 
 class Result:
-    def __init__(self, pair, ratio, foreground, background):
+    """One measured pair: what it reached, and against what."""
+
+    def __init__(
+        self, pair: Pair, ratio: float, foreground: RGB, background: RGB
+    ) -> None:
+        """Record the measurement and the colours it was taken from."""
         self.pair = pair
         self.ratio = ratio
         self.foreground = foreground
         self.background = background
 
     @property
-    def status(self):
+    def status(self) -> str:
+        """PASS, FAIL, or INFO for a pair with no threshold."""
         if self.pair.requirement is None:
             return "INFO"
         return "PASS" if self.ratio >= self.pair.requirement else "FAIL"
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Format one line of the standalone report."""
         need = (
             "     -"
             if self.pair.requirement is None
@@ -724,8 +798,8 @@ class Result:
         )
 
 
-def check():
-    """Every registered pair, evaluated against the committed sources."""
+def check() -> list[Result]:
+    """Measure every registered pair against the committed sources."""
     tokens = load_tokens()
     palette = load_person_colours()
     pick_text = _readable_text_color_impl()
@@ -740,12 +814,14 @@ def check():
     return results
 
 
-def failures(results=None):
+def failures(results: list[Result] | None = None) -> list[Result]:
+    """Return only the pairs that fell below their requirement."""
     results = check() if results is None else results
     return [r for r in results if r.status == "FAIL"]
 
 
-def _main():
+def _main() -> int:
+    """Print the full report, grouped by area of the interface."""
     results = check()
     pick_text = _readable_text_color_impl()
 
@@ -765,7 +841,8 @@ def _main():
     info = [r for r in results if r.status == "INFO"]
     print()
     print(
-        f"{len(results)} pairs checked, {len(bad)} failing, {len(info)} recorded without assertion"
+        f"{len(results)} pairs checked, {len(bad)} failing, "
+        f"{len(info)} recorded without assertion"
     )
     for result in bad:
         print(

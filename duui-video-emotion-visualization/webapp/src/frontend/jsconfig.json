@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "Type-checking settings for the frontend. There is no build step:",
+    "nothing here emits anything, and the files served are the files in",
+    "this directory. tsc reads it only to check the JSDoc types, which",
+    "is what stops a DOM lookup being used as the wrong element.",
+    "checkJs, because the sources are JavaScript and stay JavaScript."
+  ],
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2022", "dom", "dom.iterable"]
+  },
+  "include": ["js/**/*.js"]
+}

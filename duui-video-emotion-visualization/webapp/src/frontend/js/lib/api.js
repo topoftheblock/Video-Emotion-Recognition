@@ -1,14 +1,15 @@
+// @ts-check
 /**
  * Every call to the backend, with one error policy.
  *
  * A non-2xx response throws, carrying the FastAPI `detail` string when
- * there is one -- callers that can carry on without the data (the
- * cross-video panel) catch and degrade, and the ones that cannot let
- * it surface.
+ * there is one — callers that can carry on without the data (the
+ * cross-video panel) catch and degrade, and the ones that cannot let it
+ * surface.
  *
- * GET /api/stats/{id} is deliberately absent: it is still served (see
- * backend/routes/stats.py) but nothing in the viewer reads it since
- * the emotion panels replaced the old insights panel.
+ * `/api/stats/{id}` is deliberately absent. It is still served, but
+ * nothing in the webapp reads it: the per-modality emotion panels
+ * answer what it was for.
  */
 
 async function getJson(path) {
@@ -44,7 +45,8 @@ export async function askQuestion(question) {
   const result = await response.json();
   if (!response.ok) {
     // The agent reports its own failures (unconfigured key, a query it
-    // could not settle on) as `detail`; those are worth showing verbatim.
+    // could not settle on) as `detail`; those are worth showing
+    // verbatim.
     throw new Error(result.detail || "The query agent could not answer that.");
   }
   return result;

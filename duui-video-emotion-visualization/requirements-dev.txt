@@ -1,21 +1,21 @@
-# Dev/test-only dependencies: needed by the test suites, shipped by no image.
-# All three sub-projects have tests, and their own requirements files carry
-# everything else those tests need.
+# Dev/test-only dependencies: needed by the test suites, shipped by no
+# image. All three sub-projects have tests, and their own requirements
+# files carry everything else those tests need.
 #
-# Installed by Dockerfile.tests along with all three sub-projects' requirements.
-# Run the suite with:
+# Installed by Dockerfile.tests along with all three sub-projects'
+# requirements. Run the suite with:
 #
 #   docker compose run --rm tests
 #
-# Version ranges are floor-and-ceiling. The floor is the version this project is
-# actually built and tested against; the ceiling is the next major, so a new
-# major cannot arrive silently and change the program under us. Phase 9 adds a
-# lockfile on top for exact reproducibility.
+# Version ranges are floor-and-ceiling. The floor is the version this
+# project is actually built and tested against; the ceiling is the next
+# major, so a new major cannot arrive silently and change the program
+# under us. Phase 9 adds a lockfile on top for exact reproducibility.
 pytest>=9.0,<10
 
-# Required by fastapi.testclient.TestClient, which the webapp's route tests use
-# to exercise create_app() without binding a port. No test imports it directly;
-# TestClient does, and FastAPI declares it only as an optional extra, so without
-# this line the route tests fail on a missing backend. Test-only: the image
-# serves through uvicorn.
+# Required by fastapi.testclient.TestClient, which the webapp's route
+# tests use to exercise create_app() without binding a port. No test
+# imports it directly; TestClient does, and FastAPI declares it only as
+# an optional extra, so without this line the route tests fail on a
+# missing backend. Test-only: the image serves through uvicorn.
 httpx>=0.28,<1.0

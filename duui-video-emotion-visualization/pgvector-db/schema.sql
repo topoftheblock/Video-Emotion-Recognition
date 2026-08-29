@@ -1,36 +1,21 @@
--- Enable the vector extension for embeddings
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- Identity note (read before adding a table)
--- ------------------------------------------
--- Everything imported from a CAS is keyed by (video_id, <the CAS's own
--- xmi:id>), never by the xmi:id alone. XMI ids are a per-document
--- counter: every file restarts at 1, so they are unique *within* a
--- document and meaningless across documents. Keying on them alone
--- silently merged whole videos into one another -- nine files landed
--- on a single `videos` row because each declared its DocumentMetaData
--- at xmi:id 3, and 4,420 of 42,939 emotion ids collided between files,
--- each one either dropped or overwritten with another video's reading.
+-- Read before adding a table: everything imported from a CAS is keyed by
+-- (video_id, <the CAS's own xmi:id>), never by the xmi:id alone. An xmi:id is
+-- unique within one document and means nothing across documents, so the same id
+-- names different things in different videos.
 --
--- `video_id` is therefore a real surrogate (BIGSERIAL), and `videos`
--- is keyed for the importer by `filename`, which is the one identifier
--- that is stable per video and already the join key to the video store
--- the webapp plays from.
+-- `models` and `global_persons` are the two deliberate exceptions: both are
+-- corpus-wide and neither takes its id from a CAS.
 --
--- Two exceptions, both deliberate:
---   * `models` is corpus-global (the same face model processes every
---     video), so it uses its natural key instead of being duplicated
---     per video.
---   * `global_persons` is corpus-wide by definition and its ids are
---     assigned by the database, not by any CAS.
+-- See docs/database.md#conventions.
 
 -- 1. Core Infrastructure & Models
 CREATE TABLE videos (
     video_id BIGSERIAL PRIMARY KEY,
-    -- The importer upserts on this: one row per video file, however
-    -- many times it is imported. It is also how the webapp finds the
-    -- playable file in the video store, so two different recordings
-    -- sharing a filename would already be indistinguishable there.
+    -- The importer upserts on this, so a video re-imported any number of
+    -- times keeps one row. It is also the join key to the video store: the
+    -- webapp plays `<DUUI_VIDEO_DIR>/<filename>`.
     filename TEXT NOT NULL UNIQUE,
     duration DOUBLE PRECISION,
     processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -100,9 +85,8 @@ CREATE TABLE linguistic_tokens (
     pos_tag TEXT,
     ner_label TEXT,
     PRIMARY KEY (video_id, token_id),
-    -- segment_id is not always populated on the source annotation
-    -- (see media/pipeline notes on time-range matching), hence
-    -- nullable rather than NOT NULL.
+    -- Nullable because the upstream annotation carries the link only
+    -- sometimes.
     FOREIGN KEY (video_id, segment_id) REFERENCES segments(video_id, segment_id)
         ON DELETE CASCADE
 );
@@ -131,14 +115,10 @@ CREATE TABLE voice_embeddings (
         ON DELETE CASCADE
 );
 
--- HNSW, cosine distance (`<=>`) -- the doc in data_schema_with_types.md
--- has always described these embeddings as "pgvector HNSW-Index:
--- cosine", but the index itself was never actually created until now.
--- Drives both the cross-video global-person linking job
--- (global-identity-linker/src/identity/linking.py)
--- and any similarity search the NL->SQL query agent writes.
--- `vector_cosine_ops` matches the
--- `<=>` operator used everywhere else in this codebase.
+-- HNSW on cosine distance. `vector_cosine_ops` is the operator class for
+-- `<=>`, which is what identity linking compares centroids with
+-- (global-identity-linker/src/identity/linking.py) and what any similarity
+-- search the Ask panel generates will use.
 CREATE INDEX IF NOT EXISTS face_embeddings_embedding_hnsw_idx
     ON face_embeddings USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS voice_embeddings_embedding_hnsw_idx
@@ -200,8 +180,8 @@ CREATE TABLE person_detections (
 CREATE TABLE base_emotions (
     video_id BIGINT NOT NULL REFERENCES videos(video_id) ON DELETE CASCADE,
     emotion_id BIGINT NOT NULL,
-    -- Regularly NULL: video-modality frames the importer could not
-    -- attribute to anyone still belong to the video.
+    -- Often NULL, in every modality: a reading the upstream pipeline could
+    -- not attribute to a person still belongs to the video.
     person_id BIGINT,
     modality TEXT CHECK (modality IN ('audio', 'video', 'text')),
     granularity TEXT CHECK (granularity IN ('frame', 'segment', 'sentence', 'shot')),
@@ -235,11 +215,9 @@ CREATE TABLE emotion_scores (
 );
 
 -- 6. Supporting indexes
--- Not required for correctness (every FK already has an implicit
--- index on its own PK side), but these back the join/filter patterns
--- the cross-video identity job runs over the whole corpus
--- (global-identity-linker/src/identity/linking.py)
--- and that the NL->SQL query agent tends to write.
+-- Not required for correctness. These back the filters identity linking runs
+-- over the whole corpus (global-identity-linker/src/identity/linking.py) and
+-- the ones the Ask panel's generated SQL tends to use.
 CREATE INDEX IF NOT EXISTS base_emotions_video_modality_idx
     ON base_emotions (video_id, modality);
 CREATE INDEX IF NOT EXISTS segments_video_kind_idx
@@ -249,12 +227,10 @@ CREATE INDEX IF NOT EXISTS face_embeddings_person_idx
 CREATE INDEX IF NOT EXISTS voice_embeddings_person_idx
     ON voice_embeddings (video_id, person_id);
 
--- Referencing sides of the composite FKs. A composite PRIMARY KEY
--- indexes (video_id, own_id), which is no help to a cascade that
--- deletes by person or presence -- and `--on-existing replace` deletes
--- a whole video's subtree on every re-import, so these are the
--- difference between a delete that seeks and one that scans every
--- detection in the corpus.
+-- The referencing side of each composite foreign key. Postgres indexes the
+-- referenced side automatically, not this one, so without these a cascade
+-- deleting by person or presence scans. `--on-existing replace` deletes a
+-- whole video's subtree on every re-import, which is when that matters.
 CREATE INDEX IF NOT EXISTS segments_person_idx
     ON segments (video_id, person_id);
 CREATE INDEX IF NOT EXISTS linguistic_tokens_segment_idx
@@ -273,23 +249,22 @@ CREATE INDEX IF NOT EXISTS base_emotions_person_idx
     ON base_emotions (video_id, person_id);
 
 -- 7. Job status
--- One row per run of a long-running job (the importer, the
--- cross-video identity job), so the viewer can say "an import is
--- running" and how far along it is instead of leaving a user to guess
--- whether the empty dropdown is a bug or a job that hasn't finished.
+-- One row per job run, so the webapp can report that an import is running and
+-- how far it has got, rather than leaving an empty video list ambiguous.
 --
--- This file only runs when the db volume is created empty, so an
--- already-populated deployment never sees it. The same DDL is
--- therefore repeated as CREATE TABLE IF NOT EXISTS in each service
--- that touches the table -- keep the four copies in step:
+-- This file runs only when the data directory is created empty, so an
+-- already-populated deployment never sees it. The same DDL is therefore
+-- repeated as CREATE TABLE IF NOT EXISTS in the three services that write or
+-- read the table. The four are identical apart from the statement terminator,
+-- which only this file needs; keep them so:
 --   cas-to-postgres-importer/src/importer/job_runs.py
 --   global-identity-linker/src/identity/job_runs.py
 --   webapp/src/backend/queries/jobs.py
 --
--- fillfactor leaves room on the page for the heartbeat UPDATEs, which
--- rewrite the same row once a second for the length of a run: with
--- space to spare they stay HOT (in-page) instead of leaving a dead
--- tuple and a new index entry behind every time.
+-- fillfactor leaves free space on each page for the heartbeat UPDATEs, which
+-- rewrite one row roughly once a second for the length of a run
+-- (MIN_WRITE_INTERVAL in job_runs.py). With room on the page those updates stay
+-- HOT and leave no dead tuple or new index entry behind.
 CREATE TABLE IF NOT EXISTS job_runs (
     job_run_id BIGSERIAL PRIMARY KEY,
     job TEXT NOT NULL,

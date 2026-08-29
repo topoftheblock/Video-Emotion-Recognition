@@ -1,21 +1,26 @@
-"""Cross-video person identity."""
+"""Reading the people who have been linked across videos."""
+
+from typing import Any
 
 from ..db import query
 
 
-def list_global_clusters():
-    """
-    Every global_persons cluster that
-    global-identity-linker/src/identity/linking.py
-    has linked two or more video-local `persons` rows into, with which
-    video/clip_label each member came from. A person with no
-    cross-video match (still the common case -- see linking.py's
-    docstring) simply doesn't appear here; this is specifically "who
-    spans videos", not "everyone".
+def list_global_clusters() -> list[dict[str, Any]]:
+    """Return each global person, with the people making it up.
 
-    Expect nothing at all until that job has been run: it is a separate
-    container that is never part of `docker compose up`, so importing
-    videos alone leaves every `global_person_id` NULL.
+    Only people the linker has actually linked appear. Someone with no
+    cross-video match does not, because the linker creates a global
+    person only when it finds a match and then assigns both sides — so
+    a global person always has at least two members. This query does
+    not filter for that itself; it is a property of what wrote the rows.
+
+    Expect nothing at all until that job has been run. It is a separate
+    container, never part of `docker compose up`, so importing videos
+    alone leaves every `global_person_id` NULL.
+
+    Returns:
+        One entry per global person, each with its members and the
+        video and label each member came from.
     """
     rows = query(
         """
@@ -30,7 +35,7 @@ def list_global_clusters():
         """
     )
 
-    clusters = {}
+    clusters: dict[int, dict[str, Any]] = {}
     for row in rows:
         cluster = clusters.setdefault(
             row["global_person_id"],

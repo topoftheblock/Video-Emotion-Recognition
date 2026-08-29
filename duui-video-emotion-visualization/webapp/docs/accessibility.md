@@ -1,6 +1,6 @@
 # Frontend accessibility
 
-How the viewer's frontend stays accessible, and what to do so that it keeps
+How the webapp's frontend stays accessible, and what to do so that it keeps
 staying that way.
 
 This was a remediation plan once. The work is done — the phase-by-phase plan,
@@ -9,7 +9,7 @@ its findings and its measurements are in git history and in
 numbers against [a11y-baseline/](a11y-baseline/README.md). This file is what
 replaced it: the rules to work by, and an honest list of what is still missing.
 
-Paths below are relative to the viewer project root
+Paths below are relative to the webapp project root
 (`webapp/`), except `css/…` and `js/…`, which
 are relative to `src/frontend/`.
 

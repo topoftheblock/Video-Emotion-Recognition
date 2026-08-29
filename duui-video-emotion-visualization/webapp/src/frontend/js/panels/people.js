@@ -1,8 +1,9 @@
+// @ts-check
 /**
- * The two person lists in the sidebar: everyone the importer
- * identified in this video, and whoever is on screen right now.
+ * The two person lists in the sidebar: everyone the importer identified
+ * in this video, and whoever is on screen right now.
  *
- * The first list is also the app's person filter -- clicking a row
+ * The first list is also the app's person filter — clicking a row
  * narrows the three emotion panels to that person, clicking it again
  * widens them back out. The selection itself lives in state so the
  * panels can read it; this module owns the list markup and the click.
@@ -12,19 +13,20 @@ import { el, html } from "../lib/dom.js";
 import { compareNames, personColorFor, personName, state } from "../state.js";
 
 /**
- * Wire the person list once. `onChange` runs after a click has
- * changed state.selectedPersonId, and is what rebuilds the panels
- * that read it -- kept as a callback so this module doesn't have to
- * import them.
+ * Wire the person list once. `onChange` runs after a click has changed
+ * state.selectedPersonId, and is what rebuilds the panels that read it
+ * — kept as a callback so this module doesn't have to import them.
  */
 export function initPersonList(onChange) {
   el.personList.addEventListener("click", (event) => {
-    const row = event.target.closest("[data-person-id]");
+    const row = /** @type {HTMLElement} */ (
+      /** @type {Element} */ (event.target).closest("[data-person-id]")
+    );
     if (!row) return;
 
     const personId = Number(row.dataset.personId);
-    // Clicking the selected person again clears the filter, so the
-    // one control both sets and unsets it.
+    // Clicking the selected person again clears the filter, so the one
+    // control both sets and unsets it.
     state.selectedPersonId = state.selectedPersonId === personId ? null : personId;
 
     renderPersonList(state.data ? state.data.persons : []);
@@ -37,7 +39,7 @@ export function renderPersonList(persons) {
   // (and, worse, floating over nothing) once that column has no rows
   // under it.
   el.personLegend.style.display = persons.length ? "" : "none";
-  // The disclosure it opens goes with it, collapsed -- otherwise an
+  // The disclosure it opens goes with it, collapsed — otherwise an
   // explanation left open survives into the next video, floating above
   // a list that may have nothing under it.
   if (!persons.length) {
@@ -63,14 +65,14 @@ export function renderPersonList(persons) {
           : "";
       // Repeats the legend's title on the number itself, so the
       // explanation is reachable by hovering either the column header
-      // once or any one row -- no need to remember which row you
-      // learned it from.
+      // once or any one row — no need to remember which row you learned
+      // it from.
       const scoreTitle =
         p.audio_video_match_score != null
-          ? `Face/voice match confidence: ${score} -- how sure the import pipeline was that this person's face and voice recordings are the same person.`
+          ? `Face/voice match confidence: ${score} — how sure the pipeline was that this person's face and voice belong to the same person.`
           : "";
-      // Without this the button's accessible name -- computed from its
-      // contents -- comes out as "person_1100%", which a screen reader
+      // Without this the button's accessible name — computed from its
+      // contents — comes out as "person_1100%", which a screen reader
       // reads as "person eleven hundred percent". The number also needs
       // saying what it is: "100%" alone names no quantity.
       const scoreLabel = score ? `match confidence ${score}` : "";

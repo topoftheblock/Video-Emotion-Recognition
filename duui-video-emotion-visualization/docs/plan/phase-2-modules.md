@@ -69,7 +69,7 @@ it opens no files and reads no CAS.
 Entry point; `python -m identity`. Takes no arguments — the corpus is the input.
 
 Verified control flow: opens a `JobRun`, connects, calls
-`recompute_global_identities(cursor, progress=…)`, commits, and prints a summary.
+`recompute_global_persons(cursor, progress=…)`, commits, and prints a summary.
 On any exception it rolls back, re-raises, and the `__main__` guard prints
 `[duui_global_identity] ERROR: …` and exits 1.
 
@@ -82,8 +82,8 @@ Confirmed by reading: a single `conn`, one `commit()` after the recompute.
 
 ### `linking.py` — 333 lines
 
-The matching logic. Public: `clear_global_identities`, `build_centroids`,
-`link_person`, `recompute_global_identities`. Private helpers for the match
+The matching logic. Public: `clear_global_persons`, `build_centroids`,
+`link_person`, `recompute_global_persons`. Private helpers for the match
 query, id minting, and score writing.
 
 How it actually works, verified against the SQL:
