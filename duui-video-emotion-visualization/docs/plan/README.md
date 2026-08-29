@@ -860,7 +860,8 @@ and verified in Phase 8.
 | 2 — Fact ledger | [phase-2-ledger.md](phase-2-ledger.md) · [phase-2-modules.md](phase-2-modules.md) | `[x]` done |
 | 3 — Structure | [phase-3-structure.md](phase-3-structure.md) | `[x]` done |
 | 4 — Dependencies + tooling | [phase-4-tooling.md](phase-4-tooling.md) | `[x]` done |
-| 5 — In-file documentation | [phase-5-documentation.md](phase-5-documentation.md) | `[~]` plan drafted |
+| 5 — In-file documentation | [phase-5-documentation.md](phase-5-documentation.md) | `[x]` done |
+| — Fix D4 (connect timeout) | [fix-d4-connect-timeout.md](fix-d4-connect-timeout.md) | `[ ]` planned |
 | 6 — Test audit | *not yet written* | `[ ]` |
 | 7 — READMEs + docs | *not yet written* | `[ ]` |
 | 8 — Final sweep | *not yet written* | `[ ]` |
