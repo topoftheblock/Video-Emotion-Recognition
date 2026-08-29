@@ -16,8 +16,8 @@ css/emotions.css, the input fill in contrast_check.py) and the checker
 still prints their ratios so they stay visible.
 """
 
-import contrast_check
 import pytest
+from support import contrast_check
 
 
 @pytest.fixture(scope="module")

@@ -33,7 +33,7 @@ driven by `test_contrast.py`, which holds the policy, and by
 It is also runnable on its own, which is a supported second entry point
 rather than an accident:
 
-    python3 tests/contrast_check.py
+    python3 tests/support/contrast_check.py
 
 It needs nothing but the standard library, and prints every pair it
 measured with its ratio.
@@ -60,7 +60,7 @@ class TextColorPicker(Protocol):
         """Return the text colour this picker would choose."""
 
 
-FRONTEND = Path(__file__).resolve().parent.parent / "src" / "frontend"
+FRONTEND = Path(__file__).resolve().parents[2] / "src" / "frontend"
 TOKENS_CSS = FRONTEND / "css" / "tokens.css"
 STATE_JS = FRONTEND / "js" / "state.js"
 
@@ -710,7 +710,7 @@ def _person_pairs(palette: list[str], pick_text: TextColorPicker) -> list[Pair]:
     The overlay stroke over footage is not checked at all: its backdrop
     is whatever the video is showing, so there is no ratio to compute —
     only the palette's separability under colour-vision deficiency,
-    which is tests/cvd_check.py's job.
+    which is tests/support/cvd_check.py's job.
     """
     pairs = [
         Pair(

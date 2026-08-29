@@ -16,7 +16,7 @@ by nothing automated and never will be (see "Known gaps" in the guide).
 from collections import Counter
 
 import pytest
-from markup_check import Document, Element
+from support.markup_check import Document, Element
 
 HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 

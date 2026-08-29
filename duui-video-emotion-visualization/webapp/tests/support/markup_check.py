@@ -29,7 +29,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import overload
 
-INDEX_HTML = Path(__file__).resolve().parent.parent / "src" / "frontend" / "index.html"
+INDEX_HTML = Path(__file__).resolve().parents[2] / "src" / "frontend" / "index.html"
 
 # Elements that take focus without an author-supplied tabindex.
 NATIVELY_FOCUSABLE = {"button", "input", "select", "textarea", "a"}

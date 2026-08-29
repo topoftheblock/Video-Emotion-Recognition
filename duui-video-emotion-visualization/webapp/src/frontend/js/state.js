@@ -19,7 +19,8 @@
  * under tritanopia, teal/pink and orange/lime under deuteranopia, and
  * pink/grey under both red-green forms. These six hold a worst-case
  * separation of dE2000 11.1 across normal, protan, deutan and tritan
- * vision. tests/cvd_check.py is the check; run it before touching this.
+ * vision. tests/support/cvd_check.py is the check; run it before
+ * touching this.
  */
 export const PERSON_COLORS = [
   "#e69f00",

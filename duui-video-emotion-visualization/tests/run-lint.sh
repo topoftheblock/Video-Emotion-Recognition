@@ -67,7 +67,7 @@ run "stylelint"    stylelint "webapp/src/frontend/css/*.css"
 # Validity only: unclosed tags, bad nesting, an attribute that does not
 # belong on an element. Whether the markup is *usable* -- that a control
 # has a name, that the tab order is sane, that a reference resolves -- is
-# webapp/tests/markup_check.py, driven by test_markup.py. A document can
+# webapp/tests/support/markup_check.py, driven by test_markup.py. A document can
 # be perfectly valid and unusable, which is why both exist. Neither
 # should grow into the other.
 run "html-validate" html-validate webapp/src/frontend/index.html

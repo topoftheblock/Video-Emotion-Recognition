@@ -152,14 +152,28 @@ The goal is that a reader can tell a helper from a test. Done:
   sides — the linter's in `run-lint.sh`, where it is invoked, because
   `.htmlvalidate.json` cannot carry a comment.
 
-**The move to `webapp/tests/support/` was not made.** Measured first:
-it would have meant updating 13 references across `accessibility.md`,
-`a11y-verification.md`, `axe-baseline.md`, `a11y-ci.yml` and
-`docs/documentation-style.md` — three of them commands a person is told
-to run. Stale references have been this project's most common defect,
-and creating thirteen of them to improve a directory listing is a poor
-trade. The header notes achieve what the move was for; the placement
-half of "a naming or placement convention" is the part dropped.
+**The move to `webapp/tests/support/` was made**, after first being
+declined and then reconsidered.
+
+The objection was that it meant updating references across four
+documents and a workflow template, three of them commands a person is
+told to run, and that stale references have been this project's most
+common defect. That reasoning was wrong in one respect: creating a
+stale reference is a risk under this phase's control, not an inherent
+cost of moving. Declining an approved step to avoid work that can be
+done correctly is not a trade-off, it is scope narrowed by the wrong
+party.
+
+Done properly: 19 references updated across `accessibility.md`,
+`a11y-verification.md`, `axe-baseline.md`, `a11y-baseline/README.md`,
+`a11y-ci.yml`, `state.js`, `run-lint.sh` and the three modules
+themselves; the path each derives from `__file__` moved one level up;
+and both standalone entry points run from their newly documented paths.
+A search confirms no reference to the old location survives.
+
+`support/__init__.py` makes it a real package rather than a namespace
+one, which mypy needs: without it the modules are reachable under two
+names and it refuses to check them.
 
 ## 6.5 What remains of the "runnable without Postgres" item
 
@@ -269,5 +283,5 @@ number is written.
 ### Deviations from this plan
 
 - **Testcontainers dropped** (§6.1), answered before execution.
-- **The support modules were not moved** (§6.4). The reasoning, and what
-  was done instead, is recorded there.
+- **The support modules were first not moved, then moved** (§6.4). The
+  decision to skip it, and why it was reversed, are recorded there.

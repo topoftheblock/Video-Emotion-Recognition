@@ -25,7 +25,7 @@ driven by `test_palette.py`, which holds the policy.
 It is also runnable on its own, which is a supported second entry point
 rather than an accident:
 
-    python3 tests/cvd_check.py
+    python3 tests/support/cvd_check.py
 
 It needs nothing but the standard library, and prints every pair with
 its separation, worst first.
@@ -35,9 +35,7 @@ import math
 import re
 from pathlib import Path
 
-STATE_JS = (
-    Path(__file__).resolve().parent.parent / "src" / "frontend" / "js" / "state.js"
-)
+STATE_JS = Path(__file__).resolve().parents[2] / "src" / "frontend" / "js" / "state.js"
 
 # Machado et al. (2009), severity 1.0. Row-major, operating on linear
 # RGB.
