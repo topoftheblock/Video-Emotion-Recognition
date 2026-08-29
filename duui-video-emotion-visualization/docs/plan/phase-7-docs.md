@@ -118,7 +118,7 @@ activate it.**
 | 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication |
 | 10 | Rewrite the `a11y-ci.yml` header (§7.3); retitle `a11y-verification.md` |
 | 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licences alongside |
-| 12 | Delete `docs/legacy/` |
+| 12 | Rewrite the three references into `docs/legacy/` (§7.8), then delete it |
 | 13 | Verify — see §7.6 |
 
 ## 7.6 Verification
@@ -136,21 +136,43 @@ activate it.**
   `docker compose up -d` to a video playing in the browser, doing only
   what it says.
 
-## 7.7 Open questions
+## 7.7 Questions, answered
 
-1. **Does `docs/legacy/` get deleted in this phase?** The plan has
-   always said Phase 7 deletes it. Its content is not being used, so
-   deletion loses nothing this phase needs. Proposed: delete it, since
-   an unread directory of documents known to be wrong is a trap for the
-   next reader.
-2. **Does `docs/todo.md` survive?** It holds one pointer and an empty
-   section. Proposed: keep it, and move the two known-open items into
-   it, so "what is left" has one address that is not the plan.
-3. **How much does `pgvector-db/README.md` say?** It has no `src/`, no
-   tests, and one `schema.sql`. Proposed: short — what the image is,
-   the pgvector version, that the schema runs only on an empty volume,
-   and a link to `database.md`.
-4. **Does the root README keep a configuration section at all?** Rule 1
-   says it lists only what a first run needs. Proposed: name the two
-   input-path variables and link, since those are the only two a first
-   run with real data must set.
+1. **`docs/legacy/` is deleted** (2026-08-29). Its content is not used
+   and is known to be unreliable; leaving it is a trap for the next
+   reader. See §7.8 for what that costs.
+2. **`docs/todo.md` stays**, and the work Phase 6 left open moves into
+   it — so "what is left" has one address that is not the plan.
+3. **`pgvector-db/README.md` is short**: what the image is, the pgvector
+   version, that the schema runs only on an empty volume, and a link to
+   `database.md`.
+4. **The root README keeps a minimal configuration section**: the two
+   input-path variables a first run with real data must set, and a link
+   to `configuration.md` for the rest.
+
+## 7.8 Deleting `docs/legacy/` orphans three live references
+
+Found before agreeing to the deletion, not after. Outside the plan
+folder — where references to it are historical record and stay — three
+files point into `docs/legacy/`:
+
+| File | What it says |
+| --- | --- |
+| `cas-to-postgres-importer/src/importer/cas/types.py` | "The design mapping (`docs/legacy/data-schema-design.md`) specifies the bare `annotation.MetaData` type here" |
+| `webapp/src/backend/query_agent/schema_context.py` | Names it as one of three sources the schema semantics were cross-checked against |
+| `docs/database.md` | An opening paragraph distinguishing itself from it |
+
+Two of those cite the document as **evidence for a decision**. That is
+the awkward part: the deletion is justified precisely because the
+document is unreliable, so migrating its claims into a surviving page
+would carry the unreliability forward.
+
+**The rule for this phase:** do not move a claim out of a legacy
+document. Restate what the *code* shows and drop the citation. For
+`types.py` that means saying what the importer selects and why —
+selecting the bare type picks up its subtypes, which is checkable. For
+`schema_context.py` it means listing the sources that still exist. The
+paragraph in `database.md` exists only to contrast with the legacy file
+and goes with it.
+
+Step 12 therefore reads: rewrite those three, then delete.

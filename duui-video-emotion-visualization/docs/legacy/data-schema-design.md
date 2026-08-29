@@ -1,4 +1,4 @@
-# Datenbank-Schema: DUUI Pipeline Export
+    # Datenbank-Schema: DUUI Pipeline Export
 
 Dieses Schema konsolidiert die Export-Regeln und Strukturen für die UIMA-Pipeline-Ergebnisse (WhisperX / VideoID / PersonLinking / Emotion).
 
