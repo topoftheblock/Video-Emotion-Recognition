@@ -112,8 +112,11 @@ about where CI lives.
 
 ### The variables, counted from the code
 
-25 `DUUI_*` names are read by application code. Six more appear only in
-`docker-compose.yml` or `.env.example` and are read by nothing in `src`:
+22 `DUUI_*` names are read by application code — a first count said 25,
+which was three grep artifacts from names split across string literals
+(`DUUI_DB_*`, `DUUI_TS_*`, `DUUI_GLOBAL_PERSON_*`). Six more appear only
+in `docker-compose.yml` or `.env.example` and are read by nothing in
+`src`, for 28 in all:
 
     DUUI_DB_HOST_PORT     DUUI_TEST_DB_NAME    DUUI_TEST_UID
     DUUI_VIDEO_STORE      DUUI_WEBAPP_HOST_PORT DUUI_TEST_GID
@@ -192,13 +195,13 @@ unchanged.
 | --- | --- |
 | 1 | Answer §7.9 — done |
 | 2 | `docs/architecture.md` — the four parts, the four shared contracts, and why no code is shared — done |
-| 3 | `docs/configuration.md` — all 31 variables, each verified against the code or the compose file that reads it — done |
+| 3 | `docs/configuration.md` — all 28 variables, each verified against the code or the compose file that reads it — done |
 | 4 | `docs/operations.md` — everyday commands, importing, recomputing, schema upgrades on an existing volume, the Compose-rename hazard, backup, CI — done |
 | 5 | Finish `docs/database.md`'s two placeholders — done |
-| 6 | The four sub-project READMEs, to the map's five-question shape |
-| 7 | `tests/README.md` — what the directory is, since it holds no tests |
-| 8 | Root README — drop the banner, add the links, adopt the short `run` form, note where CI lives |
-| 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication |
+| 6 | The four sub-project READMEs, to the map's five-question shape — done |
+| 7 | `tests/README.md` — what the directory is, since it holds no tests — done |
+| 8 | Root README — drop the banner, add the links, adopt the short `run` form, note where CI lives — done |
+| 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication — done |
 | 10 | Rewrite the `a11y-ci.yml` header (§7.4); retitle `a11y-verification.md` |
 | 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licenses alongside |
 | 12 | Delete `docs/legacy/` — its three live references are already gone (§7.10) |
@@ -265,3 +268,32 @@ of a legacy document. Establish it from the code, the schema or the
 database, or drop it.
 
 Step 12 is therefore only the deletion.
+
+## 7.11 Found while writing `.env.example` — needs a decision
+
+**Nine of the 28 settings cannot be set in `.env`.** Compose passes a
+variable into a container only where `docker-compose.yml` names it, and
+nine are not named:
+
+    DUUI_DB_HOST      DUUI_TS_EMOTION              DUUI_QUERY_MAX_ROWS
+    DUUI_VIDEO_DIR    DUUI_TS_IDENTITY_EMOTION     DUUI_QUERY_MAX_TOOL_ITERATIONS
+    DUUI_XMI_FILE     DUUI_TS_MULTIMODAL_IDENTITY  DUUI_QUERY_STATEMENT_TIMEOUT_MS
+
+Confirmed by running `docker compose config` with all nine set in the
+environment: `DUUI_DB_HOST` and `DUUI_VIDEO_DIR` keep their fixed
+values, and the other seven appear in no service's environment at all.
+
+Two are deliberate and correct — `DUUI_DB_HOST` and `DUUI_VIDEO_DIR` are
+pinned to the service name and the container path, which is what wires
+the stack together. The remaining **seven look like an oversight**: the
+code reads them, `.env` is the documented way to set things, and setting
+them there does nothing.
+
+**Not changed.** Adding seven `${VAR:-default}` entries to the compose
+file is a behavior change, and §5 of the plan forbids incidental
+behavior changes outside Phases 4 and 6. Phase 7 documents the gap
+instead — marked per variable in `configuration.md`, and marked again in
+`.env.example` beside each one.
+
+**For decision** — pass the seven through, or leave them as
+compose-file-only settings.
