@@ -6,3 +6,7 @@ __pycache__/
 .DS_Store
 .mypy_cache/
 .ruff_cache/
+# Coverage's database. Written by `--cov` runs into whatever directory
+# pytest was started from; committed once by accident in Phase 6.
+.coverage
+htmlcov/
