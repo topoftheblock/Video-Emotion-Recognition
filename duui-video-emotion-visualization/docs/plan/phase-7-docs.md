@@ -403,9 +403,34 @@ values — `video_media` OK, `my_own_volume` fails, `/tmp/probe-store` OK,
 `.env.example` had said "a plain name is a Docker-managed volume", which
 is true of exactly one plain name. Corrected in both documents.
 
-**Nothing changed in `docker-compose.yml`.** Passing the seven through
-is a behavior change, and §5 forbids incidental behavior changes outside
-Phases 4 and 6.
+### Decided 2026-08-30, by the project owner
 
-**For decision** — pass the seven through, or leave them as
-compose-file-only settings.
+Three answers, not one. §5's ban on incidental behavior changes stands;
+this one is not incidental, having been asked for explicitly.
+
+**The three `DUUI_QUERY_*` bounds are now passed through.** One
+`${VAR:-default}` line each in the webapp's environment, beside the
+three siblings defined in the same block of `backend/config.py` that
+were already passed. They are the settings you reach for when a
+generated query is too slow or returns too much, and editing the compose
+file to change one is not that.
+
+Verified end to end: an env file setting all three reaches the container
+(`env | grep ^DUUI_QUERY`) and the application resolves it
+(`QUERY_AGENT_MAX_ROWS` 4242, `STATEMENT_TIMEOUT_MS` 1234,
+`MAX_TOOL_ITERATIONS` 9, against defaults of 500, 8000 and 6). With
+nothing set the defaults resolve unchanged, and the running webapp was
+recreated and came back healthy.
+
+**The three `DUUI_TS_*` stay as they are.** Overriding one means naming
+a file inside the container, and no service has a mount to put a
+typesystem on. Passing the variable alone would be half a feature, and
+adding the mount is a design change nothing currently needs.
+
+**`DUUI_XMI_FILE` is neither wired up nor removed.** Retiring it is the
+likelier right answer — the command line already takes any mix of files
+and directories — but that is a behavior change in its own right, so it
+goes to [`docs/todo.md`](../todo.md) as its own decision.
+
+The counts in this phase's documents move from 19 passed / 9 not, to
+**22 passed / 6 not**.

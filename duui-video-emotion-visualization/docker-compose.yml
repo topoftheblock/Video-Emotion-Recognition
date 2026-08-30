@@ -297,6 +297,14 @@ services:
       DUUI_QUERY_API_KEY: ${DUUI_QUERY_API_KEY:-}
       DUUI_QUERY_BASE_URL: ${DUUI_QUERY_BASE_URL:-https://lehre.llm.texttechnologylab.org/api}
       DUUI_QUERY_MODEL: ${DUUI_QUERY_MODEL:-gondor.qwen3-vl:32b}
+      # The bounds on a query the model writes, as opposed to the three
+      # above, which say where to reach it. Passed through for the same
+      # reason the others are: they are the setting you reach for when a
+      # generated query is too slow or returns too much, and editing
+      # this file to change one is not that.
+      DUUI_QUERY_MAX_ROWS: ${DUUI_QUERY_MAX_ROWS:-500}
+      DUUI_QUERY_STATEMENT_TIMEOUT_MS: ${DUUI_QUERY_STATEMENT_TIMEOUT_MS:-8000}
+      DUUI_QUERY_MAX_TOOL_ITERATIONS: ${DUUI_QUERY_MAX_TOOL_ITERATIONS:-6}
     volumes:
       # The same video store as the importer, read-only: the webapp
       # only ever plays videos the importer already placed, and never

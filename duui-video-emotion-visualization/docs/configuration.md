@@ -20,17 +20,26 @@ work depends on which route carries them.
 directory and substitutes `${VAR}` wherever `docker-compose.yml` names
 one. It does not put `.env` inside a container: what reaches a container
 is whatever the compose file, after substitution, lists under that
-service. Nineteen settings arrive this way. **Nine are never named**, so
-interpolation cannot carry them:
+service. Twenty-two settings arrive this way. **Six are never named**,
+so interpolation cannot carry them:
 
-    DUUI_DB_HOST      DUUI_TS_EMOTION              DUUI_QUERY_MAX_ROWS
-    DUUI_VIDEO_DIR    DUUI_TS_IDENTITY_EMOTION     DUUI_QUERY_MAX_TOOL_ITERATIONS
-    DUUI_XMI_FILE     DUUI_TS_MULTIMODAL_IDENTITY  DUUI_QUERY_STATEMENT_TIMEOUT_MS
+    DUUI_DB_HOST      DUUI_XMI_FILE     DUUI_TS_IDENTITY_EMOTION
+    DUUI_VIDEO_DIR                      DUUI_TS_MULTIMODAL_IDENTITY
+                                        DUUI_TS_EMOTION
 
-Two of those are deliberate and load-bearing: `DUUI_DB_HOST` is pinned
+The first two are deliberate and load-bearing: `DUUI_DB_HOST` is pinned
 to the database service's name and `DUUI_VIDEO_DIR` to the container
 path, which is what wires the stack together. Overriding either from
-outside would break it. The other seven are simply not passed through.
+outside would break it.
+
+The three `DUUI_TS_*` are left out on purpose too, if less absolutely:
+overriding one means naming a file that exists *inside* the container,
+and no service is given a mount you could put a typesystem on. Passing
+the variable without the mount would be half a feature.
+
+`DUUI_XMI_FILE` is not passed through and is under review — the command
+line already takes any mix of files and directories, which is the same
+job done better. See [todo.md](todo.md).
 
 **`load_dotenv()`.** Each sub-project's `config.py` also reads a `.env`
 from its own working directory, independently of Compose. That is the
@@ -42,9 +51,9 @@ the image. The `tests` service is the exception — it mounts the project
 at `/app`, so a `.env` there *is* read, and all twenty-eight take effect
 for a test run.
 
-So the nine are settable in `.env` for a native run and for the test
+So the six are settable in `.env` for a native run and for the test
 runner, and not for the three services `docker compose up` starts. To
-change one of the seven non-deliberate ones there, edit
+change one of the four non-deliberate ones there, edit
 `docker-compose.yml`.
 
 ## Input and output paths
@@ -55,7 +64,7 @@ Read by the importer, except the last, which the webapp also reads.
 | --- | --- | --- |
 | `DUUI_INPUT_XMI_DIR` | `cas` | Where the importer looks for CAS files when given no path. |
 | `DUUI_INPUT_VIDEO_DIR` | follows `DUUI_INPUT_XMI_DIR` | Where the video files those CAS files name are. Unset, it is wherever the CAS files are, so one directory of pipeline output needs one setting rather than two. |
-| `DUUI_XMI_FILE` | unset | A single file to import when no path is given. Unset, the whole input directory is imported. **Not passed through by Compose.** |
+| `DUUI_XMI_FILE` | unset | A single file to import when no path is given. Unset, the whole input directory is imported. **Not passed through by Compose**, and under review — see [todo.md](todo.md). |
 | `DUUI_VIDEO_DIR` | `cas` | The video store: where the importer puts a video and where the webapp reads it. **Not passed through by Compose** — it is pinned to the container path. |
 
 The two input directories are read-only to the importer. It never writes
@@ -118,9 +127,9 @@ everything else works unchanged.
 | `DUUI_QUERY_API_KEY` | empty | The key. Empty disables the panel. |
 | `DUUI_QUERY_BASE_URL` | a university-hosted gateway | Any OpenAI-compatible endpoint. |
 | `DUUI_QUERY_MODEL` | `gondor.qwen3-vl:32b` | Model name, as that endpoint knows it. |
-| `DUUI_QUERY_MAX_ROWS` | `500` | Row cap on a query the model writes. **Not passed through by Compose.** |
-| `DUUI_QUERY_STATEMENT_TIMEOUT_MS` | `8000` | How long one of those queries may run. **Not passed through by Compose.** |
-| `DUUI_QUERY_MAX_TOOL_ITERATIONS` | `6` | How many turns the model gets before the attempt is abandoned. **Not passed through by Compose.** |
+| `DUUI_QUERY_MAX_ROWS` | `500` | Row cap on a query the model writes. |
+| `DUUI_QUERY_STATEMENT_TIMEOUT_MS` | `8000` | How long one of those queries may run. |
+| `DUUI_QUERY_MAX_TOOL_ITERATIONS` | `6` | How many turns the model gets before the attempt is abandoned. |
 
 ## Read by Compose only
 

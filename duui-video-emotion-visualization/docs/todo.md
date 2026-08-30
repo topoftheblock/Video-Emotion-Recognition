@@ -30,6 +30,22 @@ Both halves have an argument:
 Deferred deliberately: it is a question about what the file should be, not a
 defect with an obvious fix.
 
+### Decide whether to retire `DUUI_XMI_FILE`
+
+It names a single CAS to import when the command line gives no path. Its own
+comment describes it as kept for "the older one-CAS-at-a-time workflow".
+
+The command line already does the same job better: `python -m importer`, and
+the Compose service behind it, take any mix of files and directories, so
+naming one file is a case of a more general thing that already works.
+`DUUI_XMI_FILE` is also the only input setting `docker-compose.yml` does not
+pass through, so in the Compose stack it does nothing at all today.
+
+Retiring it means deleting the setting and its branch in
+`cas-to-postgres-importer/src/importer/config.py`. That is a behavior change
+for anyone setting it in a native run, which is why it is a decision rather
+than a cleanup.
+
 ### Cover the Ask panel's tool-use loop
 
 `webapp/src/backend/query_agent/agent.py` is the one coverage gap left open on
