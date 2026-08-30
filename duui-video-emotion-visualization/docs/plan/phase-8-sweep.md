@@ -239,9 +239,28 @@ the failure this whole plan exists to correct.
 ### Still open
 
 **Nobody has seen this workflow run.** By the project owner's decision
-the phase waits for that rather than closing around it. When the branch
-is pushed, two observations close it: a commit touching a file in this
-directory triggers the run, and one touching a sibling project does not.
+the phase waits for that rather than closing around it.
+
+**And pushing the cleanup branch will not produce a run.** Checked while
+merging: the workflow's `push` trigger is scoped `branches: [main]`, so
+only a push to `main` fires it. A push of `code-cleanup/main` matches the
+`paths:` filter and still does nothing, because the branch filter is
+evaluated first. Three ways to actually see it:
+
+1. **Open a pull request** from `code-cleanup/main` to `main`. The
+   `pull_request:` trigger carries the same `paths:` filter and no branch
+   filter, so this fires. It is also how the final merge should happen,
+   so the run is not make-work.
+2. **`workflow_dispatch`** — the manual button, already declared. Fires
+   on demand but proves nothing about the filters, since a manual run
+   ignores them.
+3. **Wait for the final merge to `main`**, which is the end of Phase 9.
+
+Option 1 is the one that observes what the plan actually wants. The
+second half — that a sibling project's change stays silent — needs a
+commit touching only a sibling, which is nothing this cleanup should
+manufacture; it is best observed opportunistically the next time one
+changes.
 
 ## 8.7 Small things found while measuring
 
