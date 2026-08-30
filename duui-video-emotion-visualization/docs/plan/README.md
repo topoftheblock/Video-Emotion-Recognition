@@ -498,6 +498,18 @@ instructions come before architecture.
   the new docs. Whatever the docs fail to say, this finds.
 - Full test run; full `docker compose` build; confirm the lint workflow fires on
   a change inside this project and stays silent on one outside it.
+- **British spellings, project-wide** (found in Phase 7, 2026-08-30). §8 of the
+  style guide says US English everywhere, and nothing enforces it: `ruff` and
+  `mypy` do not spell-check, and `stylecheck.py` has no rule for it. `colour`,
+  `behaviour`, `artefact`, `licence`, `synthesise` and `-ise` endings appear
+  across **28 files** — prose, docstrings, CSS comments, and **identifiers**
+  (`load_person_colours`, and nine `test_*_colour*` functions in
+  `webapp/tests/`). Left for this phase on purpose: it is a rename as well as a
+  rewrite, and §5 forbids mixing the two in one commit. Do the rename in its
+  own commit, and add the rule to `stylecheck.py` in another, so it cannot come
+  back. Two exceptions that are proper nouns and stay: the **Ubuntu Font
+  Licence**, and the CSS media feature `forced-colors` (already US-spelled in
+  the code — it is the prose around it that says `forced-colours`).
 
 ---
 

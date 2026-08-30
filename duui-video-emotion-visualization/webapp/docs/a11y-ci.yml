@@ -1,10 +1,35 @@
-# Accessibility regression checks — ready to activate, not active here.
+# Accessibility regression checks — kept, but inactive and unneeded.
 #
 # Phase 6.3 of accessibility.md, next to this file. It does nothing
-# where it sits. To turn it on, move it into `.github/workflows/` at the
-# *repository root* — which is the parent of
-# `duui-video-emotion-visualization`, not this directory and not the
-# stack. Run these from the repository root:
+# where it sits: GitHub Actions reads workflows only from
+# `.github/workflows/` at the *repository root*, the parent of
+# `duui-video-emotion-visualization`.
+#
+# WHY IT IS INERT
+#
+# Not for want of CI. The repository has two workflows, one of them for
+# this project, and a `paths:` filter keeps a workflow from touching the
+# sibling projects — so the reason this file used to give, that adding a
+# workflow "introduces GitHub Actions to all of them", was wrong twice
+# over.
+#
+# The real reason is that it is redundant. The five suites it runs are
+# part of the project suite, and the project workflow already runs the
+# whole suite on every push and pull request touching this directory:
+#
+#     .github/workflows/duui-video-emotion-visualization.yml
+#
+# So the checks below already run in CI. This file would run them a
+# second time, in a second job, against a hand-maintained list of test
+# files that has to be kept in step with the directory.
+#
+# It is kept because it is the one thing that would still be useful if
+# the accessibility checks ever needed to run on their own — against a
+# different trigger, say, or without the rest of the suite.
+#
+# TO ACTIVATE IT ANYWAY
+#
+# From the repository root:
 #
 #     mkdir -p .github/workflows
 #     git mv duui-video-emotion-visualization/webapp/docs/a11y-ci.yml \
@@ -12,18 +37,17 @@
 #
 # The `paths:` filters and `working-directory:` below are already
 # written relative to the repository root, so they need no adjustment.
+# Note that `pull_request:` below carries no `paths:` filter and so
+# would run on every pull request in the repository; add one before
+# turning this on.
 #
-# It is left inert deliberately. This repository has no CI at all, and
-# its root holds a dozen unrelated subprojects — adding a workflow there
-# introduces GitHub Actions to all of them and starts consuming CI
-# minutes on every push. That is a decision for whoever owns the repo,
-# not a side effect of an accessibility pass.
+# WHAT IT COVERS
 #
-# What it covers: the pure-function half of the checks. No browser, no
-# database, no application dependencies — just pytest over values that
-# are committed to the repository. The browser half (five axe states and
-# the keyboard sweep) lives in webapp/tests/a11y_browser_check.js and is
-# not automated here; see the note at the bottom of that file for why.
+# The pure-function half of the checks: no browser, no database, no
+# application dependencies, just pytest over values committed to the
+# repository. The browser half — five axe states and the keyboard
+# sweep — is webapp/tests/a11y_browser_check.js, and stays a manual
+# procedure. See the note at the bottom of that file for why.
 
 name: Accessibility
 
@@ -67,8 +91,8 @@ jobs:
             tests/test_scripts.py \
             -q -p no:cacheprovider
 
-      # Printed on success too: the reports are the useful artefact when
-      # someone is changing a colour and wants to see the margins, not
+      # Printed on success too: the reports are the useful artifact when
+      # someone is changing a color and wants to see the margins, not
       # just whether the thresholds held.
       - name: Report
         if: always()

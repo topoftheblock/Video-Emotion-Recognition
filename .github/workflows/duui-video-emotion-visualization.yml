@@ -6,7 +6,7 @@
 # GitHub Actions only reads workflows from <repository root>/.github/workflows,
 # and the project lives one directory below that. If
 # duui-video-emotion-visualization/ is ever moved, extracted into its own
-# repository, or copied elsewhere, this file stays behind -- and it fails
+# repository, or copied elsewhere, this file stays behind — and it fails
 # silently: nothing errors, CI simply stops covering the code.
 #
 # Every path below is written relative to the current repository root and will
@@ -44,10 +44,6 @@ jobs:
   #
   # Needs no database and no application dependencies, which is what keeps it
   # quick and stops an unrelated dependency break from masking a lint failure.
-  #
-  # Line-length findings are reported but do not fail the build; see
-  # duui-video-emotion-visualization/tests/run-lint.sh for why, and for the
-  # note saying when to remove that exemption.
   lint:
     runs-on: ubuntu-latest
     steps:

@@ -140,6 +140,14 @@ false "no CI" premise. Only half of that is still true:
   which the existing `paths:`-scoped workflow disproves by running only
   for this directory.
 
+**The real reason turned out to be better than the one §7.4 expected.**
+Not CI minutes: the file is simply **redundant**. Its five suites are
+part of the project suite, and the project workflow already runs the
+whole suite — `docker compose run --rm tests` — on every push and pull
+request touching this directory. So the checks it would run are already
+running. The header now says that, and says the file is kept for the
+case where the accessibility checks ever need to run on their own.
+
 The repository root does hold 13 sibling projects, so the *caution* is
 reasonable even though the stated facts are not. Rewrite the header to
 give the real reason — a deliberate choice not to spend CI minutes on a
@@ -202,8 +210,8 @@ unchanged.
 | 7 | `tests/README.md` — what the directory is, since it holds no tests — done |
 | 8 | Root README — drop the banner, add the links, adopt the short `run` form, note where CI lives — done |
 | 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication — done |
-| 10 | Rewrite the `a11y-ci.yml` header (§7.4); retitle `a11y-verification.md` |
-| 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licenses alongside |
+| 10 | Rewrite the `a11y-ci.yml` header (§7.4); retitle `a11y-verification.md` — done |
+| 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licenses alongside — done, in `webapp/README.md` |
 | 12 | Delete `docs/legacy/` — its three live references are already gone (§7.10) |
 | 13 | Verify — see §7.8 |
 
