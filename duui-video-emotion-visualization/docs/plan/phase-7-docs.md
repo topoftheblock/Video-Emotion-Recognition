@@ -155,7 +155,7 @@ activate it.**
   the `routes/videos.py` payload path — belong in `todo.md` if it
   survives.
 
-## 7.6 Found while writing — needs a decision
+## 7.6 Found while writing — deferred by decision
 
 **`schema.sql` is idempotent for its indexes and not for its tables.**
 All 15 `CREATE INDEX` statements and the `job_runs` table are declared
@@ -179,25 +179,28 @@ The argument for leaving it: without `IF NOT EXISTS`, re-running tells
 you loudly that a table is already there. With it, a table whose *shape*
 has changed is silently skipped, which is worse.
 
-**For decision** — leave as is, or make all thirteen `IF NOT EXISTS` for
-consistency. Under the plan's bug rule this is the "not clear" case, so
-it is recorded rather than guessed at.
+**Decided 2026-08-30: defer.** The question is what the file should be,
+not a defect with an obvious fix, so it is recorded in
+[`docs/todo.md`](../todo.md) to be settled later. The current behavior is
+documented where it bites — [operations.md](../operations.md), under
+upgrading the schema on an existing volume — and `schema.sql` is left
+unchanged.
 
 ## 7.7 Steps
 
 | # | Step |
 | --- | --- |
 | 1 | Answer §7.9 — done |
-| 2 | `docs/architecture.md` — the four parts, the four shared contracts, and why no code is shared |
-| 3 | `docs/configuration.md` — all 31 variables, each verified against the code or the compose file that reads it |
-| 4 | `docs/operations.md` — everyday commands, importing, recomputing, schema upgrades on an existing volume, the Compose-rename hazard, backup, CI |
-| 5 | Finish `docs/database.md`'s two placeholders |
+| 2 | `docs/architecture.md` — the four parts, the four shared contracts, and why no code is shared — done |
+| 3 | `docs/configuration.md` — all 31 variables, each verified against the code or the compose file that reads it — done |
+| 4 | `docs/operations.md` — everyday commands, importing, recomputing, schema upgrades on an existing volume, the Compose-rename hazard, backup, CI — done |
+| 5 | Finish `docs/database.md`'s two placeholders — done |
 | 6 | The four sub-project READMEs, to the map's five-question shape |
 | 7 | `tests/README.md` — what the directory is, since it holds no tests |
 | 8 | Root README — drop the banner, add the links, adopt the short `run` form, note where CI lives |
 | 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication |
 | 10 | Rewrite the `a11y-ci.yml` header (§7.4); retitle `a11y-verification.md` |
-| 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licences alongside |
+| 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licenses alongside |
 | 12 | Delete `docs/legacy/` — its three live references are already gone (§7.10) |
 | 13 | Verify — see §7.8 |
 
