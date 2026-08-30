@@ -262,7 +262,7 @@ enforces part of the style guide mechanically instead of by hand review.
 - **Pinning strategy.** Today: `>=` floors, no upper bounds, no lockfile — two
   builds a month apart are not the same build. Decide the *strategy* here
   (floors vs. upper bounds vs. full lock); **generating the lockfiles themselves
-  is deferred to Phase 9** by decision, since they are only meaningful once every
+  is deferred to Phase 9** by decision, since it is only meaningful once every
   dependency is final.
 - **Formatters, linters and checkers — the full roster is in §6** (decided
   2026-08-22) and covers every language and file format in the repository:
@@ -490,7 +490,7 @@ instructions come before architecture.
 
 ---
 
-### `[ ]` Phase 8 — Final sweep
+### `[~]` Phase 8 — Final sweep
 
 - Read the whole doc set start to finish as a new reader would. Fix what only
   becomes visible at that scale: contradictions, gaps between documents,
@@ -514,28 +514,27 @@ instructions come before architecture.
 
 ---
 
-### `[ ]` Phase 9 — Lockfiles, then changelogs
+### `[x]` Phase 9 — Lockfiles
 
-**Why last:** both were explicitly deferred to the end (decided 2026-08-22), and
-both are only meaningful once nothing else will move. A lockfile generated
-mid-pass is stale by the next phase; a changelog written before the work settles
-describes a state that never shipped.
+**Why last:** lockfiles were explicitly deferred to the end (decided
+2026-08-22) and are only meaningful once nothing else will move. One generated
+mid-pass is stale by the next phase.
 
-**9a. Lockfiles for the containers** — generate per sub-project, to the pinning
-strategy chosen in Phase 4, once every dependency is final. Verify each image
-still builds from its lockfile, and document how to regenerate one.
+**Lockfiles for the containers** — generate per sub-project, once every
+dependency is final. Verify each image still builds from its lockfile, and
+document how to regenerate one. Phase 9's own planning found the scope is
+wider than the Python files: the Node tooling has no lockfile at all (8
+declared packages, 216 installed), the base images are floating tags, and two
+binaries are fetched from GitHub releases without a checksum. See
+[phase-9-lockfiles.md](phase-9-lockfiles.md).
 
-**9b. Changelogs — the very last step of the whole pass.**
+**Changelogs — dropped** (decided 2026-08-30). They were to be the very last
+step: one per sub-project plus a root `CHANGELOG.md` referencing them. Not
+wanted. Git history carries the same information, and this pass kept it
+legible on purpose. Recorded in §7 item 10.
 
-- One `CHANGELOG.md` per sub-project, covering changes to that sub-project.
-- A root `CHANGELOG.md` that references the four sub-changelogs rather than
-  restating them.
-- Open: start fresh from the current state, or reconstruct from git history; and
-  whether entries carry version numbers (implying a versioning scheme) or dates.
-  See open question 2.
-
-**Exit:** lockfiles build reproducibly; changelogs in place; this file closed
-out — phases marked done, decision records archived.
+**Exit:** lockfiles build reproducibly; this file closed out — phases marked
+done, decision records archived.
 
 ---
 
@@ -732,10 +731,10 @@ this is the index.
 | 3 | `webapp/docs/a11y-ci.yml` | **Update it, do not activate it.** Fix the broken `duui-bundestag-stack/…` path and anything else stale, so it is correct-but-inert rather than wrong-and-inert. Its header must say plainly that it is deliberately not active and what turning it on entails. |
 | 4 | The `bundestag` name | **Remove or rename where it makes sense; `DUUI` stays as the prefix.** Note the nuance that makes this a judgement call and not a `sed`: some occurrences are the *stale project name* (`duui-bundestag-stack`, the README title) and must go, while others legitimately describe *the corpus*, which really is Bundestag material. Each of the 18 files gets read, not pattern-replaced. |
 | 5 | `LICENSE` | **Not needed.** The project is internal-only, the images are not published, and the bundled fonts already ship their OFL/UFL files. Nothing to do — see the note below this table. |
-| 6 | Lockfiles | **Created last** — after all dependency decisions are final. Moved out of Phase 4 into Phase 9. |
+| 6 | Lockfiles | **Created last** — after all dependency decisions are final. Moved out of Phase 4 into Phase 9. **Settled 2026-08-31, and mostly as "no":** no Python lockfiles, the ranges stay and the images keep resolving at build time; no `package-lock.json` for the Node tooling; base images recorded in `docker-images.lock` but **not** pinned by digest, so security rebuilds still arrive; the two binaries `Dockerfile.lint` downloads stay unverified. Nothing in the project installs from a lockfile — a lockfile here is a record. What each of those costs is written out in [phase-9-lockfiles.md](phase-9-lockfiles.md) §9.3. |
 | 8 | Schema docs | `schema.sql` is the truth; `data_schema_with_types.md` gets rewritten from it. Generalized into a project-wide rule — see §5, "existing documentation is not evidence." |
 | 9 | Documentation language | **US English** throughout. Into the style guide, along with a spell-check target. |
-| 10 | Changelogs | **Yes** — one per sub-project, plus a root `CHANGELOG.md` referencing them. **The very last step of the whole pass** (Phase 9). |
+| 10 | Changelogs | **Reversed 2026-08-30: no changelogs.** Previously "one per sub-project plus a root `CHANGELOG.md`, the very last step of the pass". Not wanted: git history carries the same information, and this pass kept it legible on purpose — one commit per logical step, every message prefixed with its phase. |
 | 11 | `a11y_browser_check.js` | **Stays a manual procedure.** No Node toolchain. Its instructions and expected-results baseline must be accurate and easy to follow. |
 | 12 | README audience | **Primary: a user — how to use it.** Secondary: developers, or anyone wanting to understand the structure. Deeper developer material lives in `docs/`, and the READMEs link there. This ordering is binding on Phase 7. |
 | 13 | Prose depth | **Historical "how this came to be" material is removed or moved into a `docs/` file.** Where extra depth prevents genuine confusion, keep it. Otherwise: short — but still accurate, consistent, and correctly placed. |
@@ -744,7 +743,7 @@ this is the index.
 | 16 | DB tests without Postgres | **Yes.** Docker as a test-environment requirement is acceptable, so **testcontainers** is the approach: a throwaway Postgres per run, real SQL against the real schema, no database the developer has to set up. |
 | — | Python / Postgres version bumps | **Deferred to Phase 4's own planning**, not decided now. Phase 4 evaluates and recommends. |
 | — | Linting in CI | **Yes — add a lint workflow at the git root, scoped to this project only.** See the note below, including the portability reminder. |
-| — | Changelog scope | **Deferred to Phase 9's own planning.** |
+| — | Changelog scope | **Moot** — see item 10; there are no changelogs to scope. |
 | — | README scope | **Deferred to Phase 7's own planning** — except the root README, which is confirmed as a **two-minute read**. |
 | — | Stop-and-ask in unattended runs | **Confirmed, and binding.** An unattended run *has to* stop and ask when the situation calls for it. Halting early is always preferable to guessing. |
 
@@ -860,7 +859,7 @@ and verified in Phase 8.
 | 6 — Test audit | `[x]` | `code-cleanup/phase-6` | Done 2026-08-29. Coverage 48% to 83%; the importer's parsers and both job-run copies had none. Two of the outline's premises were found stale and dropped. |
 | 7 — READMEs + docs | `[x]` | `code-cleanup/phase-7` | Done 2026-08-30. Five READMEs written, root README cut to 87 lines, four `docs/` pages finished, `.env.example` rewritten, `docs/legacy/` deleted. `stylecheck.py` now runs over the whole project, not three parts of it. Every documented command run, including a first-run rehearsal from a clean state in an isolated Compose project. Two questions left for decision: §7.6 and §7.11. Detail: [phase-7-docs.md](phase-7-docs.md). |
 | 8 — Final sweep | `[~]` | `code-cleanup/phase-8` | Merged 2026-08-30, **open on CI alone**. Doc set read end to end (two contradictions); stylecheck extended to nine file kinds and given a US-English rule; 38 files renamed; a fresh clone found a committed `.coverage` and test/lint services that did not start from a clone. Detail: [phase-8-sweep.md](phase-8-sweep.md). |
-| 9 — Lockfiles, then changelogs | `[ ]` | | |
+| 9 — Lockfiles | `[x]` | `code-cleanup/phase-9` | Done 2026-08-31. Changelogs dropped. Base images recorded in `docker-images.lock` and deliberately **not** pinned, so security rebuilds still arrive; no Python or Node lockfiles, and nothing installs from a lockfile. The four decisions and what each costs are in [phase-9-lockfiles.md](phase-9-lockfiles.md) §9.3. |
 
 ---
 
@@ -880,7 +879,7 @@ and verified in Phase 8.
 | 6 — Test audit | [phase-6-tests.md](phase-6-tests.md) | `[x]` done |
 | 7 — READMEs + docs | [phase-7-docs.md](phase-7-docs.md) | `[x]` done |
 | 8 — Final sweep | [phase-8-sweep.md](phase-8-sweep.md) | `[~]` merged; CI open |
-| 9 — Lockfiles, then changelogs | *not yet written* | `[ ]` |
+| 9 — Lockfiles | [phase-9-lockfiles.md](phase-9-lockfiles.md) | `[x]` done |
 
 **What goes where.** This file is the durable record: constraints (§1), the
 starting state (§2), the phase overviews (§4), the cross-cutting rules (§5), the

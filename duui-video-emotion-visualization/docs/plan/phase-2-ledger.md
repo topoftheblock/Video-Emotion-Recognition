@@ -283,6 +283,18 @@ Two things worth keeping from this:
   which is a documented entry point. Phase 6 should decide whether to cover it
   or to remove the fallback.
 
+  **Phase 6 did neither, and did not say so** — found 2026-08-31 while closing
+  the plan, by sweeping the plan for instructions addressed to phases that have
+  since closed. Still true today: `run()`'s `xmi_file or XMI_FILE` fallback and
+  `default_input_paths()` are both reached only when the command line names no
+  path, and no test takes that route — `run_many` always hands `run()` a file,
+  and the end-to-end test passes explicit paths. The path itself works; it was
+  exercised by hand in Phase 7's verification.
+
+  It is the same question as the open `DUUI_XMI_FILE` entry in
+  [`todo.md`](../todo.md), since that variable *is* the fallback, so it belongs
+  with that decision rather than as a separate one.
+
 ### D15 — three user-facing surfaces give three different project names
 
 **Needs a decision; not a defect.** Found during Phase 4's final verification.

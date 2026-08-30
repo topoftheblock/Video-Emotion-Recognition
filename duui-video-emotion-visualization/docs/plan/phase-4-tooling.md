@@ -548,6 +548,12 @@ runs this software until the plan is finished, so a migration note in `docs/`
 would address a reader who does not exist. Phase 7 decides whether any of it
 survives into `docs/operations.md`.
 
+**Phase 7 decided: none of it.** `operations.md` carries no chown note, and
+mentions this fix nowhere. It was a one-off for a volume created before Phase
+4 changed the image's uid, on a deployment that no longer exists. Recorded
+2026-08-31 while closing the plan, because the instruction above had no
+recorded answer.
+
 ```bash
 docker run --rm -v <project>_video_media:/v alpine chown -R 1000:1000 /v
 ```
