@@ -109,15 +109,15 @@ project** matches. Checked by searching string literals separately.
 subquery alias. Renaming it is a code change, small and contained, but
 it belongs in the rename commit and not in a prose pass.
 
-### Three things that must not be "corrected"
+### Two things that must not be "corrected", and one that must
 
 - **Ubuntu Font Licence** — the license's actual name.
 - **`forced-colors`** — the CSS media feature, already US-spelled in
   every rule. Only the prose *around* it says `forced-colours`.
-- **`grey` where it names a palette entry.** Thirteen occurrences, and
-  they are not all the same thing: the Okabe-Ito palette's neutral is
-  discussed as "the unknown-person grey" in `state.js`, `cvd_check.py`,
-  `accessibility.md` and two stylesheets. Renaming the *concept* means
+- ~~`grey`~~ — **not an exception; see the decision below.** Thirteen
+  occurrences: the Okabe-Ito palette's neutral is discussed as "the
+  unknown-person grey" in `state.js`, `cvd_check.py`, `accessibility.md`
+  and two stylesheets. Renaming the *concept* means
   renaming it in the accessibility record too, which is a frozen
   before-picture. **Decide once, apply everywhere or nowhere** — and if
   the answer is "everywhere", `test_unknown_person_grey_...` moves with
@@ -125,11 +125,11 @@ it belongs in the rename commit and not in a prose pass.
 
 ### Whether `docs/plan/` is included
 
-**Recommendation: no.** The 30 occurrences there are in phase records
-that document what was found and decided on a given date. They are
-evidence, not documentation, and rewriting them edits the record. The
-style guide binds what the project *says*; the plan is how it got there.
-**Open question — confirm before the rename runs.**
+**Decided: no.** The 30 occurrences there are in phase records that
+document what was found and decided on a given date. They are evidence,
+not documentation, and rewriting them edits the record. The style guide
+binds what the project *says*; the plan is how it got there. The
+checker added in step 8 has to exempt `docs/plan/` for the same reason.
 
 ## 8.4 The checker gap is wider than `.sql`
 
@@ -253,18 +253,22 @@ change lands.
 | 11 | Settle §8.7 |
 | 12 | Close: every checker green, full suite, full build |
 
-## 8.9 Questions
+## 8.9 Questions, answered
 
-1. **Does the spelling rename include `docs/plan/`?** Recommendation:
-   no — those are dated records of what was found, and rewriting them
-   edits the evidence. §8.3.
-2. **Is "grey" renamed to "gray"?** It names a palette concept discussed
-   across five files including the frozen accessibility baseline. All or
-   nothing. §8.3.
-3. **Should the phase wait for a push so CI can be observed**, or close
-   with §8.6 recorded as the one open item? §8.6.
-4. **`cas-to-postgres-importer/cas/`** — gitignore it, or leave it?
-   §8.7.
+Answered 2026-08-30.
+
+1. **The rename excludes `docs/plan/`.** Those are dated records of what
+   was found and decided; rewriting them edits the evidence. The 30
+   occurrences there stay, and the checker must not fail on them.
+2. **"grey" becomes "gray"**, everywhere it appears — prose, the palette
+   concept, the identifier, and the accessibility record with it. One
+   spelling, applied across all five files.
+3. **The phase waits for a push** rather than closing with CI
+   unobserved. Everything else is finished first; the phase stays open
+   on that one item until the workflow has actually run.
+4. **`cas-to-postgres-importer/cas/` is deleted** if it is genuinely
+   redundant — verify what creates it and whether anything needs it
+   before removing it, rather than assuming.
 
 ## 8.10 Exit
 
