@@ -37,8 +37,8 @@ and pytest's own flags all work:
 docker compose run --rm tests webapp/tests -k contrast
 ```
 
-**This is the supported way to run the suite.** The project targets a Python
-version that is not installable everywhere, and a checker that cannot parse a
+**This is the supported way to run the suite.** The project targets Python
+3.14, which is not installable everywhere, and a checker that cannot parse a
 file silently checks nothing — so both run in a container or not at all.
 
 The test runner creates its own empty database and applies the schema to it,

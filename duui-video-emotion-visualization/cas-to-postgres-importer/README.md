@@ -51,8 +51,8 @@ Running it needs a database carrying the schema, wherever that is. Point
 `DUUI_DB_HOST` and the other credentials at it, mount the input and the video
 store, and give the container paths as arguments.
 
-Natively, with the project's Python and the requirements installed, `src` is
-the source root rather than a package:
+Natively, on Python 3.14 with `requirements.txt` installed, `src` is the
+source root rather than a package:
 
 ```bash
 PYTHONPATH=src python -m importer path/to/file.xmi

@@ -78,6 +78,11 @@ nowhere near sufficient — which is why the two static checkers exist.
 
 ## Static checkers
 
+What the three printed **on 2026-08-20**, alongside everything else on this
+page. They are part of the record, not a current reading: the suite has grown
+since, so the pytest line is a smaller number than the same five files give
+today.
+
 ```text
 contrast_check.py   79 pairs, 0 failing, 15 recorded without assertion
 cvd_check.py        0 pairs below dE2000 10.0

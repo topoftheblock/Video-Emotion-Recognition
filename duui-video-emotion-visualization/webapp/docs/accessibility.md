@@ -291,16 +291,24 @@ Same for `prefers-contrast: more`.
 
 ### Not implemented
 
-**There is no CI.** [a11y-ci.yml](a11y-ci.yml) is complete and YAML-validated
-but inert where it sits; one `git mv` into `.github/workflows/` at the
-repository root turns it on. It was left inert deliberately: the repository root
-is a monorepo of a dozen unrelated subprojects, and switching on GitHub Actions
-there affects all of them.
+**These checks have no workflow of their own.** [a11y-ci.yml](a11y-ci.yml) is
+complete and YAML-validated but inert where it sits; one `git mv` into
+`.github/workflows/` at the repository root would turn it on.
+
+It stays inert because it is redundant, not because the repository lacks CI.
+The repository has two workflows, one of them for this project, and `paths:`
+filters keep each off the sibling projects. That project workflow runs the
+whole suite — these five files included — on every push and pull request
+touching this directory, so activating `a11y-ci.yml` would run them a second
+time against a hand-maintained file list. Its own header carries the full
+argument.
 
 **The browser checks are not automated.** `a11y_browser_check.js` runs by hand
-in a console. Driving it headlessly means adding a JavaScript toolchain and a
-browser download to a repository that is Python end to end. The file ends with
-the four lines of Playwright needed if that changes.
+in a console. The project does carry a JavaScript toolchain now — eslint,
+prettier, stylelint and `tsc` all run in the lint image — so the obstacle is no
+longer that. What driving this headlessly would still add is a browser
+download on every check, which is a larger decision than these checks warrant.
+The file ends with the four lines of Playwright needed if that changes.
 
 **No `lang` on foreign-language content.** The document is `lang="en"`, but the
 transcripts, subtitles and emotion labels come from German-language video. WCAG
