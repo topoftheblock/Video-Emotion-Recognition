@@ -281,3 +281,87 @@ Answered 2026-08-30.
   build if one returns.
 - A fresh clone reaches a working stack following only the root README.
 - CI either observed, or recorded as unobserved with the reason.
+
+---
+
+## 8.11 What reading all 17 in sequence found
+
+Recorded before anything was fixed, so the list is what the reading
+produced rather than what survived the fixing.
+
+**The pattern is the same twice: a phase corrected a claim at one site
+and did not look for the same claim elsewhere.** Neither is findable by
+checking a page against its own row in the map, which is what Phase 7
+did. Both need two pages open at once.
+
+### F1 — Two documents disagree about whether the repository has CI
+
+`webapp/docs/accessibility.md`, under "Not implemented":
+
+> **There is no CI.** […] It was left inert deliberately: the repository
+> root is a monorepo of a dozen unrelated subprojects, and switching on
+> GitHub Actions there affects all of them.
+
+`webapp/docs/a11y-ci.yml`, rewritten in Phase 7, ten lines of argument
+saying the opposite: the repository has two workflows, a `paths:` filter
+keeps one off the siblings, and the file is inert because it is
+**redundant** — the project workflow already runs those five suites.
+
+Phase 7 fixed the header and never asked who else said it. The
+accessibility page is the wrong one, and it is the one a person reads
+first.
+
+### F2 — And about why the browser checks are not automated
+
+`accessibility.md`: "Driving it headlessly means adding a JavaScript
+toolchain and a browser download to a repository that is Python end to
+end."
+
+`webapp/tests/a11y_browser_check.js`, corrected in Phase 6: "The project
+does now carry a JavaScript toolchain, but running this would
+additionally mean downloading a browser."
+
+Phase 4 added the toolchain — eslint, prettier, stylelint, `tsc` and
+Node in the lint image. Phase 6 corrected the justification in the
+script and not in the page. The decision is unchanged and correct; only
+half of its stated reason is still true.
+
+### F3 — A dated record read as a current one
+
+`a11y-verification.md` prints three checker results under "Static
+checkers". Two are still exactly right today — `contrast_check.py` gives
+79 pairs, 0 failing, 15 unasserted; `cvd_check.py` gives 0 below dE2000
+10.0. The third, `pytest 11 passed`, matches nothing now: those five
+files give **43**, and `test_contrast.py` alone gives 7.
+
+The file is a record of a run on 2026-08-20 and says so. The block does
+not, so a reader checks it and finds it wrong. **Do not update the
+number** — that falsifies the record. Label the block with what it is.
+
+### F4 — "The only supported way" is contradicted two documents later
+
+The root README: "This is the only supported way to run the suite."
+`accessibility.md` then gives a `docker run … python:3.14-slim … pytest`
+command for five test files.
+
+Both are right about different things — one is the suite, the other a
+subset that deliberately needs no database and no dependencies — but the
+word "only" makes them read as a contradiction. Narrow the claim.
+
+### F5 — Two more British spellings the Phase 7 measurement missed
+
+`judgement` and `defence`, both in `accessibility.md`. The §8.3 scan
+searched a fixed word list that did not include them, which is an
+argument for the checker rule in step 8 being pattern-based rather than
+another fixed list.
+
+### Not a finding, checked and sound
+
+- **Postgres 18** agrees across `pgvector-db/README.md`, `glossary.md`
+  and `docker-compose.yml`.
+- **The standing-decisions tables** in `accessibility.md` and
+  `a11y-verification.md` overlap by nine rows and do not disagree.
+- **No shipped document uses "viewer"**, "global identity" or any other
+  retired term. Phase 7's glossary pass holds.
+- **Every path named in prose still resolves**, re-run over the larger
+  set.
