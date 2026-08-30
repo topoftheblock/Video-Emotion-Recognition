@@ -12,12 +12,12 @@
 # deliberate: a gate that cannot be stepped over gets worked around
 # instead.
 #
-# ---------------------------------------------------------------------------
-# This hook is repository-wide, and this repository holds a dozen unrelated
-# projects. core.hooksPath cannot be scoped to a subdirectory, so the hook
-# scopes itself — exactly as the CI workflow does with its `paths:` filter. A
-# commit that touches nothing here passes straight through.
-# ---------------------------------------------------------------------------
+# --- Scoped to this project ---------------------------------------------
+# This hook is repository-wide, and this repository holds a dozen
+# unrelated projects. core.hooksPath cannot be scoped to a subdirectory,
+# so the hook scopes itself — exactly as the CI workflow does with its
+# `paths:` filter. A commit that touches nothing here passes straight
+# through.
 set -e
 
 PROJECT="duui-video-emotion-visualization"
@@ -54,7 +54,8 @@ echo "pre-commit: checking $(echo "$staged" | wc -l) staged Python file(s)"
 
 if ! run_ruff format --check $staged; then
   echo
-  echo "  Formatting. Fix with:  docker compose run --rm --entrypoint ruff lint format ."
+  echo "  Formatting. Fix with:"
+  echo "    docker compose run --rm --entrypoint ruff lint format ."
   exit 1
 fi
 

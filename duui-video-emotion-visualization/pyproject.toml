@@ -10,15 +10,22 @@
 # Each directory also has its own pyproject.toml, so `cd
 # cas-to-postgres-importer && pytest` (or either of the other two) works
 # standalone — this file is only the "run everything" convenience.
+#
+# `tests` is on both lists for one reason: the checkers in it have tests
+# of their own. `stylecheck.py` is the only enforcement several
+# style-guide rules have, so a bug in it is silent — the check passes
+# and the rule quietly stops existing.
 pythonpath = [
     "cas-to-postgres-importer/src",
     "webapp/src",
     "global-identity-linker/src",
+    "tests",
 ]
 testpaths = [
     "cas-to-postgres-importer/tests",
     "webapp/tests",
     "global-identity-linker/tests",
+    "tests",
 ]
 
 # --- Formatting and linting ---------------------------------------------

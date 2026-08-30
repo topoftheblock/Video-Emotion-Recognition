@@ -78,8 +78,30 @@ CORPUS = [
     (r"(?<!\d)\d{1,3},\d{3}(?!\d)", 0, "no corpus figures"),
 ]
 
-CHECKED_SUFFIXES = (".py", ".toml", ".js", ".css", ".html", ".sh", ".yml")
-CHECKED_NAMES = ("Dockerfile", ".dockerignore", "requirements.txt")
+CHECKED_SUFFIXES = (
+    ".py",
+    ".toml",
+    ".js",
+    ".css",
+    ".html",
+    ".sh",
+    ".yml",
+    ".sql",
+    ".cjs",
+    ".jsonc",
+)
+# Files carrying real prose no suffix rule reaches: config dotfiles, and
+# a shell script named for the git hook it installs as.
+CHECKED_NAMES = (
+    "Dockerfile",
+    ".dockerignore",
+    "requirements.txt",
+    ".env.example",
+    ".prettierignore",
+    ".sqlfluff",
+    ".yamllint",
+    "pre-commit",
+)
 # `Dockerfile.tests` and the like: same comment syntax, same rules.
 CHECKED_PREFIXES = ("Dockerfile.",)
 
@@ -100,26 +122,39 @@ SKIP_PARTS = (
     "node_modules",
 )
 
+# A SQL comment. The marker is the same two characters as the legacy em
+# dash, which is why `.sql` needs its own handling rather than falling
+# through to the `#` rule: without stripping the marker first, every
+# comment in the schema reports itself as a dash.
+SQL_COMMENT = re.compile(r"^[ \t]*--")
+
 # The same, in the C-comment languages: `/* --- Name --- */`.
 CSS_BANNER_OK = re.compile(r"^/\* --- [^\s-].*? -{3,} \*/$")
 CSS_BANNER_ANY = re.compile(r"^\s*/\*\s*-{3,}.*-{3,}\s*(\*/)?\s*$")
 
 
-def is_docstring(node: ast.AST) -> bool:
-    """Whether this node's first statement is a docstring."""
-    if not isinstance(
-        node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
-    ):
-        return False
-    body = getattr(node, "body", None)
-    if not body:
-        return False
-    first = body[0]
-    return (
+# The four node types that can carry a docstring. Named once, so the
+# check and the extraction below agree by construction.
+Documentable = (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+
+
+def docstring_node(node: ast.AST) -> ast.Expr | None:
+    """Return this node's docstring statement, if it has one.
+
+    Returns the node rather than a bool so the caller does not have to
+    reach back into `node.body` to find what this already located —
+    which it cannot do without an ignore, `ast.AST` having no `body`.
+    """
+    if not isinstance(node, Documentable) or not node.body:
+        return None
+    first = node.body[0]
+    if (
         isinstance(first, ast.Expr)
         and isinstance(first.value, ast.Constant)
         and isinstance(first.value.value, str)
-    )
+    ):
+        return first
+    return None
 
 
 def _c_comment_lines(src: str) -> set[int]:
@@ -161,11 +196,17 @@ def prose_lines(src: str, path: pathlib.Path) -> set[int]:
     lines: set[int] = set()
     if path.suffix == ".py":
         for node in ast.walk(ast.parse(src)):
-            if is_docstring(node):
-                doc = node.body[0]
+            doc = docstring_node(node)
+            if doc is not None and doc.end_lineno is not None:
                 lines.update(range(doc.lineno, doc.end_lineno + 1))
-    if path.suffix in (".js", ".css"):
+    if path.suffix in (".js", ".css", ".cjs", ".jsonc"):
         return _c_comment_lines(src)
+    if path.suffix == ".sql":
+        return {
+            number
+            for number, line in enumerate(src.split("\n"), start=1)
+            if SQL_COMMENT.match(line)
+        }
     if path.suffix == ".html":
         return {
             number
@@ -223,7 +264,13 @@ def check_file(
 
         if not exempt:
             if number in prose:
-                if len(line) > PROSE_WIDTH:
+                # A comment that indents its content is quoting
+                # something — a command, a path, a sample — and quoting
+                # it is the point. Rewrapping would break it, so the
+                # width rule has nothing to offer, exactly as with a
+                # URL below.
+                quoted = re.match(r"^[ \t]*(#|--|//|\*)\s{2,}\S", line) is not None
+                if len(line) > PROSE_WIDTH and not quoted:
                     found.append(
                         (number, "width", f"prose {len(line)} > {PROSE_WIDTH}")
                     )
@@ -239,8 +286,13 @@ def check_file(
 
         if number in prose:
             # Between words, or left dangling at a line break — both are
-            # the legacy form.
-            if re.search(r"(?<=\S) -- (?=\S)|(?<=\S) --\s*$|^\s*-- (?=\S)", line):
+            # the legacy form. In SQL the opening marker is stripped
+            # first, so a comment is judged on what it says rather than
+            # on how it is introduced.
+            probe = line
+            if path.suffix == ".sql":
+                probe = SQL_COMMENT.sub("", line, count=1)
+            if re.search(r"(?<=\S) -- (?=\S)|(?<=\S) --\s*$|^\s*-- (?=\S)", probe):
                 found.append((number, "emdash", "'--' as an em dash; write '—'"))
             # A colour value lists numbers the way a grouped thousand is
             # written, so it is not a corpus figure.
@@ -315,6 +367,27 @@ def check_file(
     return found
 
 
+def collect(root: pathlib.Path) -> list[pathlib.Path]:
+    """Return every file under `root` this checker reads, sorted.
+
+    Selection is by suffix, by exact name, or by prefix, because the
+    files carrying prose in this repository are not all named the same
+    way: some have a suffix, some are config dotfiles, and one is a git
+    hook with no extension at all.
+    """
+    return sorted(
+        path
+        for path in root.rglob("*")
+        if path.is_file()
+        and not any(part in SKIP_PARTS for part in path.parts)
+        and (
+            path.suffix in CHECKED_SUFFIXES
+            or path.name in CHECKED_NAMES
+            or path.name.startswith(CHECKED_PREFIXES)
+        )
+    )
+
+
 def main() -> int:
     """Check every file under the given directory, and report."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -333,17 +406,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    files = sorted(
-        path
-        for path in pathlib.Path(args.root).rglob("*")
-        if path.is_file()
-        and not any(part in SKIP_PARTS for part in path.parts)
-        and (
-            path.suffix in CHECKED_SUFFIXES
-            or path.name in CHECKED_NAMES
-            or path.name.startswith(CHECKED_PREFIXES)
-        )
-    )
+    files = collect(pathlib.Path(args.root))
 
     by_kind: dict[str, list[str]] = {}
     total = 0
