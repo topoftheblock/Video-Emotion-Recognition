@@ -212,7 +212,7 @@ unchanged.
 | 9 | `.env.example` — one-line gloss per variable, pointing at `configuration.md`; kill the duplication — done |
 | 10 | Rewrite the `a11y-ci.yml` header (§7.4); retitle `a11y-verification.md` — done |
 | 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licenses alongside — done, in `webapp/README.md` |
-| 12 | Delete `docs/legacy/` — its three live references are already gone (§7.10) |
+| 12 | Delete `docs/legacy/` — its three live references are already gone (§7.10) — done |
 | 13 | Verify — see §7.8 |
 
 ## 7.8 Verification

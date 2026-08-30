@@ -1,6 +1,6 @@
 {
   "extends": "stylelint-config-standard",
-  "ignoreFiles": ["docs/legacy/**", "node_modules/**"],
+  "ignoreFiles": ["node_modules/**"],
   "rules": {
     "media-feature-range-notation": "prefix",
     "color-function-notation": "legacy",

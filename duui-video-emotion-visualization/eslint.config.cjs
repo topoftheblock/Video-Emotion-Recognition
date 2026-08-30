@@ -1,14 +1,14 @@
 // Flat config, CommonJS on purpose.
 //
 // The tooling's node_modules lives in the lint image at /opt/tooling, not beside
-// this file -- the source is mounted read-only so that no checker can rewrite
+// this file — the source is mounted read-only so that no checker can rewrite
 // what it is checking. An ESM `import` here would be resolved by Node relative
-// to this file and fail; `require` honours NODE_PATH, which the image sets.
+// to this file and fail; `require` honors NODE_PATH, which the image sets.
 const js = require("@eslint/js");
 
 module.exports = [
   {
-    ignores: ["docs/legacy/**", "node_modules/**", "webapp/src/frontend/fonts/**"],
+    ignores: ["node_modules/**", "webapp/src/frontend/fonts/**"],
   },
   {
     files: ["**/*.js"],

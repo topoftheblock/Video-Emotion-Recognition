@@ -1,9 +1,4 @@
-# Legacy documents, kept only as a checklist of topics for the rewrite. Their
-# claims are unverified and they are deleted when Phase 7 finishes; reformatting
-# them would put churn in a diff that should stay empty.
-docs/legacy/
-
-# Vendored font files and their licences.
+# Vendored font files and their licenses.
 webapp/src/frontend/fonts/
 
 # Records of past runs, not documents being maintained.
