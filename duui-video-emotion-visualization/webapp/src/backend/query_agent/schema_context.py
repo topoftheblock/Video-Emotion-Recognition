@@ -1,23 +1,24 @@
-"""
-Static schema + domain knowledge fed to the NL->SQL agent as its
-system prompt. Kept as a plain string (not introspected from the live
-DB on every request) because the *meaning* of columns -- which
-columns are actually populated in practice, how label vocabularies
-differ across modalities, how to recover a time anchor for a row that
-doesn't have one -- isn't recoverable from `information_schema` alone.
+"""The schema and domain knowledge given to the agent as its prompt.
 
-Structure comes from pgvector-db/schema.sql. The semantics below come from
-three sources, cross-checked against each other:
-  1. docs/data_schema_with_types.md (the intended design)
-  2. cas-to-postgres-importer/src/main/parsers/*.py (what
-     actually gets INSERTed, which in a few places diverges from (1) --
-     noted explicitly below)
-  3. A live query against a populated duui_bundestag database, to see
-     which columns are *actually* non-null in practice versus merely
-     nullable in the DDL, and what real label/value vocabularies look
-     like. Treat the concrete value lists below as representative
-     (confirmed to occur), not as an enforced enum -- a differently
-     configured pipeline run could add new labels.
+Kept as a plain string rather than introspected from the live database
+on each request, because the *meaning* of a column is not recoverable
+from `information_schema`: which columns are populated in practice, how
+label vocabularies differ between modalities, and how to recover a time
+anchor for a row that has none.
+
+The structure has to match `pgvector-db/schema.sql`, which is what the
+database actually contains. The semantics — which columns are populated,
+what the values look like — are only checkable against two things: the
+importer's parsers, for what is written, and a query against a populated
+database, for what is there. Check a claim below against those before
+trusting it.
+
+The value lists are representative rather than enumerated: they record
+what has been observed, and a differently configured pipeline run could
+add more.
+
+The string itself is a prompt, not documentation for a human reader,
+and is left as written — see docs/plan/phase-5-documentation.md, Q3.
 """
 
 SCHEMA_CONTEXT = """

@@ -1,43 +1,46 @@
-"""
-Regression tests for the two annotators that share modality='text'.
+"""Tests for the two annotators that share `modality='text'`.
 
-Real data carries one Ekman-mapped text emotion *and* one raw 28-class
-GoEmotions text emotion per sentence (see
-query_agent/schema_context.py). Both are modality='text', so anything
-that treats that modality as a single series counts every sentence
-twice -- which is how the insights panel came to report a label more
-often than the video had sentences.
+A sentence carries one text emotion on the timeline, over a small label
+set, *and* one GoEmotions reading anchored to character offsets with no
+times. Both are `modality='text'`, so anything treating that modality
+as a single series counts every sentence twice, and can report a label
+more often than the video has sentences.
 
-Needs a live Postgres with the schema applied: the fixture writes a
-throwaway video and deletes it again (base_emotions is ON DELETE
-CASCADE), because `backend.db.query` opens its own connection per call
-and so cannot see an uncommitted transaction.
+Database-backed. The fixture writes a throwaway video and deletes it
+again, relying on the cascade from `videos`, and commits rather than
+holding a transaction: `backend.db.query` opens its own connection per
+call, so it could not see uncommitted rows.
 """
+
+from collections.abc import Iterator
 
 import psycopg2
 import pytest
+from psycopg2.extensions import cursor
 
 from backend.config import DB_CONFIG
 from backend.queries import stats, videos
 
 
-def _next_id(cur, table, column):
-    """
-    An id above everything already in `table`.
+def _next_id(cur: cursor, table: str, column: str) -> int:
+    """Return an id above everything already in the table.
 
-    The importer writes primary keys straight from the CAS's own xmi:id
-    space rather than letting the BIGSERIAL assign them, so on a
-    database that has had a real import the sequences trail the actual
-    maximum and nextval() hands back an id that is already taken.
+    The importer writes these keys straight from the CAS's own `xmi:id`
+    space rather than letting the sequence assign them, so on a
+    database that has had a real import the sequence trails the actual
+    maximum and would hand back an id that is already taken.
     """
     cur.execute(f"SELECT COALESCE(max({column}), 0) + 1 FROM {table}")
     return cur.fetchone()[0]
 
 
 @pytest.fixture
-def video_with_both_text_annotators(db_available):
-    """One sentence, read by both text annotators -- the shape that
-    used to double-count."""
+def video_with_both_text_annotators(db_available: bool) -> Iterator[int]:
+    """Build one sentence read by both text annotators.
+
+    This is the shape that double-counts if the two are treated as one
+    series.
+    """
     if not db_available:
         pytest.skip("no DB reachable")
 
@@ -74,11 +77,12 @@ def video_with_both_text_annotators(db_available):
 
 
 def test_the_two_text_annotators_are_counted_as_separate_series(
-    video_with_both_text_annotators,
-):
+    video_with_both_text_annotators: int,
+) -> None:
+    """The distribution reports the two text readings separately."""
     rows = stats.emotion_distribution(video_with_both_text_annotators)
 
-    # One 'neutral' each, not a single row of n=2 for a one-sentence video.
+    # One each, not a single row of two for a one-sentence video.
     assert [(r["series"], r["dominant_label"], r["n"]) for r in rows] == [
         ("text", "neutral", 1),
         ("text (raw GoEmotions)", "neutral", 1),
@@ -89,13 +93,15 @@ def test_the_two_text_annotators_are_counted_as_separate_series(
 
 
 def test_the_playback_payload_carries_only_readings_on_the_timeline(
-    video_with_both_text_annotators,
-):
+    video_with_both_text_annotators: int,
+) -> None:
+    """The payload drops the untimed reading, keeping the timed one."""
     payload = videos.build_playback_payload(video_with_both_text_annotators)
+    assert payload is not None
 
-    # The frontend renders everything off currentTime, so a reading
-    # with no time cannot be placed -- and leaving it in is what would
-    # let a panel average two different label vocabularies together.
+    # The frontend renders everything off the playback time, so a
+    # reading with no time cannot be placed — and leaving it in is what
+    # would let a panel average two label vocabularies together.
     text_emotions = payload["emotions"]["text"]
     assert len(text_emotions) == 1
     assert text_emotions[0]["start_time"] == 0.0

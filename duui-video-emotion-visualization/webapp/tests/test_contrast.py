@@ -1,39 +1,38 @@
-"""
-Contrast assertions over the committed frontend palette.
+"""Contrast assertions over the committed frontend palette.
 
-Phase 0.1 of docs/accessibility.md, tightened by Phase 3. The maths
-and the pair registry live in tests/contrast_check.py; this file is only
-the policy.
+The arithmetic and the pair registry live in `contrast_check.py`; this
+file is only the policy. See "Color and contrast" in
+docs/accessibility.md.
 
-That policy used to be a KNOWN_FAILURES baseline of the 25 pairs the
-audit found still open, because asserting zero while they were all live
-would have kept the suite red for the length of the remediation. Phase 3
-closed the last of them, so the baseline is gone and the assertion is
-now the plain one: nothing below its threshold, ever.
+The policy is the plain one — nothing below its threshold, ever. It was
+once a baseline of known failures, because asserting zero while they
+were all still open would have kept the suite red; they are closed, so
+the baseline is gone.
 
-Six pairs are recorded as INFO rather than asserted. Those are decisions,
-not omissions -- each is argued at its call site (the panel dots and the
---border exemption in css/tokens.css, the emotion groove in
+Six pairs are recorded as INFO rather than asserted. Those are
+decisions, not omissions — each is argued at its call site (the panel
+dots and the --border exemption in css/tokens.css, the emotion groove in
 css/emotions.css, the input fill in contrast_check.py) and the checker
 still prints their ratios so they stay visible.
 """
 
 import pytest
-
-import contrast_check
+from support import contrast_check
 
 
 @pytest.fixture(scope="module")
-def results():
+def results() -> list:
+    """Every measured pair, computed once for the whole module."""
     return contrast_check.check()
 
 
-# ---------------- the checker's own parsing ----------------
+# --- The checker's own parsing ------------------------------------------
 # If these break, every ratio below is measuring something other than
 # what the app ships, so they are worth asserting independently.
 
 
-def test_semantic_tokens_resolve_through_var_aliases():
+def test_semantic_tokens_resolve_through_var_aliases() -> None:
+    """A semantic name resolves through its aliases to a real color."""
     tokens = contrast_check.load_tokens()
     # --signal is var(--primary-500) is #006c98: two hops, and the shape
     # almost every semantic token in tokens.css takes.
@@ -43,26 +42,29 @@ def test_semantic_tokens_resolve_through_var_aliases():
     assert tokens["--border-input"] == tokens["--surface-400"]
 
 
-def test_translucent_tokens_keep_their_alpha():
+def test_translucent_tokens_keep_their_alpha() -> None:
+    """Alpha survives parsing: it is what makes a stack measurable."""
     tokens = contrast_check.load_tokens()
     assert tokens["--border-soft"] == ((102, 104, 114), 0.2)
 
 
-def test_non_colour_declarations_are_skipped():
+def test_non_color_declarations_are_skipped() -> None:
+    """A radius or a font stack is not a color, and is skipped."""
     tokens = contrast_check.load_tokens()
     for name in ("--theme-rounded-base", "--font-ui", "--transition", "--shadow-md"):
-        assert name not in tokens, f"{name} is not a colour and must not be checked"
+        assert name not in tokens, f"{name} is not a color and must not be checked"
 
 
-def test_person_palette_is_read_from_state_js():
-    palette = contrast_check.load_person_colours()
-    # Six assignable colours plus the unknown-person fallback.
+def test_person_palette_is_read_from_state_js() -> None:
+    """The palette measured is the one the frontend assigns from."""
+    palette = contrast_check.load_person_colors()
+    # Six assignable colors plus the unknown-person fallback.
     assert len(palette) == 7
     assert palette[0] == "#e69f00"
     assert palette[-1] == "#c8c8d0"
 
 
-def test_every_pair_resolves(results):
+def test_every_pair_resolves(results: list) -> None:
     """A typo in the registry would otherwise surface as a KeyError deep
     in a later assertion rather than as its own failure."""
     assert len(results) > 60
@@ -70,10 +72,11 @@ def test_every_pair_resolves(results):
         assert 1.0 <= result.ratio <= 21.0
 
 
-# ---------------- the policy ----------------
+# --- The policy ---------------------------------------------------------
 
 
-def test_no_contrast_failures(results):
+def test_no_contrast_failures(results: list) -> None:
+    """No pair the page composites falls below its requirement."""
     failing = [r for r in results if r.status == "FAIL"]
     assert not failing, "contrast failures:\n" + "\n".join(
         f"  {r.pair.area}/{r.pair.label}: {r.ratio:.2f} < {r.pair.requirement} "
@@ -82,27 +85,28 @@ def test_no_contrast_failures(results):
     )
 
 
-def test_readable_text_color_clears_aa_for_every_person_colour():
-    """
-    Phase 3.1's regression guard, and the check that would have caught
-    the original bug.
+def test_readable_text_color_clears_aa_for_every_person_color() -> None:
+    """The check that would have caught the original bug.
 
-    readableTextColor() picks the filter chip's text colour per person at
-    render time. It used to threshold on luminance at L > 0.45 -- far
-    above the true crossover near 0.18 -- so four of the seven colours
+    readableTextColor() picks the filter chip's text color per person
+    at render time. It used to threshold on luminance at L > 0.45 — far
+    above the true crossover near 0.18 — so four of the seven colors
     were handed white text at 2.2-3.1:1. Asserting the *outcome* for
     every palette entry is what makes that unrepeatable, including after
     a palette change.
     """
-    palette = contrast_check.load_person_colours()
+    palette = contrast_check.load_person_colors()
     pick = contrast_check._readable_text_color_impl()
 
     weak = []
-    for colour in palette:
-        rgb = contrast_check._parse_rgba(colour)[0]
-        ratio = contrast_check.contrast(contrast_check._parse_rgba(pick(rgb))[0], rgb)
+    for color in palette:
+        parsed = contrast_check._parse_rgba(color)
+        picked = contrast_check._parse_rgba(pick(parsed[0])) if parsed else None
+        assert parsed is not None and picked is not None
+        rgb = parsed[0]
+        ratio = contrast_check.contrast(picked[0], rgb)
         if ratio < contrast_check.TEXT:
-            weak.append(f"  {colour}: picked {pick(rgb)} at {ratio:.2f}:1")
+            weak.append(f"  {color}: picked {pick(rgb)} at {ratio:.2f}:1")
 
     assert not weak, (
         f"readableTextColor() ({pick.description}) drops below "

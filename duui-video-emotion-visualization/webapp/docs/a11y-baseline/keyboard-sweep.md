@@ -4,7 +4,7 @@ Phase 0.3 of [../accessibility.md](../accessibility.md).
 Captured 2026-08-20 against `http://localhost:8010` in the default state
 (video `teil_007.mp4`, three identified people, no person selected).
 
-This is the artefact Phase 1 is measured against.
+This is the artifact Phase 1 is measured against.
 
 ## Method
 
@@ -81,7 +81,7 @@ Every stop that has a `:focus-visible` rule shows a 2px `--signal` outline at
 5.84:1 against the card, which passes 1.4.11. Stops 1 and 2 instead suppress
 the outline and draw a `box-shadow` ring; that reads fine now but is the reason
 Phase 4.2 has to add an `outline` fallback, since `box-shadow` is dropped under
-forced colours.
+forced colors.
 
 Nothing in the sweep was focusable-but-invisible, and no stop was reachable
 without a visible indicator.

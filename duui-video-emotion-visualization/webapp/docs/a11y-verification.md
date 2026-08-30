@@ -1,9 +1,17 @@
-# Accessibility verification — after Phases 1–5
+# Accessibility verification — baseline versus now
 
-Phase 6.1 of [accessibility.md](accessibility.md). Run 2026-08-20
-against the rebuilt container, diffed against
+What the accessibility remediation actually changed, measured rather
+than asserted. The verification step of the plan in
+[accessibility.md](accessibility.md), which numbers its own phases 0–6
+and has nothing to do with the cleanup effort in `docs/plan/`.
+
+Run 2026-08-20 against the rebuilt container, diffed against
 [a11y-baseline/](a11y-baseline/README.md), which is left untouched as the
 before-picture.
+
+Paths below are relative to the webapp project root (`webapp/`), except
+`css/…` and `js/…`, which are relative to `src/frontend/` — the same convention
+as [accessibility.md](accessibility.md).
 
 Same method as the baseline: axe-core 4.10.2 injected into the live page at
 `http://localhost:8010`, the same five application states, the same `fetch`
@@ -13,7 +21,7 @@ the same tab-order sweep. Desktop viewport, to match how the baseline was taken.
 ## The diff
 
 | | baseline | now |
-|---|---|---|
+| --- | --- | --- |
 | axe violations, all five states | 4 (2 critical) | **0** |
 | — `aria-allowed-attr` (critical) | 1 node | gone |
 | — `label` (critical) | 1 node | gone |
@@ -33,7 +41,7 @@ accessible name, the two extra contrast pairs) are closed with them.
 ## The tab order now
 
 | # | Region | Element | Announced name | State |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1 | page | `.skip-link` | Skip to player | – |
 | 2 | header | `#videoComboInput` | Video | `expanded=false` |
 | 3 | ask | `#askInput` | Ask a question about this video | – |
@@ -70,7 +78,12 @@ nowhere near sufficient — which is why the two static checkers exist.
 
 ## Static checkers
 
-```
+What the three printed **on 2026-08-20**, alongside everything else on this
+page. They are part of the record, not a current reading: the suite has grown
+since, so the pytest line is a smaller number than the same five files give
+today.
+
+```text
 contrast_check.py   79 pairs, 0 failing, 15 recorded without assertion
 cvd_check.py        0 pairs below dE2000 10.0
 pytest              11 passed
@@ -91,15 +104,15 @@ Recorded at their call sites so they are not re-litigated. Listed here as an
 index only.
 
 | Decision | Where the reasoning lives |
-|---|---|
-| Panel dots are decorative (labelled), exempt from 1.4.11 | `css/tokens.css`, accent block |
+| --- | --- |
+| Panel dots are decorative (labeled), exempt from 1.4.11 | `css/tokens.css`, accent block |
 | `--border` hairlines are decorative separation, exempt | `css/tokens.css`, on `--border-input` |
 | Emotion groove keeps 1.24:1 — value is printed as text beside it | `css/emotions.css`, `.emo-track` |
-| Input fill no longer carries the boundary; its border does | `tests/contrast_check.py`, input pairs |
-| Person swatch boundary is a ring, not the hue | `css/sidebar.css`, `tests/contrast_check.py` |
-| `.person-swatch` opts out of forced colours; the hue *is* the data | `css/adaptive.css` |
-| `.subtitle-box` opts out of forced colours; it sits over video | `css/adaptive.css` |
-| Okabe-Ito palette, and why the grey separates by lightness | `js/state.js`, `tests/cvd_check.py` |
+| Input fill no longer carries the boundary; its border does | `tests/support/contrast_check.py`, input pairs |
+| Person swatch boundary is a ring, not the hue | `css/sidebar.css`, `tests/support/contrast_check.py` |
+| `.person-swatch` opts out of forced colors; the hue *is* the data | `css/adaptive.css` |
+| `.subtitle-box` opts out of forced colors; it sits over video | `css/adaptive.css` |
+| Okabe-Ito palette, and why the gray separates by lightness | `js/state.js`, `tests/support/cvd_check.py` |
 | The `19em` block that was tried and removed | `css/responsive.css`, end of file |
 
 Each row above was checked against the file it names, not assumed. The
@@ -115,6 +128,6 @@ verifies the accessibility *tree*; none of it verifies what a screen reader
 actually announces from that tree, which is a different question and the only
 way to confirm the combobox's `aria-activedescendant` behaves.
 
-**Windows High Contrast (Phase 4).** Same limitation: the forced-colours rules
+**Windows High Contrast (Phase 4).** Same limitation: the forced-colors rules
 were verified as parsed-and-intact through the CSSOM, never seen rendered.
 Worth doing in the same sitting as the screen-reader pass.

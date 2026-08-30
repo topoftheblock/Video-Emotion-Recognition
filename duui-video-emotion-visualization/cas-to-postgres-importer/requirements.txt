@@ -1,8 +1,18 @@
-# Runtime deps for the importer only -- deliberately does NOT include
-# fastapi/uvicorn/openai, which nothing under src/ imports
-# (those belong to the webapp: its HTTP server and the NL->SQL "Ask"
-# panel). Keeping the two requirement sets apart keeps this image small
-# and free of libraries it never touches.
-dkpro-cassis>=0.9.0
-psycopg2-binary>=2.9
-python-dotenv>=1.0
+# Runtime dependencies for the importer alone. Deliberately does not
+# include fastapi, uvicorn or openai: nothing under src/ imports them,
+# and they belong to the webapp. Keeping the two sets apart keeps this
+# image small and free of libraries it never touches.
+#
+# Ranges are floor-and-ceiling. The floor is the version the project is
+# built and tested against; the ceiling is the next major, so a new
+# major cannot arrive silently and change the program underneath us.
+# Phase 9 adds a lockfile on top, for exact reproducibility.
+dkpro-cassis>=0.11,<1.0
+# Imported directly by pipeline.py and cas/sofas.py, which read the XML
+# tree before cassis sees it. dkpro-cassis happens to require lxml too,
+# so this was resolving by luck: a release of theirs that widened or
+# dropped that pin would have broken the importer with nothing here to
+# explain why.
+lxml>=6.1,<7
+psycopg2-binary>=2.9,<3
+python-dotenv>=1.2,<2

@@ -1,0 +1,70 @@
+# Lint and tests for duui-video-emotion-visualization/.
+#
+# ---------------------------------------------------------------------------
+# THIS FILE DOES NOT TRAVEL WITH THE PROJECT IT CHECKS.
+#
+# GitHub Actions only reads workflows from <repository root>/.github/workflows,
+# and the project lives one directory below that. If
+# duui-video-emotion-visualization/ is ever moved, extracted into its own
+# repository, or copied elsewhere, this file stays behind — and it fails
+# silently: nothing errors, CI simply stops covering the code.
+#
+# Every path below is written relative to the current repository root and will
+# be wrong at a new location. If the project does become its own repository,
+# move this file to that repository's .github/workflows/ and delete the
+# `duui-video-emotion-visualization/` prefixes and the `working-directory`.
+# ---------------------------------------------------------------------------
+#
+# Scoped with paths filters so the dozen unrelated projects in this repository
+# never trigger it. Note that both triggers are filtered: the sibling ci.yml
+# filters only `push`, so its `pull_request` runs on every pull request in the
+# repository regardless of what changed. That is not copied here.
+
+name: Video Emotion Visualization
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "duui-video-emotion-visualization/**"
+      - ".github/workflows/duui-video-emotion-visualization.yml"
+  pull_request:
+    paths:
+      - "duui-video-emotion-visualization/**"
+      - ".github/workflows/duui-video-emotion-visualization.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: duui-video-emotion-visualization
+
+jobs:
+  # Every checker: ruff, mypy, sqlfluff, yamllint, hadolint, eslint, prettier,
+  # stylelint, html-validate, markdownlint and a relative-link check.
+  #
+  # Needs no database and no application dependencies, which is what keeps it
+  # quick and stops an unrelated dependency break from masking a lint failure.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the lint image
+        run: docker compose --profile lint build lint
+
+      - name: Run every checker
+        run: docker compose run --rm lint
+
+  # The same command a developer runs. The service brings up the database it
+  # needs, creates its own empty test database, applies the schema, and fails
+  # rather than skipping if the database is unreachable.
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the test image
+        run: docker compose --profile test build tests
+
+      - name: Run the suites
+        run: docker compose run --rm tests

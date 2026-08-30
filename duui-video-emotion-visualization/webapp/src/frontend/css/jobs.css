@@ -1,15 +1,17 @@
-/* ---------------- Job status banner ----------------
+/* --- Job status banner ---------------------------------------------- */
+
+/*
    Sits between the header and the Ask panel while the importer or the
    cross-video identity job is running. Built to be noticed and then
-   ignored: it takes the theme's primary rather than a warning colour,
+   ignored: it takes the theme's primary rather than a warning color,
    because a running import is normal, not a problem.
 
-   Shaped like the Gateway's .toast -- hairline border, rounded-base,
-   shadow-md, and a fat left edge in the semantic colour (border-l-8,
+   Shaped like the Gateway's .toast — hairline border, rounded-base,
+   shadow-md, and a fat left edge in the semantic color (border-l-8,
    .toast-info in primary and .toast-error in error). It keeps the white
    card fill rather than the toast's surface-100, since unlike a toast
    it sits on the page rather than floating over it.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 .job-banner {
   display: flex;
@@ -48,8 +50,8 @@
   animation: job-spin 0.9s linear infinite;
 }
 
-/* Stopped, not spinning: the whole point of this state is that
-   nothing is moving any more. */
+/* Stopped, not spinning: the whole point of this state is that nothing
+   is moving any more. */
 .job-spinner-stale {
   border-color: color-mix(in srgb, var(--danger) 30%, transparent);
   border-top-color: var(--danger);
@@ -57,7 +59,9 @@
 }
 
 @keyframes job-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .job-text {
@@ -71,7 +75,7 @@
 /* The Gateway's own .toast (the model for this banner) sets its whole
    message block to text-xl (20px). This banner already splits headline
    from detail, so the headline alone doesn't need to carry that full
-   size -- one step down, 18px, matching .ask-title's heading weight. */
+   size — one step down, 18px, matching .ask-title's heading weight. */
 .job-text strong {
   font-size: var(--text-lg);
   font-weight: 600;
@@ -81,11 +85,13 @@
 /* One step past --danger-text: the stale row is the only place error
    text sits on the error-100 banner fill rather than on white, and
    error-700 only reaches 4.2:1 against it. The detail line moves with
-   it -- --text-dim is a neutral grey tuned for white and drops to
-   4.4:1 on the same pink. */
+   it — --text-dim is a neutral gray tuned for white and drops to 4.4:1
+   on the same pink. */
 .job-row-stale .job-text strong,
 .job-row-stale .job-detail,
-.job-row-stale .job-elapsed { color: var(--error-800); }
+.job-row-stale .job-elapsed {
+  color: var(--error-800);
+}
 
 /* --text-strong (surface-600), not --text-dim: this is read
    continuously while a job runs, and --text-dim's 5.5:1 reads as weak
@@ -102,7 +108,11 @@
   white-space: nowrap;
 }
 
-.job-elapsed { margin-left: auto; color: var(--text-dim); flex-shrink: 0; }
+.job-elapsed {
+  margin-left: auto;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
 
 .job-bar {
   position: relative;
@@ -121,20 +131,30 @@
   transition: width 0.3s ease;
 }
 
-/* No countable progress (the importer's CAS parse is one opaque
-   call): a stripe that travels says "working" without claiming to
-   know how far along it is. */
+/* No countable progress (the importer's CAS parse is one opaque call):
+   a stripe that travels says "working" without claiming to know how far
+   along it is. */
 .job-bar-indeterminate .job-bar-fill {
   width: 35% !important;
   animation: job-sweep 1.4s ease-in-out infinite;
 }
 
 @keyframes job-sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(285%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(285%);
+  }
 }
 
 @media (max-width: 860px) {
-  .job-banner { padding: 10px 16px 0; }
-  .job-detail { white-space: normal; }
+  .job-banner {
+    padding: 10px 16px 0;
+  }
+
+  .job-detail {
+    white-space: normal;
+  }
 }

@@ -1,18 +1,12 @@
-"""
-Central configuration for the global-identity job.
+"""Configuration: database credentials and matching thresholds.
 
-Deliberately separate from the importer's config (see
-cas-to-postgres-importer/src/main/config.py) and the viewer's
-(webapp/src/backend/config.py): the
-three containers are independent images with independent code, and
-share nothing but the database. The settings they have in common --
-DB_CONFIG here -- are defined in each of them from the same environment
-variables, which is what keeps them pointing at the same Postgres (see
-docker-compose.yml, where every service gets the same values).
+The database is this job's entire input and output — it reads no files
+and no CAS — so these settings are its whole external surface.
 
-This job reads no files and no CAS at all: the database is its entire
-input and its entire output, so DB credentials plus the two distance
-thresholds are the whole surface.
+Each sub-project defines its own configuration from the same `DUUI_*`
+environment variables rather than sharing a module; see
+docs/architecture.md for why, and docker-compose.yml for where the
+values come from.
 """
 
 import os
@@ -22,32 +16,49 @@ try:
 
     load_dotenv()
 except ImportError:
-    # dotenv is optional -- if it's not installed, real environment
-    # variables (export FOO=bar, or set by your process manager) still
-    # work fine; only the convenience of a local .env file is lost.
+    # Optional. Without it, environment variables set by the shell or
+    # the process manager still work; only .env file support is lost.
     pass
 
-# --- Matching thresholds ----------------------------------------------
-# Cosine distance (`<=>`, 0 = identical .. 2 = opposite) -- lower is
-# stricter. 0.30 is a conservative starting point for ArcFace-style
-# 512-dim face embeddings; retune against real cross-video duplicates
-# before trusting this for anything beyond suggestions.
-#
-# There is no on/off switch here the way there used to be while this
-# ran inside the importer: running this container *is* the opt-in.
+# --- Matching thresholds ------------------------------------------------
 
+# Maximum cosine distance at which two face embeddings are taken to be
+# the same person. pgvector's `<=>` returns 0 for identical vectors and
+# 2 for opposite ones, so a lower value is stricter.
+#
+# No derivation for 0.30 is recorded in this repository. Which model
+# produced a given embedding is recorded per row, in `models`.
 GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD = float(
     os.environ.get("DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD", "0.30")
 )
+
+# The same, for voice embeddings. Looser than the face threshold; no
+# derivation for either value is recorded in this repository.
 GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
     os.environ.get("DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD", "0.35")
 )
 
-# --- Database ---------------------------------------------------------
+# --- Database -----------------------------------------------------------
 
-DB_CONFIG = {
+# Keyword arguments for psycopg2.connect().
+#
+# The defaults are placeholders that cannot connect to anything. Whether
+# that is deliberate (fail rather than reach an unintended database) or
+# simply an unfinished template is not recorded anywhere in this
+# repository. It does have one known consequence: on a host with no
+# DUUI_DB_* set, every database-backed test skips instead of running.
+# See docs/plan/phase-0-baseline.md §0.2(c).
+# Seconds to wait for the connection itself. Without it, psycopg2 waits
+# on the operating system's TCP timeout: against a host that accepts the
+# route but never answers, that is minutes with nothing printed. Ten
+# turns that hang into a clean OperationalError. It bounds the connect
+# only, never a query that is already running.
+DB_CONNECT_TIMEOUT = int(os.environ.get("DUUI_DB_CONNECT_TIMEOUT", "10"))
+
+DB_CONFIG: dict[str, str | int] = {
     "dbname": os.environ.get("DUUI_DB_NAME", "your_db"),
     "user": os.environ.get("DUUI_DB_USER", "your_user"),
     "password": os.environ.get("DUUI_DB_PASSWORD", "your_password"),
     "host": os.environ.get("DUUI_DB_HOST", "localhost"),
+    "connect_timeout": DB_CONNECT_TIMEOUT,
 }

@@ -1,0 +1,13 @@
+# Base images this project builds on, and the digests the last
+# refresh saw. Written by tests/refresh-image-digests.sh.
+#
+# NOTHING READS THIS FILE. The Dockerfiles use floating tags so
+# that security rebuilds of the base still arrive. This records
+# what a build used; it does not pin what the next one gets.
+
+python:3.14-slim
+  sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4
+pgvector/pgvector:pg18
+  sha256:2ba9ca5f2e7daa0f0e7723cba1ee9167bab54efd3640516a44ac1a928dd67e7a
+node:24-trixie-slim
+  sha256:50c3b2f6988dfc307b86e5301d69611af31f4789bdf232863b07d3b02fe55ae0

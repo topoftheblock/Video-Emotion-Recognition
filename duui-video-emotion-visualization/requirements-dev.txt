@@ -1,16 +1,21 @@
-# Dev/test-only deps -- not needed to run either container, only to run
-# the test suites (cas-to-postgres-importer/tests/ and
-# webapp/tests/). The app code itself
-# lives entirely inside those two directories; this is the one thing
-# both suites need and neither image ships.
+# Dev/test-only dependencies: needed by the test suites, shipped by no
+# image. All three sub-projects have tests, and their own requirements
+# files carry everything else those tests need.
 #
-#   pip install -r cas-to-postgres-importer/requirements.txt \
-#               -r webapp/requirements.txt \
-#               -r requirements-dev.txt
-#   pytest
-pytest>=8.0
+# Installed by Dockerfile.tests along with all three sub-projects'
+# requirements. Run the suite with:
+#
+#   docker compose run --rm tests
+#
+# Version ranges are floor-and-ceiling. The floor is the version this
+# project is actually built and tested against; the ceiling is the next
+# major, so a new major cannot arrive silently and change the program
+# under us. Phase 9 adds a lockfile on top for exact reproducibility.
+pytest>=9.0,<10
 
-# Required by fastapi.testclient.TestClient, which the viewer's route
-# tests use to exercise create_app() without binding a port. Test-only:
-# the viewer image serves through uvicorn and never imports it.
-httpx>=0.27
+# Required by fastapi.testclient.TestClient, which the webapp's route
+# tests use to exercise create_app() without binding a port. No test
+# imports it directly; TestClient does, and FastAPI declares it only as
+# an optional extra, so without this line the route tests fail on a
+# missing backend. Test-only: the image serves through uvicorn.
+httpx>=0.28,<1.0

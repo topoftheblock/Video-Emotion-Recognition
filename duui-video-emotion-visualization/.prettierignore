@@ -1,0 +1,12 @@
+# Vendored font files and their licenses.
+webapp/src/frontend/fonts/
+
+# Records of past runs, not documents being maintained.
+webapp/docs/a11y-baseline/
+
+# Markdown is handled by markdownlint, not by prettier. Prettier's only
+# change to these files is rewriting *emphasis* as _emphasis_, a marker
+# swap with no readability gain that would churn every document in the
+# repository. markdownlint checks markdown style and can be told which
+# marker this project already uses.
+*.md

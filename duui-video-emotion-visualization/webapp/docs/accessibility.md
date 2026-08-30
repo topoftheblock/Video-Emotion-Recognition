@@ -1,6 +1,6 @@
 # Frontend accessibility
 
-How the viewer's frontend stays accessible, and what to do so that it keeps
+How the webapp's frontend stays accessible, and what to do so that it keeps
 staying that way.
 
 This was a remediation plan once. The work is done — the phase-by-phase plan,
@@ -9,7 +9,7 @@ its findings and its measurements are in git history and in
 numbers against [a11y-baseline/](a11y-baseline/README.md). This file is what
 replaced it: the rules to work by, and an honest list of what is still missing.
 
-Paths below are relative to the viewer project root
+Paths below are relative to the webapp project root
 (`webapp/`), except `css/…` and `js/…`, which
 are relative to `src/frontend/`.
 
@@ -22,16 +22,16 @@ application dependencies — which is what makes it cheap enough to run on every
 change:
 
 ```bash
-docker run --rm -v "$PWD":/w -w /w python:3.12-slim sh -c \
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim sh -c \
   "pip install -q pytest && pytest tests/test_contrast.py tests/test_palette.py \
    tests/test_markup.py tests/test_stylesheets.py tests/test_scripts.py -q"
 ```
 
-For the colour reports rather than pass/fail:
+For the color reports rather than pass/fail:
 
 ```bash
-docker run --rm -v "$PWD":/w -w /w python:3.12-slim python3 tests/contrast_check.py
-docker run --rm -v "$PWD":/w -w /w python:3.12-slim python3 tests/cvd_check.py
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 tests/support/contrast_check.py
+docker run --rm -v "$PWD":/w -w /w python:3.14-slim python3 tests/support/cvd_check.py
 ```
 
 The second half needs the app running, because three of the five states it
@@ -55,7 +55,7 @@ page-wide and passing them all while the page was rendering a 2.18:1 chip.
 
 ## Guidelines
 
-Each rule says what enforces it. Rules marked **judgement** have no automated
+Each rule says what enforces it. Rules marked **judgment** have no automated
 backstop and depend on whoever is reviewing.
 
 ### Structure and markup
@@ -64,7 +64,7 @@ backstop and depend on whoever is reviewing.
   handler on a `<div>` or `<li>`. Those are unreachable by keyboard, and no
   automated tool can see the problem — a click listener leaves no trace in the
   accessibility tree. This is how the Ask results were mouse-only.
-  → *judgement*, partially caught by `a11y_browser_check.js`
+  → *judgment*, partially caught by `a11y_browser_check.js`
 - **Never a positive `tabindex`.** It pulls an element out of document order and
   forces every other control to be reasoned about relative to it.
   → `test_markup.py::test_no_positive_tabindex`
@@ -72,7 +72,7 @@ backstop and depend on whoever is reviewing.
   (`flex-basis`, wrapping, grid placement) — never `order` or `row-reverse`.
   Reordering visually while leaving the DOM alone looks identical and makes a
   keyboard user tab through the page in a sequence that does not match what they
-  can see. → *judgement*
+  can see. → *judgment*
 - **One `<h1>`, and no skipped heading levels.**
   → `test_exactly_one_h1`, `test_heading_levels_do_not_skip`
 - **Every focusable element sits inside a landmark.** An unnamed `<section>` is
@@ -99,8 +99,9 @@ backstop and depend on whoever is reviewing.
   `test_no_control_is_named_only_by_its_title`
 - **A name that describes state must change when the state does.** `"Play/Pause"`
   announces both and is never accurate about either. Move the icon and the name
-  together in one function — `syncPlayButton()` in `js/player.js` and
-  `syncToggleButton()` in `js/subtitles.js` are the pattern. → *judgement*, with
+  together in one function — `syncPlayButton()` in `js/playback/player.js` and
+  `syncToggleButton()` in `js/playback/subtitles.js` are the pattern.
+  → *judgment*, with
   the initial value checked by `test_toggle_buttons_declare_their_pressed_state`
 - **Interpolating a value next to a name needs a separator, and the value needs
   naming.** `${name}<span>${score}</span>` with no whitespace concatenates into
@@ -109,7 +110,7 @@ backstop and depend on whoever is reviewing.
   names no quantity.
   → `test_scripts.py::test_person_rows_separate_the_name_from_the_metadata`
 - **Information must never live only in a `title`.** If it is worth writing, it
-  is worth reaching — make it a disclosure. → *judgement*
+  is worth reaching — make it a disclosure. → *judgment*
 
 ### Keyboard and state
 
@@ -126,40 +127,40 @@ backstop and depend on whoever is reviewing.
   focus to the document body. Use `aria-disabled` plus a guard in the handler
   that actually refuses the action — the attribute enforces nothing on its own,
   and the guard must also cover Enter-in-the-input, which submits a form without
-  touching the button. → *judgement*
+  touching the button. → *judgment*
 - **A visible focus indicator on everything.** If you suppress `outline`, you owe
-  a forced-colours fallback (see below).
-  → `test_stylesheets.py::test_suppressed_outlines_have_a_forced_colours_fallback`
+  a forced-colors fallback (see below).
+  → `test_stylesheets.py::test_suppressed_outlines_have_a_forced_colors_fallback`
 - **Disclosures start closed and say so**: `aria-expanded="false"` with the panel
   `hidden`. → `test_disclosure_buttons_are_wired_both_ways`
 
-### Colour and contrast
+### Color and contrast
 
-- **Colours come from tokens in `css/tokens.css`.** An undefined `var(--typo)`
+- **Colors come from tokens in `css/tokens.css`.** An undefined `var(--typo)`
   does not error; it drops the declaration silently.
   → `test_every_custom_property_used_is_defined`
-- **Adding a colour combination means adding it to the registry.** The pair list
-  in `tests/contrast_check.py` is curated, not discovered — there is no way to
-  know from a stylesheet which colours end up stacked on which. A combination
-  that is not in the registry is not checked.
-  → *judgement*, then `test_contrast.py::test_no_contrast_failures`
+- **Adding a color combination means adding it to the registry.** The pair list
+  in `tests/support/contrast_check.py` is curated, not discovered — there
+  is no way to know from a stylesheet which colors end up stacked on
+  which. A combination that is not in the registry is not checked.
+  → *judgment*, then `test_contrast.py::test_no_contrast_failures`
 - **Thresholds:** 4.5:1 for text, 3:1 for large text and for anything non-text
   that conveys meaning or marks a control's boundary. Exemptions are allowed but
   must be written down at the call site and recorded as `INFO` in the registry.
-- **Never darken the person palette to fix sidebar contrast.** Those same colours
+- **Never darken the person palette to fix sidebar contrast.** Those same colors
   are stroked over arbitrary video, where they must stay bright. The swatch's
   boundary comes from its ring, not its hue.
 - **Changing the person palette means re-running `cvd_check.py`.** Hue is the
-  only thing linking a box on the video to a name in the sidebar, so two colours
+  only thing linking a box on the video to a name in the sidebar, so two colors
   that collapse under a deficiency make two people indistinguishable with no text
   fallback. → `test_palette.py`
 - **Do not rely on hue alone** for anything else. Every panel dot is exempt from
   the 3:1 rule *only* because it sits beside a text label saying the same thing.
-- **Text colour chosen at runtime goes through `readableTextColor()`**, which
+- **Text color chosen at runtime goes through `readableTextColor()`**, which
   compares both candidates rather than thresholding on luminance. The threshold
   it replaced sat far above the true crossover and handed white text to four of
-  seven person colours at 2.2–3.1:1.
-  → `test_readable_text_color_clears_aa_for_every_person_colour`
+  seven person colors at 2.2–3.1:1.
+  → `test_readable_text_color_clears_aa_for_every_person_color`
 
 ### Type and layout
 
@@ -176,12 +177,12 @@ backstop and depend on whoever is reviewing.
 - **A dimension derived from text is expressed in `em`, not `px`.** The emotion
   row's label column is nine characters at Ubuntu Mono's 0.5em advance — that is
   `4.5em`, not the 63px it happens to equal at a 16px root. Written in px it
-  clips the moment someone raises their font size. → *judgement*
+  clips the moment someone raises their font size. → *judgment*
 - **Flex and grid items that contain text need `min-width: 0`.** Their default
   floor is their own min-content, so they widen the page rather than let anything
   reflow. An `<input>` is worst: it carries a default `size` of 20 characters,
   which at a 200% root is over 400px. Three of these caused every pixel of
-  horizontal scroll the app had. → *judgement*
+  horizontal scroll the app had. → *judgment*
 - **Verify at 320, 560, 860 and 1280px, each at 100%, 150% and 200% root font
   size** — twelve combinations, zero horizontal overflow, zero clipping.
   → *manual*; set `document.documentElement.style.fontSize` to simulate
@@ -193,26 +194,26 @@ backstop and depend on whoever is reviewing.
 ### Adaptive rendering modes
 
 - **Anything meaningful in a `background` or `box-shadow` must be restated under
-  `@media (forced-colors: active)`**, in system colours (`Highlight`,
+  `@media (forced-colors: active)`**, in system colors (`Highlight`,
   `CanvasText`, `HighlightText`) — or opted out with `forced-color-adjust: none`
-  where the *specific* colour is the information. Forced colours strips
+  where the *specific* color is the information. Forced colors strips
   backgrounds, which for this app deletes the readings and leaves the layout
   looking perfectly fine.
-  → `test_forced_colours_covers_everything_whose_background_is_data`
+  → `test_forced_colors_covers_everything_whose_background_is_data`
 - **`prefers-contrast: more` re-points tokens on `:root` and nothing else.** If
-  raising contrast needs a per-rule change, a colour is being set outside the
+  raising contrast needs a per-rule change, a color is being set outside the
   token layer and the fix is to move it in.
   → `test_more_contrast_only_repoints_tokens`
 - **Keep `color-scheme` accurate.** The palette is light-only; without saying so,
   UA widgets may render dark on a dark system.
-  → `test_the_colour_scheme_is_declared`
+  → `test_the_color_scheme_is_declared`
 - All three preference queries live in `css/adaptive.css`, imported last.
   → `test_the_preference_queries_are_present`
 
 ### The video overlay
 
 `<canvas>` inherits nothing — not the cascade, not the type scale, and forced
-colours does not touch it at all.
+colors does not touch it at all.
 
 - **Only ask for a font the app bundles.** `ctx.font` uses its family string
   verbatim and falls back silently. This asked for IBM Plex Mono for a long
@@ -222,9 +223,9 @@ colours does not touch it at all.
   padding, box height, baseline — as a ratio of it. Constants left behind make
   the box and the text separate as soon as the size changes.
   → `test_canvas_label_size_is_derived_from_the_root_font_size`
-- **Route label colours through `readableTextColor()`** rather than hardcoding
+- **Route label colors through `readableTextColor()`** rather than hardcoding
   one, so there is a single place the decision is made.
-  → `test_the_on_video_label_colour_comes_from_the_shared_decision`
+  → `test_the_on_video_label_color_comes_from_the_shared_decision`
 
 ---
 
@@ -234,15 +235,15 @@ Settled. Each is argued at the place it applies; this is an index, not a
 restatement. Do not re-litigate without new information.
 
 | Decision | Where the reasoning lives |
-|---|---|
+| --- | --- |
 | Panel dots are decorative (each has an adjacent label), exempt from 1.4.11 | `css/tokens.css`, accent block |
 | `--border` hairlines are decorative separation, exempt | `css/tokens.css`, on `--border-input` |
 | The emotion groove keeps 1.24:1 — every row prints its value as text beside the bar | `css/emotions.css`, `.emo-track` |
-| The input fill no longer carries the field boundary; its border does | `tests/contrast_check.py`, input pairs |
-| The person swatch's boundary is a ring, not its hue | `css/sidebar.css`, `tests/contrast_check.py` |
-| `.person-swatch` opts out of forced colours — the hue *is* the data | `css/adaptive.css` |
-| `.subtitle-box` opts out of forced colours — it sits over video | `css/adaptive.css` |
-| Okabe-Ito palette; the unknown grey separates by lightness, not hue | `js/state.js`, `tests/cvd_check.py` |
+| The input fill no longer carries the field boundary; its border does | `tests/support/contrast_check.py`, input pairs |
+| The person swatch's boundary is a ring, not its hue | `css/sidebar.css`, `tests/support/contrast_check.py` |
+| `.person-swatch` opts out of forced colors — the hue *is* the data | `css/adaptive.css` |
+| `.subtitle-box` opts out of forced colors — it sits over video | `css/adaptive.css` |
+| Okabe-Ito palette; the unknown gray separates by lightness, not hue | `js/state.js`, `tests/support/cvd_check.py` |
 | A `19em` reflow block that was tried and removed | `css/responsive.css`, end of file |
 | Touch targets of 36–41px at ≤560px rather than 44px | `css/responsive.css` — passes WCAG 2.2 AA (2.5.8 needs 24px); a deliberate AAA deviation |
 
@@ -265,7 +266,7 @@ WCAG 1.4.1 gap: on the video, a box is identified *only* by hue, and the mapping
 to a name exists solely in the sidebar swatch. For someone who cannot
 distinguish two palette entries there is no second channel. The Okabe-Ito
 palette and `cvd_check.py` mitigate this; they do not close it. That is why the
-CVD check is a test and not a preference — it is the only defence there is.
+CVD check is a test and not a preference — it is the only defense there is.
 
 ### Never verified
 
@@ -282,24 +283,32 @@ is a different question. Worth one pass with NVDA or Orca, in this order:
 5. The scrubber: "Seek, slider, 0:00 of 3:27", not a number out of 1000.
 6. The Ask button mid-request: still focused, reads as busy.
 
-**Windows High Contrast has never been seen rendered.** The forced-colours rules
+**Windows High Contrast has never been seen rendered.** The forced-colors rules
 were verified as parsed with their declarations intact, through the CSSOM — a
-mistyped system-colour keyword would have been dropped silently and shown up as
+mistyped system-color keyword would have been dropped silently and shown up as
 an empty declaration, and none were. That is not the same as looking at it.
 Same for `prefers-contrast: more`.
 
 ### Not implemented
 
-**There is no CI.** [a11y-ci.yml](a11y-ci.yml) is complete and YAML-validated
-but inert where it sits; one `git mv` into `.github/workflows/` at the
-repository root turns it on. It was left inert deliberately: the repository root
-is a monorepo of a dozen unrelated subprojects, and switching on GitHub Actions
-there affects all of them.
+**These checks have no workflow of their own.** [a11y-ci.yml](a11y-ci.yml) is
+complete and YAML-validated but inert where it sits; one `git mv` into
+`.github/workflows/` at the repository root would turn it on.
+
+It stays inert because it is redundant, not because the repository lacks CI.
+The repository has two workflows, one of them for this project, and `paths:`
+filters keep each off the sibling projects. That project workflow runs the
+whole suite — these five files included — on every push and pull request
+touching this directory, so activating `a11y-ci.yml` would run them a second
+time against a hand-maintained file list. Its own header carries the full
+argument.
 
 **The browser checks are not automated.** `a11y_browser_check.js` runs by hand
-in a console. Driving it headlessly means adding a JavaScript toolchain and a
-browser download to a repository that is Python end to end. The file ends with
-the four lines of Playwright needed if that changes.
+in a console. The project does carry a JavaScript toolchain now — eslint,
+prettier, stylelint and `tsc` all run in the lint image — so the obstacle is no
+longer that. What driving this headlessly would still add is a browser
+download on every check, which is a larger decision than these checks warrant.
+The file ends with the four lines of Playwright needed if that changes.
 
 **No `lang` on foreign-language content.** The document is `lang="en"`, but the
 transcripts, subtitles and emotion labels come from German-language video. WCAG
@@ -326,14 +335,15 @@ to" more accurately, but it is a bigger change and toggle buttons are not wrong.
 Unresolved.
 
 **The contrast registry is curated, not discovered.** Nothing detects a new
-colour combination that nobody added. A stylesheet-walking version that finds
+color combination that nobody added. A stylesheet-walking version that finds
 composited pairs automatically would be strictly better and is a real piece of
 work.
 
 **One literal is duplicated between the stylesheet and the checker** — the
 `0.85` alpha in `.person-row.is-selected .person-meta` appears in both
-`css/sidebar.css` and `tests/contrast_check.py`. Changing one without the other
-silently re-opens the pair. It is commented in both places; it is still a seam.
+`css/sidebar.css` and `tests/support/contrast_check.py`. Changing one
+without the other silently re-opens the pair. It is commented in both
+places; it is still a seam.
 
 **The Ask agent is unavailable without `DUUI_QUERY_API_KEY`**, so two of the five
 browser states are only reachable through the `fetch` stub built into

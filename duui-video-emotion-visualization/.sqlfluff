@@ -1,0 +1,16 @@
+# schema.sql is the authoritative description of the database, and it is
+# hand-written in a consistent style of its own. sqlfluff earns its
+# place here by proving the file is valid PostgreSQL — a typo in a
+# schema is expensive and silent — not by imposing a layout on it.
+[sqlfluff]
+dialect = postgres
+# Layout rules are off. The 49 findings they produced were all
+# whitespace before brackets and indentation depth: reformatting the
+# schema to satisfy them would be a large diff on the one file the whole
+# project agrees about, for no correctness gain.
+#
+# RF04 is off too. It flags `version`, `kind` and `source` as keywords
+# used for identifiers; all three are non-reserved in PostgreSQL,
+# deliberate, and renaming a column is a migration.
+exclude_rules = LT01, LT02, LT05, RF04
+max_line_length = 88

@@ -1,9 +1,11 @@
-/* ---------------- Ask panel ----------------
+/* --- Ask panel ------------------------------------------------------ */
+
+/*
    The one AI-adjacent surface in the app. Before the port it announced
    itself with a gradient border sheen; the Gateway has no such thing,
    so it is now an ordinary .section-wrapper card and lets the filled
    primary button carry the emphasis instead.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 .ask-panel {
   position: relative;
@@ -45,7 +47,10 @@
   justify-content: center;
 }
 
-.ask-icon svg { width: 18px; height: 18px; }
+.ask-icon svg {
+  width: 18px;
+  height: 18px;
+}
 
 /* Matches .h4 (Skeleton's card-title class, e.g. PipelineCard's own
    name heading) at its mobile-first step, text-lg. */
@@ -67,21 +72,23 @@
   gap: 8px;
 }
 
-/* The Gateway's .input-wrapper: recessed fill, soft border, 2px
-   primary ring on focus. */
+/* The Gateway's .input-wrapper: recessed fill, soft border, 2px primary
+   ring on focus. */
 .ask-input {
   flex: 1;
+
   /* A flex item's floor is its intrinsic width, and an <input> carries
-     a default `size` of 20 characters -- so this refuses to shrink below
+     a default `size` of 20 characters — so this refuses to shrink below
      roughly twenty characters' worth of its own font. At the default
      size that fits anywhere; at a 200% root it is over 400px, which is
-     wider than the phone it is sitting on, and it alone pushed the whole
-     page into horizontal scroll. `min-width: 0` is what lets a flex item
-     be narrower than its content, the same fix .scrub already carries in
-     responsive.css. */
+     wider than the phone it is sitting on, and it alone pushed the
+     whole page into horizontal scroll. `min-width: 0` is what lets a
+     flex item be narrower than its content, the same fix .scrub already
+     carries in responsive.css. */
   min-width: 0;
   background: var(--surface-alt);
   color: var(--text);
+
   /* --border-input, not --border-soft: at 1.31:1 the old edge and the
      1.24:1 fill left nothing marking this as a field until it was
      focused. See the token's comment in tokens.css. */
@@ -90,10 +97,14 @@
   padding: 11px 14px;
   font-family: var(--font-ui);
   font-size: var(--text-base);
-  transition: border-color var(--transition), box-shadow var(--transition);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 
-.ask-input::placeholder { color: var(--text-placeholder); }
+.ask-input::placeholder {
+  color: var(--text-placeholder);
+}
 
 .ask-input:focus {
   outline: none;
@@ -101,7 +112,8 @@
   box-shadow: 0 0 0 2px var(--signal);
 }
 
-.ask-submit, .ask-reset {
+.ask-submit,
+.ask-reset {
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -109,8 +121,10 @@
   padding: 11px 22px;
   cursor: pointer;
   border: var(--theme-border-base) solid transparent;
-  transition: background-color var(--transition), color var(--transition),
-  border-color var(--transition);
+  transition:
+    background-color var(--transition),
+    color var(--transition),
+    border-color var(--transition);
 }
 
 /* .button-primary */
@@ -120,11 +134,17 @@
   position: relative;
 }
 
-.ask-submit:hover:not([aria-disabled="true"]) { background: var(--signal-hover); }
-.ask-submit:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.ask-submit:hover:not([aria-disabled="true"]) {
+  background: var(--signal-hover);
+}
+
+.ask-submit:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 /* Keyed off aria-disabled rather than :disabled, because the button is
-   never really disabled while a question is out -- see the comment on
+   never really disabled while a question is out — see the comment on
    setPending() in js/panels/ask.js for why it stays focusable. The look
    is identical either way; only the selector changed. */
 .ask-submit[aria-disabled="true"] {
@@ -136,8 +156,10 @@
 .ask-submit[aria-disabled="true"]::after {
   content: "";
   position: absolute;
-  top: 50%; left: 50%;
-  width: 14px; height: 14px;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
   margin: -7px 0 0 -7px;
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-top-color: #fff;
@@ -145,11 +167,15 @@
   animation: spin 0.7s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* .button-neutral: soft border at rest, fills solid primary on hover.
-   The Gateway's default for any control that is not the primary
-   action on its surface. */
+   The Gateway's default for any control that is not the primary action
+   on its surface. */
 .ask-reset {
   background: transparent;
   color: var(--text-dim);
@@ -162,7 +188,10 @@
   color: #fff;
 }
 
-.ask-reset:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.ask-reset:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 .ask-status {
   font-family: var(--font-mono);
@@ -171,7 +200,9 @@
   min-height: 16px;
 }
 
-.ask-status.error { color: var(--danger-text); }
+.ask-status.error {
+  color: var(--danger-text);
+}
 
 .ask-results {
   display: flex;
@@ -180,9 +211,12 @@
   animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.ask-results:empty { display: none; animation: none; }
+.ask-results:empty {
+  display: none;
+  animation: none;
+}
 
-/* Matches PipelineCard's own description paragraph -- no size override
+/* Matches PipelineCard's own description paragraph — no size override
    there, which inherits Tailwind's text-base default. */
 .ask-explanation {
   font-size: var(--text-base);
@@ -193,8 +227,8 @@
 /* surface-50 rather than the surface-100 of --surface-alt: this block
    and the segment rows below carry dimmed text, which lands at 4.48:1
    on surface-100. Grooves and inputs, which don't, keep surface-100.
-   --text-strong (surface-600), not --text-dim: a query's SQL is read
-   in full, not skimmed. */
+   --text-strong (surface-600), not --text-dim: a query's SQL is read in
+   full, not skimmed. */
 .ask-sql {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
@@ -204,7 +238,12 @@
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   white-space: pre-wrap;
-  word-break: break-word;
+
+  /* overflow-wrap, not `word-break: break-word` — that spelling is a
+     non-standard WebKit alias for exactly this and is deprecated. Same
+     behavior: break a long token only when it would otherwise
+     overflow. */
+  overflow-wrap: break-word;
 }
 
 .ask-overlays {
@@ -238,15 +277,15 @@
 }
 
 /* Each row is a <button>, not the <li>. These seek the player, and a
-   click handler on a list item is reachable by pointer only -- the
+   click handler on a list item is reachable by pointer only — the
    sidebar's .person-row is the same control in the same situation and
    was already built this way, so this is that idiom rather than a
    second one.
 
    Everything the row looks like moved onto the button with it: an
    affordance drawn on the <li> would sit one element away from the
-   thing that actually takes focus, and the ring would outline the
-   wrong box. The <li> keeps nothing but its place in the list. */
+   thing that actually takes focus, and the ring would outline the wrong
+   box. The <li> keeps nothing but its place in the list. */
 .ask-segment-list button {
   width: 100%;
   background: var(--surface-50);
@@ -261,7 +300,9 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  transition: background-color var(--transition), border-color var(--transition);
+  transition:
+    background-color var(--transition),
+    border-color var(--transition);
 }
 
 .ask-segment-list button:hover {
@@ -269,7 +310,10 @@
   background: var(--signal-soft);
 }
 
-.ask-segment-list button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.ask-segment-list button:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 .ask-segment-time {
   font-family: var(--font-mono);
@@ -284,16 +328,16 @@
 }
 
 /* A result table's width is whatever the columns the model picked
-   happen to need -- four ordinary ones already come to ~395px, which
-   is wider than a phone and, being a table, will not wrap. Scrolling
-   it inside its own box is the only way it cannot push the page
-   sideways. `min-width: 0` is what actually lets the box be narrower
-   than the table inside it: .ask-results is a flex column, so this
-   wrapper's default floor is its own content's width.
+   happen to need — four ordinary ones already come to ~395px, which is
+   wider than a phone and, being a table, will not wrap. Scrolling it
+   inside its own box is the only way it cannot push the page sideways.
+   `min-width: 0` is what actually lets the box be narrower than the
+   table inside it: .ask-results is a flex column, so this wrapper's
+   default floor is its own content's width.
 
-   Not scoped to a breakpoint -- a wide enough result overflows a
-   desktop card too, and overflow-x: auto costs nothing when the table
-   already fits. */
+   Not scoped to a breakpoint — a wide enough result overflows a desktop
+   card too, and overflow-x: auto costs nothing when the table already
+   fits. */
 .ask-table-wrap {
   min-width: 0;
   overflow-x: auto;
@@ -307,12 +351,19 @@
   font-size: var(--text-sm);
 }
 
-.ask-table th, .ask-table td {
+.ask-table th,
+.ask-table td {
   border-bottom: var(--theme-border-base) solid var(--border);
   padding: 7px 10px;
   text-align: left;
   color: var(--text-dim);
 }
 
-.ask-table th { color: var(--text); font-weight: 600; }
-.ask-table tr:hover td { background: var(--surface-50); }
+.ask-table th {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ask-table tr:hover td {
+  background: var(--surface-50);
+}

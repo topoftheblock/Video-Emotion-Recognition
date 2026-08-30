@@ -1,6 +1,11 @@
-# Runtime deps for the global-identity job only. Deliberately does NOT
-# include dkpro-cassis: this job never opens a CAS. Its entire input and
-# output is the database, which is why it needs nothing but a Postgres
-# driver (the vector maths all happens server-side in pgvector).
-psycopg2-binary>=2.9
-python-dotenv>=1.0
+# Runtime dependencies for the identity linker alone. Deliberately does
+# not include dkpro-cassis: this job never opens a CAS. Its whole input
+# and output is the database, so it needs nothing but a Postgres driver
+# — the vector arithmetic all happens server-side, in pgvector.
+#
+# Ranges are floor-and-ceiling. The floor is the version the project is
+# built and tested against; the ceiling is the next major, so a new
+# major cannot arrive silently and change the program underneath us.
+# Phase 9 adds a lockfile on top, for exact reproducibility.
+psycopg2-binary>=2.9,<3
+python-dotenv>=1.2,<2

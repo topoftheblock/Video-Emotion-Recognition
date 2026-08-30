@@ -1,21 +1,28 @@
-"""
-Guardrails for running LLM-generated SQL against the real database.
+"""Guardrails for running model-written SQL against the database.
 
-Two layers, because neither alone is trustworthy against an LLM that
-might emit something unexpected:
-  1. A syntactic check that the statement is a single read-only
-     `SELECT`/`WITH ... SELECT` -- rejects multi-statement input and
-     any DML/DDL keyword.
-  2. A `SET TRANSACTION READ ONLY` Postgres transaction, which the
-     engine itself enforces regardless of what slipped past (1).
+Two layers, because neither alone is trustworthy against a model that
+may emit something unexpected:
 
-On top of that: every query is capped to `QUERY_AGENT_MAX_ROWS` rows
-by wrapping it in an outer `SELECT * FROM (<query>) AS _sub LIMIT n`,
-and a statement timeout bounds how long a bad query (e.g. a missing
-join condition producing a huge cross product) can run.
+1. A textual check that the statement is a single read-only `SELECT`,
+   optionally led by `WITH`. It rejects multi-statement input and any
+   statement carrying a writing keyword.
+2. A read-only Postgres session, which the engine itself enforces
+   whatever slipped past the first layer.
+
+On top of those, every query is capped to `QUERY_AGENT_MAX_ROWS` by
+wrapping it in an outer `LIMIT`, and a statement timeout bounds how
+long a bad query can run — a missing join condition producing a huge
+cross product, say.
+
+The first layer is deliberately blunt. It matches keywords anywhere in
+the text, so a query mentioning one inside a string literal is refused
+even though it would have been harmless. Refusing a valid query is
+recoverable, since the model is told why and can try again; the
+opposite is not.
 """
 
 import re
+from typing import Any
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -23,9 +30,8 @@ from psycopg2.extras import RealDictCursor
 from ..config import QUERY_AGENT_MAX_ROWS, QUERY_AGENT_STATEMENT_TIMEOUT_MS
 from ..db import get_db_connection
 
-# Keywords that must never appear in agent-generated SQL, even inside
-# a CTE -- this is a blunt but effective belt-and-suspenders check
-# alongside the READ ONLY transaction.
+# Keywords that must never appear in the model's SQL, including inside
+# a CTE. Checked as text, before the database is involved at all.
 _FORBIDDEN_KEYWORDS = re.compile(
     r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|GRANT|REVOKE|CREATE|"
     r"COPY|CALL|EXECUTE|VACUUM|REINDEX|LISTEN|NOTIFY|SET|RESET|"
@@ -41,9 +47,19 @@ class SQLGuardError(ValueError):
 
 
 def validate_select_only(sql: str) -> str:
-    """
-    Raise SQLGuardError unless `sql` is a single SELECT (optionally
-    preceded by WITH ... ) statement. Returns the trimmed statement.
+    """Check that a statement is a single read-only query.
+
+    Args:
+        sql: The candidate statement.
+
+    Returns:
+        The statement, trimmed of surrounding space and any trailing
+        semicolon.
+
+    Raises:
+        SQLGuardError: If it is empty, holds more than one statement,
+            does not begin with SELECT or WITH, or carries a forbidden
+            keyword.
     """
     stripped = sql.strip().rstrip(";").strip()
     if not stripped:
@@ -60,29 +76,42 @@ def validate_select_only(sql: str) -> str:
     return stripped
 
 
-def run_read_only(sql: str, row_limit: int = None):
-    """
-    Validate and execute `sql` as a read-only, row-capped query.
+def run_read_only(
+    sql: str, row_limit: int | None = None
+) -> tuple[list[str], list[dict[str, Any]], bool]:
+    """Validate a query, then run it read-only and row-capped.
 
-    Returns (columns, rows, truncated) where `rows` is a list of plain
-    dicts and `truncated` is True if the result was cut off by the row
-    cap (i.e. more rows existed than we returned).
+    Args:
+        sql: The statement to run.
+        row_limit: The row cap; `QUERY_AGENT_MAX_ROWS` when not given.
+
+    Returns:
+        The column names, the rows as plain dicts, and whether the cap
+        actually cut anything off.
+
+    Raises:
+        SQLGuardError: If validation fails, or the database rejects the
+            query.
     """
     validated = validate_select_only(sql)
     limit = row_limit or QUERY_AGENT_MAX_ROWS
-    # Fetch one extra row so we can tell whether the cap actually
-    # truncated anything, without a separate COUNT(*) round-trip.
+    # One extra row, so the cap can be told from a result that simply
+    # ended, without a second round-trip to count.
     wrapped = f"SELECT * FROM ({validated}) AS _sub LIMIT %s"
 
     conn = get_db_connection()
     try:
         conn.set_session(readonly=True, autocommit=False)
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(f"SET LOCAL statement_timeout = {QUERY_AGENT_STATEMENT_TIMEOUT_MS}")
+            cur.execute(
+                f"SET LOCAL statement_timeout = {QUERY_AGENT_STATEMENT_TIMEOUT_MS}"
+            )
             cur.execute(wrapped, (limit + 1,))
             rows = [dict(row) for row in cur.fetchall()]
-            columns = list(rows[0].keys()) if rows else (
-                [d.name for d in cur.description] if cur.description else []
+            columns = (
+                list(rows[0].keys())
+                if rows
+                else ([d.name for d in cur.description] if cur.description else [])
             )
         conn.rollback()
     except psycopg2.Error as exc:

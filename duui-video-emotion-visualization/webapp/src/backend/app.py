@@ -1,22 +1,24 @@
+"""The FastAPI application: what the webapp serves, and in what order.
+
+Two things reach the browser:
+
+1. The video file itself, from the video store, range-request aware so
+   that seeking works.
+2. One JSON payload per video carrying everything the frontend needs to
+   render subtitles, emotions and bounding boxes in step with playback:
+   sentence segments with their assembled text, per-modality emotions,
+   and the detections.
+
+`create_app` is a factory rather than a module-level `app` so that
+importing this package has no side effects. The directory creation and
+the static mounts, which fail on a missing directory, happen when an
+app is built and not when a test imports a helper. Run it with
+uvicorn's `--factory` flag, as the Dockerfile does:
+
+    uvicorn backend.app:create_app --factory
 """
-Web viewer backend for the DUUI Bundestag pipeline.
 
-Serves two things:
-  1. The video file itself, from VIDEO_DIR (range-request aware, so
-     seeking works) -- see .env's DUUI_VIDEO_DIR.
-  2. A single JSON payload per video with everything the frontend
-     needs to render subtitles, emotions, and bounding boxes in sync
-     with video playback time: sentences (with assembled subtitle
-     text), per-modality emotions, and face/person detections.
-
-`create_app()` is a factory rather than a module-level `app` so that
-importing this package has no side effects -- the VIDEO_DIR mkdir and
-the static mounts (which fail on a missing directory) happen when an
-app is built, not when a test imports a helper. Run it with uvicorn's
---factory flag, as the Dockerfile does:
-
-    uvicorn backend.app:create_app --factory --reload
-"""
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -29,47 +31,53 @@ from .routes import ask, jobs, persons, stats, videos
 
 
 class NoCacheStaticFiles(StaticFiles):
+    """Static files the browser must revalidate on every load.
+
+    The frontend is unversioned — `index.html` asks for `js/main.js`,
+    not `js/main.<hash>.js` — so a browser is free to reuse a cached
+    copy under its own heuristics, and does: after a rebuild it can
+    revalidate the navigation, getting fresh HTML, while serving the
+    module and stylesheet subresources from its disk cache. The result
+    is a page whose HTML has a new control on it and whose JavaScript
+    has never heard of that control, which looks like a broken feature
+    rather than a stale cache.
+
+    `no-cache` does not mean "do not store". The copy is kept, and the
+    ETag `StaticFiles` already sends still turns the check into a 304,
+    so this costs one conditional request per file rather than a
+    re-download.
     """
-    Static files the browser must revalidate on every load.
 
-    The frontend is unversioned -- index.html asks for `js/main.js`,
-    not `js/main.<hash>.js` -- so a browser is free to reuse a cached
-    copy under its own heuristics. It does: after a rebuild, Chrome
-    revalidates the navigation (fresh index.html) while serving the
-    module and stylesheet subresources straight from disk cache. The
-    result is a page whose HTML has a new control on it and whose JS
-    has never heard of that control, which looks exactly like a broken
-    feature rather than a stale cache.
-
-    `no-cache` does not mean "don't store" -- the copy is kept and the
-    ETag StaticFiles already sends still turns the check into a 304, so
-    this costs one conditional request per file, not a re-download.
-    """
-
-    def file_response(self, *args, **kwargs) -> Response:
+    def file_response(self, *args: Any, **kwargs: Any) -> Response:
+        """Serve the file, adding the revalidation header."""
         response = super().file_response(*args, **kwargs)
         response.headers["Cache-Control"] = "no-cache"
         return response
 
 
 def create_app() -> FastAPI:
-    # Same DUUI_VIDEO_DIR the importer writes into
-    # (cas-to-postgres-importer/src/main/media.py) -- this is
-    # the single place both sides agree a video for
-    # `videos.filename = X` lives at `<VIDEO_DIR>/X`. See config.py's
-    # VIDEO_MEDIA_DIR comment and README "Docker architecture".
+    """Build the application: mounts, routes, and the startup checks.
+
+    Returns:
+        The configured application, ready to serve.
+    """
+    # The video store, which the importer writes and this reads. It is
+    # mounted read-only, so this call only ever succeeds because the
+    # image already created the directory and gave it to the runner.
     VIDEO_DIR.mkdir(parents=True, exist_ok=True)
 
-    app = FastAPI(title="DUUI Bundestag Video Viewer")
+    app = FastAPI(title="DUUI Video Emotion Visualization")
 
     @app.get("/healthz")
-    def healthz():
-        """
-        Liveness + DB-connectivity check for orchestrators/`docker
-        compose healthcheck` -- deliberately does a real query, not just
-        "the process is up", since a webapp that's running but can't
-        reach Postgres is not actually healthy from a caller's
-        perspective.
+    def healthz() -> dict[str, str]:
+        """Report liveness, and that the database is actually reachable.
+
+        Deliberately runs a real query rather than answering "the
+        process is up": a webapp that is running but cannot reach
+        Postgres is not healthy from a caller's point of view.
+
+        Raises:
+            HTTPException: 503, when the database cannot be reached.
         """
         try:
             conn = get_db_connection()
@@ -84,9 +92,9 @@ def create_app() -> FastAPI:
             ) from exc
         return {"status": "ok"}
 
-    # The jobs write this table, but the viewer is the service that is
-    # always up, and pgvector-db/schema.sql only runs on a fresh volume -- so it
-    # creates the table too if this database predates the feature.
+    # The jobs write this table, but the webapp is the service that is
+    # always up, and the schema only runs on a fresh volume — so the
+    # webapp creates it too, for a database that predates the feature.
     # Best-effort: a failure here must not stop the app from starting.
     jobs_query.ensure_table()
 

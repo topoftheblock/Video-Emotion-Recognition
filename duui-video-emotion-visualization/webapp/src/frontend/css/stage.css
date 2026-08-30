@@ -1,4 +1,4 @@
-/* ---------------- Stage / video ---------------- */
+/* --- Stage / video -------------------------------------------------- */
 
 .stage-frame {
   position: relative;
@@ -20,17 +20,25 @@
   pointer-events: none;
 }
 
-#player, #overlay {
+#player,
+#overlay {
   position: absolute;
-  top: 0; left: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
 
-#player { object-fit: contain; background: var(--surface-900); }
-#overlay { pointer-events: none; }
+#player {
+  object-fit: contain;
+  background: var(--surface-900);
+}
 
-/* Positioning layer only -- pulled down to 2% so the box sits close to
+#overlay {
+  pointer-events: none;
+}
+
+/* Positioning layer only — pulled down to 2% so the box sits close to
    the bottom edge, the way a streaming player's captions do, rather
    than floating mid-frame. The visual card itself is .subtitle-box, one
    level in, so this can stay a plain non-visual wrapper. */
@@ -45,7 +53,7 @@
   pointer-events: none;
 }
 
-/* Covers the video frame when there is nothing to play -- nothing
+/* Covers the video frame when there is nothing to play — nothing
    imported yet, or a DB row whose file isn't in the video store. Both
    otherwise render as a silent black rectangle. Uses the theme's own
    dark surfaces, which is what the Gateway shows in dark mode. */
@@ -61,11 +69,12 @@
   text-align: center;
   background: linear-gradient(160deg, var(--surface-700), var(--surface-900));
   color: #fff;
-  /* Last resort. .stage-frame.is-empty (below) gives this cover room
-     to lay out at phone widths, so this should not trigger there --
-     but the frame is `overflow: hidden`, and silently clipping the
-     command someone is meant to copy is the one failure mode worth
-     spending a scrollbar to avoid. */
+
+  /* Last resort. .stage-frame.is-empty (below) gives this cover room to
+     lay out at phone widths, so this should not trigger there — but the
+     frame is `overflow: hidden`, and silently clipping the command
+     someone is meant to copy is the one failure mode worth spending a
+     scrollbar to avoid. */
   overflow-y: auto;
 }
 
@@ -87,7 +96,7 @@
 }
 
 /* Inline code, matched to Skeleton's .badge/.chip default (text-xs,
-   12px). `overflow-wrap: anywhere` because these are shell commands --
+   12px). `overflow-wrap: anywhere` because these are shell commands —
    one unbroken `--input /data/input/xmi` run is longer than a phone is
    wide, and normal word-wrapping will not break inside it. */
 .empty-state-command {
@@ -103,10 +112,10 @@
   user-select: all;
 }
 
-/* The one translucent card, holding both lines -- plain translucency,
-   no blur, the flat dark band streaming players use under a caption
-   rather than a frosted-glass pill. Hidden by JS (subtitles.js) rather
-   than :empty when both lines are empty, since a container with two
+/* The one translucent card, holding both lines — plain translucency, no
+   blur, the flat dark band streaming players use under a caption rather
+   than a frosted-glass pill. Hidden by JS (subtitles.js) rather than
+   :empty when both lines are empty, since a container with two
    (possibly textless) child spans is never DOM-:empty itself. */
 .subtitle-box {
   display: flex;
@@ -129,11 +138,11 @@
   line-height: 1.35;
 }
 
-/* Sits over video, so it takes the light end of the primary ramp
-   rather than the primary-700 the same read-out uses against white in
-   the sidebar panels. Sized off .subtitle-text's own clamp() rather
-   than a fixed px, so "very slightly smaller" holds at every viewport
-   instead of just the one it was tuned at. */
+/* Sits over video, so it takes the light end of the primary ramp rather
+   than the primary-700 the same read-out uses against white in the
+   sidebar panels. Sized off .subtitle-text's own clamp() rather than a
+   fixed px, so "very slightly smaller" holds at every viewport instead
+   of just the one it was tuned at. */
 .subtitle-emotion {
   font-family: var(--font-mono);
   font-size: var(--text-subtitle-emotion);
@@ -144,14 +153,19 @@
   text-transform: uppercase;
 }
 
-/* Padding alone would otherwise leave a small dark blob over the
-   video wherever the playhead has no caption -- collapses an empty
-   line's own box so it doesn't hold the shared gap open when the other
-   line is the only one with something to show. */
-.subtitle-text:empty { display: none; }
-.subtitle-emotion:empty { display: none; }
+/* Padding alone would otherwise leave a small dark blob over the video
+   wherever the playhead has no caption — collapses an empty line's own
+   box so it doesn't hold the shared gap open when the other line is the
+   only one with something to show. */
+.subtitle-text:empty {
+  display: none;
+}
 
-/* ---------------- Transport ---------------- */
+.subtitle-emotion:empty {
+  display: none;
+}
+
+/* --- Transport ------------------------------------------------------ */
 
 .transport {
   display: flex;
@@ -182,18 +196,24 @@
   transition: background-color var(--transition);
 }
 
-/* 20px in a 40px button -- half the diameter. The glyphs this replaced
+/* 20px in a 40px button — half the diameter. The glyphs this replaced
    sat at 13px, which read as small for the only filled control in the
    transport. `display: block` keeps the inline-baseline gap from
-   nudging the icon off the vertical centre. */
+   nudging the icon off the vertical center. */
 .transport-btn svg {
   width: 20px;
   height: 20px;
   display: block;
 }
 
-.transport-btn:hover { background: var(--signal-hover); }
-.transport-btn:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.transport-btn:hover {
+  background: var(--signal-hover);
+}
+
+.transport-btn:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 /* CC switch, built as the Gateway's .button-neutral: soft border while
    off, filling solid primary on hover. On is the filled state outright,
@@ -211,8 +231,10 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   cursor: pointer;
-  transition: background-color var(--transition), color var(--transition),
-  border-color var(--transition);
+  transition:
+    background-color var(--transition),
+    color var(--transition),
+    border-color var(--transition);
 }
 
 .transport-toggle:hover {
@@ -227,7 +249,10 @@
   color: #fff;
 }
 
-.transport-toggle.is-on:hover { background: var(--signal-hover); border-color: var(--signal-hover); }
+.transport-toggle.is-on:hover {
+  background: var(--signal-hover);
+  border-color: var(--signal-hover);
+}
 
 .transport-toggle:focus-visible {
   outline: 2px solid var(--signal);
@@ -242,10 +267,13 @@
   white-space: nowrap;
 }
 
-/* Was --text-faint (surface-300, #a7a9ae) -- 2.35:1 on white, an
+/* Was --text-faint (surface-300, #a7a9ae) — 2.35:1 on white, an
    outright AA failure. --text-dim is what the rest of the transport
    already uses. */
-.time-sep { color: var(--text-dim); margin: 0 1px; }
+.time-sep {
+  color: var(--text-dim);
+  margin: 0 1px;
+}
 
 .scrub {
   flex: 1;

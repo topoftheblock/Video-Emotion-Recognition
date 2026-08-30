@@ -1,15 +1,16 @@
+// @ts-check
 /**
  * The banner under the header: "an import is running, here is how far
  * it has got".
  *
- * The importer and the cross-video identity job write their progress
- * to `job_runs` (see each job's job_runs.py); this polls GET /api/jobs
- * and renders whatever is running. Nothing running means an empty,
- * collapsed banner -- the page should look exactly as it did before
- * this feature existed for the 99% of the time no job is going.
+ * The importer and the cross-video identity job write their progress to
+ * `job_runs` (see each job's job_runs.py); this polls GET /api/jobs and
+ * renders whatever is running. Nothing running means an empty,
+ * collapsed banner — the page should look exactly as it did before this
+ * feature existed for the 99% of the time no job is going.
  *
- * Polling is the whole cost of the feature, so it is kept honest in
- * two ways:
+ * Polling is the whole cost of the feature, so it is kept honest in two
+ * ways:
  *
  *   - **Nothing polls while the tab is hidden.** A backgrounded tab
  *     nobody is looking at is where the waste would be; the poll stops
@@ -19,12 +20,12 @@
  *   - **The interval backs off when there is nothing to watch.** Ten
  *     seconds while idle, two once a job is detected. Each poll is one
  *     new Postgres connection (see backend/db.py), so the idle rate is
- *     what the DB actually pays nearly all the time -- roughly what
+ *     what the DB actually pays nearly all the time — roughly what
  *     the compose healthcheck already costs.
  */
 
-import { fetchRunningJobs } from "../api.js";
-import { el, html } from "../dom.js";
+import { fetchRunningJobs } from "../lib/api.js";
+import { el, html } from "../lib/dom.js";
 
 const POLL_IDLE_MS = 10000;
 const POLL_ACTIVE_MS = 2000;
@@ -89,9 +90,9 @@ function jobRow(job) {
   const counted = job.progress_total > 0 && job.progress_current != null;
   const percent = counted ? (job.progress_current / job.progress_total) * 100 : 0;
 
-  // A job whose heartbeat has stopped is the one case where the
-  // banner has to contradict its own row: the status still says
-  // running, but nothing is writing it any more.
+  // A job whose heartbeat has stopped is the one case where the banner
+  // has to contradict its own row: the status still says running, but
+  // nothing is writing it any more.
   if (job.stale) {
     return html`<div class="job-row job-row-stale">
       <span class="job-spinner job-spinner-stale" aria-hidden="true"></span>
@@ -110,8 +111,7 @@ function jobRow(job) {
     <div class="job-text">
       <strong>${title}</strong>
       <span class="job-detail">
-        ${counted ? `${job.progress_current}/${job.progress_total}` : ""}
-        ${detail}
+        ${counted ? `${job.progress_current}/${job.progress_total}` : ""} ${detail}
         <span class="job-elapsed">${formatDuration(job.elapsed_seconds)}</span>
       </span>
       <!-- Determinate only when the job actually counts something.
@@ -124,7 +124,7 @@ function jobRow(job) {
   </div>`;
 }
 
-/** "2m 14s" -- long enough runs are the point, so hours count too. */
+/** "2m 14s" — long enough runs are the point, so hours count too. */
 function formatDuration(seconds) {
   const total = Math.max(0, Math.round(seconds || 0));
   const hours = Math.floor(total / 3600);

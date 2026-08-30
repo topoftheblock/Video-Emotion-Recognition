@@ -1,24 +1,26 @@
-/* ---------------- Base ----------------
+/* --- Base ----------------------------------------------------------- */
+
+/*
    Element defaults plus the page backdrop. Mirrors the Gateway's
    app.postcss: Oxanium everywhere, and the soft two-stop `.gradient`
    wash behind the whole page.
-------------------------------------------------------------------*/
+------------------------------------------------------------------ */
 
 /* Every self-hosted family lives in its own fonts/<family>/ folder,
-   next to that family's own licence file -- fonts/oxanium/OFL.txt,
+   next to that family's own license file — fonts/oxanium/OFL.txt,
    fonts/ubuntu-mono/UFL.txt, fonts/roboto/OFL.txt. One font, one
-   licence, one directory: nothing to cross-reference when a licence
+   license, one directory: nothing to cross-reference when a license
    needs checking or a family needs pulling out. */
 
-/* Oxanium -- the same file DUUIWeb ships in static/fonts/.
+/* Oxanium — the same file DUUIWeb ships in static/fonts/.
 
    Variable (wght 200-800) in a single 42KB file. DUUIWeb's @font-face
    omits the weight range, which pins the axis at 400 and leaves the
-   browser to synthesise every bold; declaring the real range here means
+   browser to synthesize every bold; declaring the real range here means
    600/700 render as drawn glyphs instead. Same typeface, just not
    faked. */
 @font-face {
-  font-family: "Oxanium";
+  font-family: Oxanium;
   src: url("../fonts/oxanium/Oxanium.ttf") format("truetype-variations");
   font-weight: 200 800;
   font-style: normal;
@@ -28,21 +30,22 @@
 /* Ubuntu Mono, from the official ubuntu-font-family-0.83 release rather
    than the lone Regular that DUUIWeb bundles. Same font, same version
    (0.80), but the release carries the real Bold and Italic faces, so
-   nothing here is synthesised.
+   nothing here is synthesized.
 
-   All four faces of the family, for completeness -- three of them
-   match what the app currently asks for:
-     400 normal  -- the default for every read-out
-     700 normal  -- what a request for 600 (.emo-dominant, .ask-table
-                    th) resolves to, since CSS matching walks upward
-                    from any desired weight above 500
-     400 italic  -- .emo-row-dim .emo-label, the valence/arousal/
-                    dominance rows in the emotion panels
-     700 italic  -- unused today; shipped so the family is whole rather
-                    than missing its one remaining combination
+   All four faces of the family are declared. Three of them match what
+   the page currently asks for:
+
+     400 normal  the default for every read-out
+     700 normal  what a request for 600 (.emo-dominant, .ask-table th)
+                 resolves to, since CSS weight matching walks upward
+                 from any desired weight above 500
+     400 italic  .emo-row-dim .emo-label, the valence/arousal/dominance
+                 rows in the emotion panels
+     700 italic  unused today; shipped so the family is whole rather
+                 than missing its one remaining combination
+
    Note that 500 (.time-readout, .emo-now) resolves *down* to 400 by the
-   same weight-matching rule -- a real Regular, not a synthesised
-   in-between. */
+   same rule — a real Regular, not a synthesized in-between. */
 @font-face {
   font-family: "Ubuntu Mono";
   src: url("../fonts/ubuntu-mono/UbuntuMono-R.ttf") format("truetype");
@@ -75,55 +78,62 @@
   font-display: swap;
 }
 
-/* Roboto -- the subtitle track's font (see .subtitle-text in
-   stage.css), and deliberately not used anywhere else. Everything else
-   in the app is UI chrome or a data read-out, in Oxanium or Ubuntu Mono
-   respectively; subtitles are neither -- they're prose, sourced from
-   the video's own transcript, sitting over footage rather than next to
-   it. Oxanium's squared-off geometry is built to be a display/heading
-   face and gets harder to read at the small sizes a caption track
-   needs; Roboto is a humanist grotesque designed for exactly that,
-   which is why it's the default on both major mobile caption stacks.
+/* Roboto — the subtitle track's font (see .subtitle-text in stage.css),
+   and deliberately not used anywhere else. Everything else in the app
+   is UI chrome or a data read-out, in Oxanium or Ubuntu Mono
+   respectively; subtitles are neither — they're prose, sourced from the
+   video's own transcript, sitting over footage rather than next to it.
+   Oxanium's squared-off geometry is built to be a display/heading face
+   and gets harder to read at the small sizes a caption track needs;
+   Roboto is a humanist grotesque designed for exactly that, which is
+   why it's the default on both major mobile caption stacks.
 
    Two files cover the whole family: variable wght 100-900 on both the
    upright and (separately, since italic is a distinct axis Roboto
    doesn't expose as a variable dimension within one file) the italic
    face. Nothing here currently sets font-style: italic, but the second
-   file is 42KB and keeps the family complete rather than half-shipped. */
+   file is 42KB and keeps the family complete rather than half-shipped.
+   */
 @font-face {
-  font-family: "Roboto";
-  src: url("../fonts/roboto/Roboto-VariableFont_wdth,wght.ttf") format("truetype-variations");
+  font-family: Roboto;
+  src: url("../fonts/roboto/Roboto-VariableFont_wdth,wght.ttf")
+    format("truetype-variations");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Roboto";
-  src: url("../fonts/roboto/Roboto-Italic-VariableFont_wdth,wght.ttf") format("truetype-variations");
+  font-family: Roboto;
+  src: url("../fonts/roboto/Roboto-Italic-VariableFont_wdth,wght.ttf")
+    format("truetype-variations");
   font-weight: 100 900;
   font-style: italic;
   font-display: swap;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 html {
   background: var(--bg);
+
   /* tokens.css resolves every ramp at its light-mode value and says so
-     -- but nothing had told the browser, which leaves the UA free to
+     — but nothing had told the browser, which leaves the UA free to
      render its own widgets dark on a system set to dark: the range
      input's track and thumb, the text fields, the scrollbars. Declaring
      the scheme is what stops a dark scrubber appearing on a light
      transport bar.
 
      This is the honest minimum, not dark-mode support. Actually
-     supporting dark means a second set of ramps and is a separate
-     piece of work. */
+     supporting dark means a second set of ramps and is a separate piece
+     of work. */
   color-scheme: light;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   min-height: 100%;
   color: var(--text);
@@ -133,9 +143,9 @@ html, body {
 
 /* The Gateway's `.gradient`: bg-gradient-to-tr, tertiary-100 at 20%
    into surface-200 at 50%, over the surface floor. Warm off-white at
-   the bottom-left grading to a cool grey at the top-right. Fixed so it
+   the bottom-left grading to a cool gray at the top-right. Fixed so it
    reads as a backdrop rather than something that scrolls with content
-   -- this is what the old .mesh-bg layer was doing, folded into body
+   — this is what the old .mesh-bg layer was doing, folded into body
    now that it is a single gradient instead of three radials. */
 body {
   position: relative;
@@ -149,7 +159,14 @@ body {
   background-attachment: fixed;
 }
 
-h1, h2, h3, h4, h5, h6 { font-weight: bold; }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: bold;
+}
 
 /* Out of the layout, still in the accessibility tree.
 
@@ -159,9 +176,9 @@ h1, h2, h3, h4, h5, h6 { font-weight: bold; }
    and `title` cannot be reached from a keyboard at all. A real element
    that simply isn't painted is the only thing that works for everyone.
 
-   The 1px-clip idiom specifically -- `display: none` and
-   `visibility: hidden` would take the element out of the accessibility
-   tree along with the layout, which is the opposite of the point. */
+   The 1px-clip idiom specifically — `display: none` and `visibility:
+   hidden` would take the element out of the accessibility tree along
+   with the layout, which is the opposite of the point. */
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -177,9 +194,9 @@ h1, h2, h3, h4, h5, h6 { font-weight: bold; }
 /* The skip link: clipped away until it is focused, then a real control
    in the top-left corner.
 
-   Same clip idiom as .visually-hidden above rather than `display: none`,
-   for the same reason and one more -- a display:none link cannot be
-   focused, so it could never be reached to be revealed. Only the
+   Same clip idiom as .visually-hidden above rather than `display:
+   none`, for the same reason and one more — a display:none link cannot
+   be focused, so it could never be reached to be revealed. Only the
    geometry moves on :focus; the look below applies either way and costs
    nothing while the element is one pixel wide.
 
@@ -192,11 +209,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: bold; }
   z-index: 40;
 
   /* Anything that changes the box lives in the :focus rule below, not
-     here. `* { box-sizing: border-box }` is set at the top of this file,
-     so padding and border are *inside* a declared width -- leaving them
-     on this rule would floor the hidden box at the size of its own
-     padding (34x22, not 1x1) and make the clip the only thing hiding
-     it. Kept to the paint properties, which cost nothing at one pixel. */
+     here. `* { box-sizing: border-box }` is set at the top of this
+     file, so padding and border are *inside* a declared width — leaving
+     them on this rule would floor the hidden box at the size of its own
+     padding (34x22, not 1x1) and leave clipping as the only thing
+     hiding it. Kept to the paint properties, which cost nothing at one
+     pixel. */
   width: 1px;
   height: 1px;
   margin: 0;
@@ -205,7 +223,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: bold; }
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-
   background: var(--surface);
   color: var(--signal-strong);
   border-radius: var(--radius-sm);
@@ -226,15 +243,29 @@ h1, h2, h3, h4, h5, h6 { font-weight: bold; }
   clip-path: none;
 }
 
-::selection { background: var(--signal-soft); color: var(--signal-strong); }
+::selection {
+  background: var(--signal-soft);
+  color: var(--signal-strong);
+}
 
 /* Skeleton paints the scrollbar thumb in primary-500. */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 ::-webkit-scrollbar-thumb {
   background: var(--signal);
   border-radius: var(--radius-sm);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--signal-strong); background-clip: padding-box; }
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--signal-strong);
+  background-clip: padding-box;
+}

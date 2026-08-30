@@ -1,0 +1,68 @@
+#!/bin/sh
+# Fast checks before a commit is created. Formatting and lint only — the
+# type checker, the link check and the Node tools stay in CI, where a
+# few seconds cost nothing. A hook that makes committing slow is a hook
+# people bypass.
+#
+# Install (from anywhere in the repository):
+#
+#     git config core.hooksPath duui-video-emotion-visualization/tests/hooks
+#
+# Bypass a single commit with `git commit --no-verify`. That is
+# deliberate: a gate that cannot be stepped over gets worked around
+# instead.
+#
+# --- Scoped to this project ---------------------------------------------
+# This hook is repository-wide, and this repository holds a dozen
+# unrelated projects. core.hooksPath cannot be scoped to a subdirectory,
+# so the hook scopes itself — exactly as the CI workflow does with its
+# `paths:` filter. A commit that touches nothing here passes straight
+# through.
+set -e
+
+PROJECT="duui-video-emotion-visualization"
+
+# Staged Python files inside this project, as paths from the repository
+# root, which is how git reports them.
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- \
+  "$PROJECT/**/*.py" "$PROJECT/*.py")
+[ -z "$staged" ] && exit 0
+
+root=$(git rev-parse --show-toplevel)
+
+# A local ruff if there is one — it starts in milliseconds. Otherwise
+# the same version the lint image carries, through Docker, which every
+# contributor already needs for this project. Installing ruff is an
+# optimisation, not a requirement:
+#
+#     pipx install ruff        (or: uv tool install ruff)
+#
+# The cache goes to /tmp either way: the repository root is not writable
+# from inside the container, and a checker should not leave anything in
+# the tree.
+if command -v ruff >/dev/null 2>&1; then
+  run_ruff() { (cd "$root" && RUFF_CACHE_DIR=/tmp/ruff-cache ruff "$@"); }
+else
+  run_ruff() {
+    docker run --rm -v "$root":/w -w /w \
+      -e RUFF_CACHE_DIR=/tmp/ruff-cache \
+      --entrypoint ruff "$PROJECT/lint:latest" "$@"
+  }
+fi
+
+echo "pre-commit: checking $(echo "$staged" | wc -l) staged Python file(s)"
+
+if ! run_ruff format --check $staged; then
+  echo
+  echo "  Formatting. Fix with:"
+  echo "    docker compose run --rm --entrypoint ruff lint format ."
+  exit 1
+fi
+
+if ! run_ruff check $staged; then
+  echo
+  echo "  Lint. Some findings are fixable with:  ruff check --fix"
+  exit 1
+fi
+
+echo "pre-commit: ok"
