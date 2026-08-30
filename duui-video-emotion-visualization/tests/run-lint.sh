@@ -56,21 +56,29 @@ run "prettier"     prettier --check .
 run "stylelint"    stylelint "webapp/src/frontend/css/*.css"
 # Validity only: unclosed tags, bad nesting, an attribute that does not
 # belong on an element. Whether the markup is *usable* — that a control
-# has a name, that the tab order is sane, that a reference resolves — is
-# webapp/tests/support/markup_check.py, driven by test_markup.py. A
+# has a name, that the tab order is sane, that a reference resolves —
+# is webapp/tests/support/markup_check.py, driven by test_markup.py. A
 # document can be perfectly valid and unusable, which is why both exist.
 # Neither should grow into the other.
 run "html-validate" html-validate webapp/src/frontend/index.html
 run "markdownlint" markdownlint-cli2
 run "links"        python /app/tests/check_links.py
 
-# The style guide and the glossary, on every sub-project. No other
-# checker enforces prose width, em dashes, glossary terms or docstring
-# coverage, so without this they would hold only by review.
-for project in global-identity-linker cas-to-postgres-importer webapp; do
-  run "style ($project)" python /app/tests/stylecheck.py "$project" \
-    --exempt cas/types.py query_agent/schema_context.py
-done
+# The style guide and the glossary. No other checker enforces prose
+# width, em dashes, glossary terms or docstring coverage, so without
+# this they would hold only by review.
+#
+# One run over the whole project, not one per sub-project: the earlier
+# form left pgvector-db, this directory and the root config files
+# unchecked, which is where the violations it later found had collected.
+#
+# The exemptions are files whose *subject* is the thing being checked:
+# two modules that describe UIMA type names and the schema the query
+# agent is given, and this checker's own rule table, which holds every
+# retired term by definition.
+run "style" python /app/tests/stylecheck.py . \
+  --exempt cas/types.py query_agent/schema_context.py \
+  --exempt-terms tests/stylecheck.py
 
 # The only workflow-shaped file inside this project. The real workflow
 # lives in the repository root's .github/workflows, one directory above

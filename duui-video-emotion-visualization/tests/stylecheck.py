@@ -83,9 +83,22 @@ CHECKED_NAMES = ("Dockerfile", ".dockerignore", "requirements.txt")
 # `Dockerfile.tests` and the like: same comment syntax, same rules.
 CHECKED_PREFIXES = ("Dockerfile.",)
 
-# Not source: vendored font licences, and recorded measurements that are
-# data rather than prose anyone wrote.
-SKIP_PARTS = ("__pycache__", "resources", "fonts", "a11y-baseline", "legacy")
+# Not source: vendored font licenses, recorded measurements that are
+# data rather than prose anyone wrote, and the caches and installed
+# packages a development machine accumulates. The last never appears
+# in the lint image, where the mount is the repository; it appears when
+# the checker is run against a working tree.
+SKIP_PARTS = (
+    "__pycache__",
+    "resources",
+    "fonts",
+    "a11y-baseline",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "node_modules",
+)
 
 # The same, in the C-comment languages: `/* --- Name --- */`.
 CSS_BANNER_OK = re.compile(r"^/\* --- [^\s-].*? -{3,} \*/$")
@@ -165,13 +178,19 @@ def prose_lines(src: str, path: pathlib.Path) -> set[int]:
     return lines
 
 
-def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
+def check_file(
+    path: pathlib.Path, exempt: bool, exempt_terms: bool = False
+) -> list[tuple[int, str, str]]:
     """Check one file against every rule.
 
     Args:
         path: The file to check.
         exempt: Whether the file is exempt from the width limits, which
             data files that happen to end in `.py` are.
+        exempt_terms: Whether the file is exempt from the glossary,
+            which a file whose *subject* is the glossary has to be:
+            this module's own rule table holds every retired term by
+            definition.
 
     Returns:
         `(line, kind, message)` per finding.
@@ -229,6 +248,8 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
             for pattern, flags, message in GLOSSARY + CORPUS:
                 if colourish and "corpus figures" in message:
                     continue
+                if exempt_terms and (pattern, flags, message) in GLOSSARY:
+                    continue
                 if re.search(pattern, line, flags):
                     found.append((number, "term", message))
 
@@ -284,7 +305,7 @@ def check_file(path: pathlib.Path, exempt: bool) -> list[tuple[int, str, str]]:
     # messages and anything the reader sees under the same rules. Three
     # of these reached the browser before this check existed.
     for number, line in enumerate(lines, start=1):
-        if number in prose or not re.search(r"[\"'`]", line):
+        if exempt_terms or number in prose or not re.search(r"[\"'`]", line):
             continue
         for text in re.findall(r"\"([^\"]{12,})\"|'([^']{12,})'|`([^`]{12,})`", line):
             literal = next(part for part in text if part)
@@ -304,6 +325,12 @@ def main() -> int:
         default=[],
         help="path suffixes exempt from the width limits",
     )
+    parser.add_argument(
+        "--exempt-terms",
+        nargs="*",
+        default=[],
+        help="path suffixes exempt from the glossary",
+    )
     args = parser.parse_args()
 
     files = sorted(
@@ -322,7 +349,8 @@ def main() -> int:
     total = 0
     for path in files:
         exempt = any(str(path).endswith(suffix) for suffix in args.exempt)
-        for number, kind, message in check_file(path, exempt):
+        exempt_terms = any(str(path).endswith(suffix) for suffix in args.exempt_terms)
+        for number, kind, message in check_file(path, exempt, exempt_terms):
             by_kind.setdefault(kind, []).append(f"{path}:{number}: {message}")
             total += 1
 
