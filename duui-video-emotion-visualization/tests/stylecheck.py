@@ -111,6 +111,12 @@ SPELLING = [
 ]
 SPELLING_EXEMPT = ("aria-labelledby", "Ubuntu Font Licence")
 
+# `docs/plan/` is excluded by decision (2026-08-30). Those files record
+# what was found and decided on a date; correcting a spelling in one
+# edits the evidence rather than the software. The guide binds what the
+# project says, not the account of how it got there.
+SPELLING_SKIP_DIRS = ("docs/plan",)
+
 CHECKED_SUFFIXES = (
     ".py",
     ".toml",
@@ -122,6 +128,11 @@ CHECKED_SUFFIXES = (
     ".sql",
     ".cjs",
     ".jsonc",
+    # Markdown is read for the spelling rule and nothing else: its prose
+    # wraps at 80 rather than 72, and markdownlint already owns that,
+    # its em dashes cannot be told from a documented `--flag` inside a
+    # fence, and it has no banners or docstrings. See `prose_lines`.
+    ".md",
 )
 # Files carrying real prose no suffix rule reaches: config dotfiles, and
 # a shell script named for the git hook it installs as.
@@ -227,6 +238,10 @@ def prose_lines(src: str, path: pathlib.Path) -> set[int]:
         Every line number that carries prose rather than code.
     """
     lines: set[int] = set()
+    if path.suffix == ".md":
+        # No prose lines, so every rule keyed on prose stays silent and
+        # only the spelling pass, which reads every line, applies.
+        return lines
     if path.suffix == ".py":
         for node in ast.walk(ast.parse(src)):
             doc = docstring_node(node)
@@ -296,7 +311,8 @@ def check_file(
     lines = src.split("\n")
     found: list[tuple[int, str, str]] = []
 
-    spelling_lines = _spelling_findings(lines)
+    in_skipped_dir = any(skipped in path.as_posix() for skipped in SPELLING_SKIP_DIRS)
+    spelling_lines = [] if in_skipped_dir else _spelling_findings(lines)
     try:
         prose = prose_lines(src, path)
     except SyntaxError as exc:
@@ -335,8 +351,9 @@ def check_file(
             # Code width belongs to the tool that already owns it:
             # prettier and stylelint for the C-comment languages,
             # yamllint for YAML — which exempts an unbreakable inline
-            # value on purpose. Two checkers disagreeing helps nobody.
-            elif path.suffix not in (".js", ".css", ".html", ".yml"):
+            # value on purpose, and markdownlint for Markdown, at 80
+            # rather than 88. Two checkers disagreeing helps nobody.
+            elif path.suffix not in (".js", ".css", ".html", ".yml", ".md"):
                 # A URL is one token and cannot be broken, so the width
                 # rule has nothing to offer there.
                 if len(line) > CODE_WIDTH and not re.search(r"https?://\S", line):
@@ -414,8 +431,14 @@ def check_file(
     # than a comment: §9 of the style guide puts log lines, error
     # messages and anything the reader sees under the same rules. Three
     # of these reached the browser before this check existed.
+    # Markdown is read for the spelling rule alone. It has no string
+    # literals — a quotation mark is just punctuation — and the one
+    # document most full of retired terms is the glossary, which has to
+    # name them in order to retire them.
     for number, line in enumerate(lines, start=1):
-        if exempt_terms or number in prose or not re.search(r"[\"'`]", line):
+        if path.suffix == ".md" or exempt_terms:
+            break
+        if number in prose or not re.search(r"[\"'`]", line):
             continue
         for text in re.findall(r"\"([^\"]{12,})\"|'([^']{12,})'|`([^`]{12,})`", line):
             literal = next(part for part in text if part)

@@ -178,6 +178,65 @@ def test_the_ubuntu_font_licence_keeps_its_name(tmp_path: pathlib.Path) -> None:
     assert kinds(path) == []
 
 
+# --- Markdown, which gets the spelling rule and nothing else ------------
+
+
+def test_the_glossary_may_name_the_terms_it_retires(tmp_path: pathlib.Path) -> None:
+    """Markdown gets the spelling rule and not the glossary rule.
+
+    The document that lists every retired term is the glossary, and it
+    has to write them down in order to retire them.
+    """
+    path = write(tmp_path, "a.md", 'Use "the webapp", never "viewer".\n')
+    assert kinds(path) == []
+
+
+def test_a_british_spelling_in_markdown_is_found(tmp_path: pathlib.Path) -> None:
+    """The documents held most of Phase 8's 185 occurrences."""
+    path = write(tmp_path, "a.md", "The colour of it.\n")
+    assert kinds(path) == ["spelling"]
+
+
+def test_markdown_prose_is_not_measured_at_72(tmp_path: pathlib.Path) -> None:
+    """Markdown wraps at 80, which markdownlint already enforces.
+
+    Applying this checker's 72-column rule to Markdown would
+    contradict the guide and duplicate a tool that owns it.
+    """
+    path = write(tmp_path, "a.md", "word " * 16 + "\n")
+    assert kinds(path) == []
+
+
+def test_a_markdown_table_is_not_measured_at_88(tmp_path: pathlib.Path) -> None:
+    """Markdown width belongs to markdownlint, at 80 and with exempts.
+
+    A table row cannot be wrapped, and markdownlint exempts tables for
+    exactly that reason. Measuring them here as code would report every
+    document in the project.
+    """
+    path = write(tmp_path, "a.md", "| " + "cell | " * 20 + "\n")
+    assert kinds(path) == []
+
+
+def test_a_markdown_code_fence_is_not_read_as_prose(tmp_path: pathlib.Path) -> None:
+    """A documented flag is not a legacy em dash."""
+    path = write(tmp_path, "a.md", "```bash\ngit diff --cached -- src/\n```\n")
+    assert kinds(path) == []
+
+
+def test_the_plan_is_exempt_from_the_spelling_rule(tmp_path: pathlib.Path) -> None:
+    """`docs/plan/` records what was found on a date; it is evidence.
+
+    Rewriting it to fix a spelling edits the record rather than
+    the software, which is why the owner excluded it.
+    """
+    plan = tmp_path / "docs" / "plan"
+    plan.mkdir(parents=True)
+    path = plan / "phase-1.md"
+    path.write_text("The colour it was then.\n")
+    assert kinds(path) == []
+
+
 # --- Rules that already existed, so the extension cannot break them -----
 
 

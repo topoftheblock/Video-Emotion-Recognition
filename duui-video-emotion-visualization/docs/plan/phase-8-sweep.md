@@ -301,7 +301,15 @@ Answered 2026-08-30.
 - The 17 documents read end to end, with what that found either fixed or
   recorded in `docs/todo.md`.
 - No British spelling left in a shipped file, and a rule that fails the
-  build if one returns.
+  build if one returns — **in the documents as well as the code**. The
+  first version of that rule reached neither: `stylecheck.py` did not
+  read `.md` at all, so the 17 documents, which held most of the 185
+  occurrences, were clean only because they had been corrected by hand.
+  Markdown now gets the spelling rule and nothing else: its width
+  belongs to markdownlint at 80, its `--` cannot be told from a
+  documented flag inside a fence, and the one document most full of
+  retired terms is the glossary, which has to name them to retire them.
+  `docs/plan/` is exempt, per §8.9 answer 1.
 - A fresh clone reaches a working stack following only the root README.
 - CI either observed, or recorded as unobserved with the reason.
 
