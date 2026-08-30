@@ -236,31 +236,40 @@ the failure this whole plan exists to correct.
    and now green from a fresh clone as well, which they were not before
    §8.5.
 
-### Still open
+### Observed 2026-08-31 — closed
 
-**Nobody has seen this workflow run.** By the project owner's decision
-the phase waits for that rather than closing around it.
+**The workflow has now run, and it was green.** Not taken on report: read
+back from the GitHub API afterwards, because "CI is green" and "*this*
+workflow is green" are different claims, and the repository carries a
+second, older workflow that runs on every pull request with no `paths:`
+filter at all.
 
-**And pushing the cleanup branch will not produce a run.** Checked while
-merging: the workflow's `push` trigger is scoped `branches: [main]`, so
-only a push to `main` fires it. A push of `code-cleanup/main` matches the
-`paths:` filter and still does nothing, because the branch filter is
-evaluated first. Three ways to actually see it:
+| | |
+| --- | --- |
+| Workflow | `Video Emotion Visualization`, `.github/workflows/duui-video-emotion-visualization.yml`, active |
+| Run 1 | `pull_request` from `code-cleanup/main` — **success** |
+| Run 2 | `push` to `main`, the merge landing — **success** |
+| Jobs, both runs | `lint` and `tests`, every step success |
+| Total runs, all time | 2 |
 
-1. **Open a pull request** from `code-cleanup/main` to `main`. The
-   `pull_request:` trigger carries the same `paths:` filter and no branch
-   filter, so this fires. It is also how the final merge should happen,
-   so the run is not make-work.
-2. **`workflow_dispatch`** — the manual button, already declared. Fires
-   on demand but proves nothing about the filters, since a manual run
-   ignores them.
-3. **Wait for the final merge to `main`**, which is the end of Phase 9.
+Both jobs ran on GitHub's runners rather than this machine: the lint
+image built and every checker ran, the test image built and the suites
+ran. That is the first time anything in this cleanup has been executed
+anywhere but here, and after Phase 8's SELinux finding it was not a
+foregone conclusion.
 
-Option 1 is the one that observes what the plan actually wants. The
-second half — that a sibling project's change stays silent — needs a
-commit touching only a sibling, which is nothing this cleanup should
-manufacture; it is best observed opportunistically the next time one
-changes.
+"Total runs, all time: 2" is itself the useful number — the workflow
+fired for exactly the two events that touch this project and for nothing
+else in the repository's history since it was added.
+
+**The negative half stays unobserved**, and honestly so. That a change to
+one of the eleven sibling projects leaves this workflow silent is
+established by matching the `paths:` filters against every tracked file —
+201 inside, all matched; 179 outside, none matched — and by the fact that
+the workflow has never fired for anything else. It has not been watched
+*not* happening, because no sibling-only change has been pushed since.
+That is a thing to notice the next time one is, not a reason to hold the
+phase open.
 
 ## 8.7 Small things found while measuring
 

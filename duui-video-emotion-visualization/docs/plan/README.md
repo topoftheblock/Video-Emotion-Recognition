@@ -1,5 +1,14 @@
 # Cleanup & Documentation Plan
 
+**Finished 2026-08-31.** All ten phases are closed and
+`code-cleanup/main` has merged into `main`, which is the one merge §5
+allowed it. What remains open is listed in [`../todo.md`](../todo.md) and
+was never in scope here.
+
+This file stays as the record of how the project got from there to here:
+what was found, what was decided, and what was deliberately not done. It
+is no longer a plan to follow.
+
 Living document, and the **single home** for anything cross-cutting: the phase
 order, the constraints, the rules, the decisions already made (§7), and the
 progress log (§8).
@@ -490,7 +499,7 @@ instructions come before architecture.
 
 ---
 
-### `[~]` Phase 8 — Final sweep
+### `[x]` Phase 8 — Final sweep
 
 - Read the whole doc set start to finish as a new reader would. Fix what only
   becomes visible at that scale: contradictions, gaps between documents,
@@ -858,7 +867,7 @@ and verified in Phase 8.
 | — Fix D4 | `[x]` | `code-cleanup/fix-d4-connect-timeout` | Done 2026-08-29. `connect_timeout` in `DB_CONFIG` across all three services, from `DUUI_DB_CONNECT_TIMEOUT` (default 10). The webapp now starts against an unreachable database instead of never listening. |
 | 6 — Test audit | `[x]` | `code-cleanup/phase-6` | Done 2026-08-29. Coverage 48% to 83%; the importer's parsers and both job-run copies had none. Two of the outline's premises were found stale and dropped. |
 | 7 — READMEs + docs | `[x]` | `code-cleanup/phase-7` | Done 2026-08-30. Five READMEs written, root README cut to 87 lines, four `docs/` pages finished, `.env.example` rewritten, `docs/legacy/` deleted. `stylecheck.py` now runs over the whole project, not three parts of it. Every documented command run, including a first-run rehearsal from a clean state in an isolated Compose project. Two questions left for decision: §7.6 and §7.11. Detail: [phase-7-docs.md](phase-7-docs.md). |
-| 8 — Final sweep | `[~]` | `code-cleanup/phase-8` | Merged 2026-08-30, **open on CI alone**. Doc set read end to end (two contradictions); stylecheck extended to nine file kinds and given a US-English rule; 38 files renamed; a fresh clone found a committed `.coverage` and test/lint services that did not start from a clone. Detail: [phase-8-sweep.md](phase-8-sweep.md). |
+| 8 — Final sweep | `[x]` | `code-cleanup/phase-8` | Done 2026-08-31, when the workflow was finally observed: green on the pull request and again on the merge to `main`, both jobs, read back from the API rather than taken on report. Doc set read end to end (two contradictions); stylecheck extended to nine file kinds and given a US-English rule; 38 files renamed; a fresh clone found a committed `.coverage` and test/lint services that did not start from a clone. Detail: [phase-8-sweep.md](phase-8-sweep.md). |
 | 9 — Lockfiles | `[x]` | `code-cleanup/phase-9` | Done 2026-08-31. Changelogs dropped. Base images recorded in `docker-images.lock` and deliberately **not** pinned, so security rebuilds still arrive; no Python or Node lockfiles, and nothing installs from a lockfile. The four decisions and what each costs are in [phase-9-lockfiles.md](phase-9-lockfiles.md) §9.3. |
 
 ---
