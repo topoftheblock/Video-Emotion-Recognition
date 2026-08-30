@@ -168,7 +168,7 @@ being changed, so most of this phase is the record of that.
 | 4 | Document what that file is, what it is not, and how to refresh it — done, in `operations.md` |
 | 5 | Write the four "no change" decisions into the plan's §7, where they can be found without reading this file — done |
 | 6 | Verify — see §9.5 — done |
-| 7 | Close the phase, and the plan |
+| 7 | Close the phase, and the plan — done |
 
 ## 9.5 Verification
 
@@ -215,5 +215,8 @@ Done 2026-08-31.
   asserted: a grep across the Dockerfiles, the compose file, the runners
   and the Python sources finds no reference outside the script that
   writes it; and the webapp image builds with the file deleted.
-- Every checker green, 221 tests pass, and the corpus was not touched —
-  this phase went nowhere near the database.
+- **From a fresh clone**, not from this working tree: every checker
+  green, 221 tests pass, the record ships with the clone, and the
+  refresh script run there produces no diff — so the file describes the
+  images rather than this machine.
+- The corpus was not touched. This phase went nowhere near the database.

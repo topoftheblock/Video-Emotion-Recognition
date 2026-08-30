@@ -514,7 +514,7 @@ instructions come before architecture.
 
 ---
 
-### `[ ]` Phase 9 — Lockfiles
+### `[x]` Phase 9 — Lockfiles
 
 **Why last:** lockfiles were explicitly deferred to the end (decided
 2026-08-22) and are only meaningful once nothing else will move. One generated
@@ -859,7 +859,7 @@ and verified in Phase 8.
 | 6 — Test audit | `[x]` | `code-cleanup/phase-6` | Done 2026-08-29. Coverage 48% to 83%; the importer's parsers and both job-run copies had none. Two of the outline's premises were found stale and dropped. |
 | 7 — READMEs + docs | `[x]` | `code-cleanup/phase-7` | Done 2026-08-30. Five READMEs written, root README cut to 87 lines, four `docs/` pages finished, `.env.example` rewritten, `docs/legacy/` deleted. `stylecheck.py` now runs over the whole project, not three parts of it. Every documented command run, including a first-run rehearsal from a clean state in an isolated Compose project. Two questions left for decision: §7.6 and §7.11. Detail: [phase-7-docs.md](phase-7-docs.md). |
 | 8 — Final sweep | `[~]` | `code-cleanup/phase-8` | Merged 2026-08-30, **open on CI alone**. Doc set read end to end (two contradictions); stylecheck extended to nine file kinds and given a US-English rule; 38 files renamed; a fresh clone found a committed `.coverage` and test/lint services that did not start from a clone. Detail: [phase-8-sweep.md](phase-8-sweep.md). |
-| 9 — Lockfiles | `[~]` | `code-cleanup/phase-9` | Plan drafted 2026-08-30; four questions open. Changelogs dropped by decision. Detail: [phase-9-lockfiles.md](phase-9-lockfiles.md). |
+| 9 — Lockfiles | `[x]` | `code-cleanup/phase-9` | Done 2026-08-31. Changelogs dropped. Base images recorded in `docker-images.lock` and deliberately **not** pinned, so security rebuilds still arrive; no Python or Node lockfiles, and nothing installs from a lockfile. The four decisions and what each costs are in [phase-9-lockfiles.md](phase-9-lockfiles.md) §9.3. |
 
 ---
 
@@ -879,7 +879,7 @@ and verified in Phase 8.
 | 6 — Test audit | [phase-6-tests.md](phase-6-tests.md) | `[x]` done |
 | 7 — READMEs + docs | [phase-7-docs.md](phase-7-docs.md) | `[x]` done |
 | 8 — Final sweep | [phase-8-sweep.md](phase-8-sweep.md) | `[~]` merged; CI open |
-| 9 — Lockfiles | [phase-9-lockfiles.md](phase-9-lockfiles.md) | `[~]` plan drafted |
+| 9 — Lockfiles | [phase-9-lockfiles.md](phase-9-lockfiles.md) | `[x]` done |
 
 **What goes where.** This file is the durable record: constraints (§1), the
 starting state (§2), the phase overviews (§4), the cross-cutting rules (§5), the
