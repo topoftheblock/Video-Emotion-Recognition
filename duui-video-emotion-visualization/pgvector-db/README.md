@@ -6,9 +6,8 @@ The image is `pgvector/pgvector:pg18` plus one file: `schema.sql`, copied into
 `/docker-entrypoint-initdb.d/`. Running the image is therefore enough to get an
 initialized database, with no separate step to remember.
 
-It is the only thing the other three sub-projects share. They never call each
-other; what one writes, another reads, and the schema is the whole of the
-agreement between them.
+It is the only thing the other three sub-projects share. What that shared
+contract amounts to is in [architecture.md](../docs/architecture.md).
 
 ## Running it
 
@@ -54,5 +53,5 @@ this image.
 ## Where the detail is
 
 - **The schema, table by table** — [database.md](../docs/database.md).
-- **Why the database is the integration point** —
-  [architecture.md](../docs/architecture.md).
+- **Why the database is the integration point, and what the other three agree
+  on through it** — [architecture.md](../docs/architecture.md).

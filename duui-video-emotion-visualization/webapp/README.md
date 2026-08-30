@@ -120,11 +120,11 @@ Three third-party font families are committed under `src/frontend/fonts/` and
 served from this application. The page loads nothing from outside itself: no
 font service, no content delivery network, no analytics.
 
-| Family | License | File |
+| Family | License | License file |
 | --- | --- | --- |
-| Oxanium | SIL Open Font License 1.1 | `fonts/oxanium/OFL.txt` |
-| Roboto | SIL Open Font License 1.1 | `fonts/roboto/OFL.txt` |
-| Ubuntu Mono | Ubuntu Font Licence 1.0 | `fonts/ubuntu-mono/UFL.txt` |
+| Oxanium | SIL Open Font License 1.1 | `src/frontend/fonts/oxanium/OFL.txt` |
+| Roboto | SIL Open Font License 1.1 | `src/frontend/fonts/roboto/OFL.txt` |
+| Ubuntu Mono | Ubuntu Font Licence 1.0 | `src/frontend/fonts/ubuntu-mono/UFL.txt` |
 
 Each license is reproduced verbatim in the family's own directory, beside the
 files it covers, so nothing has to be cross-referenced when a license needs

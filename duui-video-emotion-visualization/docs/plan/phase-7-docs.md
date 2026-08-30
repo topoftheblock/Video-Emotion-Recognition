@@ -156,15 +156,17 @@ activate it.**
 
 ## 7.5 What Phase 5 and Phase 6 left owing
 
-- `webapp/docs/a11y-verification.md` is titled "after Phases 1–5",
+All three settled.
+
+- `webapp/docs/a11y-verification.md` was titled "after Phases 1–5",
   meaning the accessibility remediation phases. Beside a cleanup effort
-  with its own Phase 5, that is confusing. Retitle by what it records,
-  not by when.
-- `docs/todo.md` has one entry and an empty "Open" section. Decide
-  whether it earns its place or folds into the plan.
+  with its own Phase 5, that is confusing. **Retitled** by what it
+  records, and it now says which set of phases it means.
+- `docs/todo.md` **stays** (§7.9). Its "Open" section is no longer
+  empty.
 - The two gaps Phase 6 left open — `query_agent/agent.py` coverage and
-  the `routes/videos.py` payload path — belong in `todo.md` if it
-  survives.
+  the `routes/videos.py` payload path — **are in `todo.md`**, with the
+  deferred `schema.sql` question (§7.6).
 
 ## 7.6 Found while writing — deferred by decision
 
@@ -213,22 +215,74 @@ unchanged.
 | 10 | Rewrite the `a11y-ci.yml` header (§7.4); retitle `a11y-verification.md` — done |
 | 11 | Font attribution: Oxanium, Roboto and Ubuntu Mono are third-party, OFL/UFL, licenses alongside — done, in `webapp/README.md` |
 | 12 | Delete `docs/legacy/` — its three live references are already gone (§7.10) — done |
-| 13 | Verify — see §7.8 |
+| 13 | Verify — see §7.8 — done |
 
-## 7.8 Verification
+## 7.8 Verification — the record
 
-- Every checker green, including the link checker over a much larger
-  web of links, and `stylecheck.py` over the new prose.
-- **Every command in every document actually run.** Not read — run. The
-  documentation's failure mode is a command that no longer works, and
-  Phase 5 found several.
-- **Every variable checked against the code that reads it**, and the
-  six Compose-only ones checked against `docker-compose.yml`.
-- The map's "must not contain" column enforced by reading each page
-  against it: no page explains something another page owns.
-- A first-run rehearsal from a clean state: follow the root README from
-  `docker compose up -d` to a video playing in the browser, doing only
-  what it says.
+Done 2026-08-30. What was checked, and how.
+
+**Every checker green.** `docker compose run --rm lint`: 20 checkers,
+136 relative links all resolving, `stylecheck.py` at zero findings over
+the whole project. `docker compose run --rm tests`: 188 passed.
+
+**Every command in every document run.** Every fenced `bash` block in
+the root README, the five sub-project and `tests/` READMEs,
+`operations.md` and `webapp/docs/accessibility.md` was executed:
+
+- The two job commands, plus `--on-existing replace` and the
+  explicit-path form, against the **test** database rather than the real
+  one, so the corpus was not touched.
+- All four images built from their own directory alone, which is what
+  the standalone sections claim.
+- `pgvector-db` run on its own, applying the schema: 14 tables.
+- The three `python -m` entry points — `importer`, `identity`,
+  `backend` — run in the project's own interpreter. `python -m backend`
+  answered `/healthz` on 127.0.0.1:8000, as its README says.
+- `pg_dump` and `pg_restore` round-tripped into a scratch database and
+  back out with identical row counts, then the scratch database was
+  dropped.
+- The `CREATE TABLE IF NOT EXISTS` form `operations.md` recommends
+  instead of re-running `schema.sql`.
+- The accessibility commands, from `webapp/`: the five suites, and both
+  report scripts.
+- `git config core.hooksPath …` needed no run: it is already set to
+  exactly that value, and the hook fires on every commit in this phase.
+
+Two commands were **not** run, deliberately: `docker compose down` and
+`docker compose down -v` against the real project would stop the stack
+and delete the corpus. `down -v` was instead run against the rehearsal
+project below, where it removed both volumes and left the real ones
+untouched.
+
+**Every variable checked against the code that reads it**, and the six
+Compose-only ones against `docker-compose.yml`. That count was wrong in
+§7.3 and is corrected there; it also turned up §7.11.
+
+**The map's "must not contain" column enforced.** One violation found
+and fixed: `pgvector-db/README.md` explained the database contract,
+which `architecture.md` owns. It links now.
+
+**Every path named in prose checked**, by script, over every document
+and the four non-Markdown files that carry prose. One ambiguity fixed —
+`webapp/README.md`'s font table gave license paths relative to
+`src/frontend/` in a file that uses sub-project-relative paths
+everywhere else — and `a11y-verification.md` gained the base-path note
+its sibling already had.
+
+**First-run rehearsal from a genuinely clean state.** Not by tearing the
+real stack down, but by bringing up a second, isolated Compose project
+on different host ports:
+
+    DUUI_WEBAPP_HOST_PORT=8011 DUUI_DB_HOST_PORT=5433 \
+      docker compose -p duui-rehearsal up -d
+
+Following only the root README from there: the stack came up healthy,
+`/api/videos` returned `[]`, the import placed one video and its file,
+the list then showed it with `video_file_available: true`, the payload
+route served 125 KB, `/media/first2.mp4` answered a range request with
+206, the page served, and the linker ran. Then
+`docker compose -p duui-rehearsal down -v` removed that project's two
+volumes, and the real stack and its volumes were confirmed unchanged.
 
 ## 7.9 Questions, answered
 

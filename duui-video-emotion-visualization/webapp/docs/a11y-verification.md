@@ -9,6 +9,10 @@ Run 2026-08-20 against the rebuilt container, diffed against
 [a11y-baseline/](a11y-baseline/README.md), which is left untouched as the
 before-picture.
 
+Paths below are relative to the webapp project root (`webapp/`), except
+`css/…` and `js/…`, which are relative to `src/frontend/` — the same convention
+as [accessibility.md](accessibility.md).
+
 Same method as the baseline: axe-core 4.10.2 injected into the live page at
 `http://localhost:8010`, the same five application states, the same `fetch`
 stub for the two Ask states (this stack still has no `DUUI_QUERY_API_KEY`), and
