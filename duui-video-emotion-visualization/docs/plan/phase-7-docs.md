@@ -333,29 +333,79 @@ Step 12 is therefore only the deletion.
 
 ## 7.11 Found while writing `.env.example` — needs a decision
 
-**Nine of the 28 settings cannot be set in `.env`.** Compose passes a
-variable into a container only where `docker-compose.yml` names it, and
-nine are not named:
+**Nine of the 28 settings never reach the three containers
+`docker compose up` starts.** `docker-compose.yml` names only nineteen,
+and Compose passes a variable into a container only where the file names
+it:
 
     DUUI_DB_HOST      DUUI_TS_EMOTION              DUUI_QUERY_MAX_ROWS
     DUUI_VIDEO_DIR    DUUI_TS_IDENTITY_EMOTION     DUUI_QUERY_MAX_TOOL_ITERATIONS
     DUUI_XMI_FILE     DUUI_TS_MULTIMODAL_IDENTITY  DUUI_QUERY_STATEMENT_TIMEOUT_MS
 
-Confirmed by running `docker compose config` with all nine set in the
-environment: `DUUI_DB_HOST` and `DUUI_VIDEO_DIR` keep their fixed
-values, and the other seven appear in no service's environment at all.
+Two are deliberate and load-bearing — `DUUI_DB_HOST` is pinned to the
+service name and `DUUI_VIDEO_DIR` to the container path, which is what
+wires the stack together. The remaining **seven look like an
+oversight**: the code reads them and nothing carries them.
 
-Two are deliberate and correct — `DUUI_DB_HOST` and `DUUI_VIDEO_DIR` are
-pinned to the service name and the container path, which is what wires
-the stack together. The remaining **seven look like an oversight**: the
-code reads them, `.env` is the documented way to set things, and setting
-them there does nothing.
+### The first check was wrong, and how
 
-**Not changed.** Adding seven `${VAR:-default}` entries to the compose
-file is a behavior change, and §5 of the plan forbids incidental
-behavior changes outside Phases 4 and 6. Phase 7 documents the gap
-instead — marked per variable in `configuration.md`, and marked again in
-`.env.example` beside each one.
+The finding survived re-checking; the evidence behind it did not.
+
+**`docker compose config` omits profiled services.** The first check ran
+it with no profile, so it resolved `pgvector-db` and `webapp` and
+silently left out the importer, the linker, `tests` and `lint` — four of
+the six, including both services most of the nine belong to. The
+conclusion happened to be right, drawn from a third of the project.
+
+Re-checked three ways, 2026-08-30:
+
+1. `docker compose --env-file <probe> --profile import --profile
+   identity --profile test --profile lint config`, with all 28 set to
+   marker values in a real env file rather than shell variables. All six
+   services resolve; nineteen markers land, nine do not.
+2. `DUUI_TEST_UID` / `DUUI_TEST_GID` land in `user:` rather than in an
+   environment block, so they were confirmed separately: `1500:1501`.
+3. At runtime, not just in the projection —
+   `docker compose --env-file <probe> run --rm --entrypoint sh
+   cas-to-postgres-importer -c 'env | grep ^DUUI_'` returns ten
+   variables. `DUUI_XMI_FILE` and the three `DUUI_TS_*` are absent
+   entirely; `DUUI_DB_HOST` and `DUUI_VIDEO_DIR` hold their pinned
+   values.
+
+### And a second route, which the first write-up missed
+
+Every `config.py` calls `load_dotenv()`, so the application reads a
+`.env` from its own working directory, independently of Compose. Whether
+that does anything depends on whether a `.env` is inside the container:
+
+- **The three application images: no.** Their Dockerfiles copy
+  `requirements.txt` and `src/` and nothing else. Confirmed:
+  `ls /app/.env` in a running importer is "No such file or directory".
+- **The `tests` service: yes.** It mounts the project at `/app`, so
+  `/app/.env` exists and is read. Demonstrated by binding a `.env`
+  setting `DUUI_QUERY_MAX_ROWS=4242` and `DUUI_XMI_FILE` over `/app/.env`
+  in the test image: both resolved to the file's values, against
+  defaults of 500 and None.
+- **A native run: yes**, which is what makes all 28 entries in
+  `.env.example` real for that path.
+
+So "setting them in `.env` has no effect on a container" was too broad.
+It holds for the three services `up` starts, and not for the test
+runner. Both documents say so now.
+
+### A third thing, found by the same probe
+
+**`DUUI_VIDEO_STORE` does not take an arbitrary volume name.** The probe
+failed to load the project with `DUUI_VIDEO_STORE=my_own_volume`:
+`service "webapp" refers to undefined volume my_own_volume`. Tested four
+values — `video_media` OK, `my_own_volume` fails, `/tmp/probe-store` OK,
+`./relative-dir` OK. So it is the one declared volume name, or a path.
+`.env.example` had said "a plain name is a Docker-managed volume", which
+is true of exactly one plain name. Corrected in both documents.
+
+**Nothing changed in `docker-compose.yml`.** Passing the seven through
+is a behavior change, and §5 forbids incidental behavior changes outside
+Phases 4 and 6.
 
 **For decision** — pass the seven through, or leave them as
 compose-file-only settings.
