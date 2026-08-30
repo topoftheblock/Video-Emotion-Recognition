@@ -78,7 +78,7 @@ x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
     #
     # `z` is the SELinux share flag. On a labelling distro (openSUSE,
     # Fedora, RHEL) the container runs as container_t and simply may not
-    # read files labelled user_home_t, so without this the importer sees
+    # read files labeled user_home_t, so without this the importer sees
     # an unreadable /data/input/xmi and reports "No .xmi files found" —
     # even running as root. `z` relabels this directory's contents to
     # container_file_t with a SHARED category, so both importer services

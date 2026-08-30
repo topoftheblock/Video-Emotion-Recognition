@@ -5,7 +5,7 @@ and diffs against these.
 
 | File | Phase | What it is |
 | --- | --- | --- |
-| [contrast-baseline.txt](contrast-baseline.txt) | 0.1 | 82 colour pairs, 25 failing |
+| [contrast-baseline.txt](contrast-baseline.txt) | 0.1 | 82 color pairs, 25 failing |
 | [axe-baseline.md](axe-baseline.md) | 0.2 | axe-core 4.10.2 over five application states |
 | [keyboard-sweep.md](keyboard-sweep.md) | 0.3 | the tab order, verified against real key presses |
 

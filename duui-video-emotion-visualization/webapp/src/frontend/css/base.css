@@ -143,7 +143,7 @@ body {
 
 /* The Gateway's `.gradient`: bg-gradient-to-tr, tertiary-100 at 20%
    into surface-200 at 50%, over the surface floor. Warm off-white at
-   the bottom-left grading to a cool grey at the top-right. Fixed so it
+   the bottom-left grading to a cool gray at the top-right. Fixed so it
    reads as a backdrop rather than something that scrolls with content
    — this is what the old .mesh-bg layer was doing, folded into body
    now that it is a single gradient instead of three radials. */

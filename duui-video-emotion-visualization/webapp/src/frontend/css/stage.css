@@ -199,7 +199,7 @@
 /* 20px in a 40px button — half the diameter. The glyphs this replaced
    sat at 13px, which read as small for the only filled control in the
    transport. `display: block` keeps the inline-baseline gap from
-   nudging the icon off the vertical centre. */
+   nudging the icon off the vertical center. */
 .transport-btn svg {
   width: 20px;
   height: 20px;

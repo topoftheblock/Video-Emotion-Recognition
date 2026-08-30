@@ -113,7 +113,7 @@ export function displayLabel(label) {
 /**
  * Both clamps exist because these are raw model outputs, and the panels
  * state a range in the way they draw ("share of a full track",
- * "distance from the centre"). A value outside the range the model is
+ * "distance from the center"). A value outside the range the model is
  * documented to produce is a data problem worth noticing in the
  * numbers, not one worth letting a bar overflow its track over.
  */

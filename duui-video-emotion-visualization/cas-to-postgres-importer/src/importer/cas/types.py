@@ -203,7 +203,7 @@ INJECTED_FALLBACK_TYPES = {
 # taken from that type's own features where present.
 #
 # cassis warns once per unknown type while loading the CAS and skips
-# the annotation. That is correct behaviour, but here it is noise that
+# the annotation. That is correct behavior, but here it is noise that
 # buries anything real, so `loading_cas_quietly` filters exactly these
 # messages. Declaring them here instead of stubbing them in
 # INJECTED_FALLBACK_TYPES is deliberate: a featureless stub would make

@@ -22,7 +22,7 @@ export function coveredBy(rows, t) {
  * How far outside a row's window the playhead may sit and still count
  * as "on" that row, for the subtitle bar only.
  *
- * The sub-second gaps between sentences are an artefact of the token
+ * The sub-second gaps between sentences are an artifact of the token
  * timings the transcript is rebuilt from, not real silence. Without
  * this the caption blinks out between sentences — and, worse, a video
  * sitting at 0:00 falls before the first sentence (which typically

@@ -3,11 +3,11 @@
 /*
    Sits between the header and the Ask panel while the importer or the
    cross-video identity job is running. Built to be noticed and then
-   ignored: it takes the theme's primary rather than a warning colour,
+   ignored: it takes the theme's primary rather than a warning color,
    because a running import is normal, not a problem.
 
    Shaped like the Gateway's .toast — hairline border, rounded-base,
-   shadow-md, and a fat left edge in the semantic colour (border-l-8,
+   shadow-md, and a fat left edge in the semantic color (border-l-8,
    .toast-info in primary and .toast-error in error). It keeps the white
    card fill rather than the toast's surface-100, since unlike a toast
    it sits on the page rather than floating over it.
@@ -85,7 +85,7 @@
 /* One step past --danger-text: the stale row is the only place error
    text sits on the error-100 banner fill rather than on white, and
    error-700 only reaches 4.2:1 against it. The detail line moves with
-   it — --text-dim is a neutral grey tuned for white and drops to 4.4:1
+   it — --text-dim is a neutral gray tuned for white and drops to 4.4:1
    on the same pink. */
 .job-row-stale .job-text strong,
 .job-row-stale .job-detail,

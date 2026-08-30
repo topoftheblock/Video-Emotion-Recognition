@@ -320,7 +320,7 @@
 
    Without this the rows inherit `.person-list li { display: block }`,
    which leaves .person-swatch as an inline span — and an inline span
-   ignores width and height, so the colour never renders at all. */
+   ignores width and height, so the color never renders at all. */
 .cross-list li {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -354,7 +354,7 @@
 }
 
 /* Per-entry cross-video match distance, at the end of each "other
-   video/person" entry. Same font and colour as the People panel's
+   video/person" entry. Same font and color as the People panel's
    match-score badge (.person-meta) so the two read as one convention;
    the number is a cosine distance, not the import pipeline's confidence
    score, which the tooltip spells out. */
@@ -404,15 +404,15 @@
 
 /* --- Shared row parts ----------------------------------------------- */
 
-/* Per-person identity colours — set inline from js/state.js and
+/* Per-person identity colors — set inline from js/state.js and
    deliberately outside the theme, since they have to stay mutually
    distinguishable rather than on-brand. tests/cvd_check.py is what
-   keeps them distinguishable under colour-vision deficiency, which
+   keeps them distinguishable under color-vision deficiency, which
    matters here because this swatch is the only thing tying a name in
    this list to a stroked box on the video.
 
    Two shadows, and the inner one is load-bearing. The palette cannot
-   supply its own boundary: the same colours are drawn over arbitrary
+   supply its own boundary: the same colors are drawn over arbitrary
    footage, where they have to stay bright, which leaves them at
    1.2-3.5:1 against these light rows — and darkening them to fix that
    would break the other use. The 1px ring carries the 3:1 instead,
@@ -428,7 +428,7 @@
     0 0 0 3px color-mix(in srgb, currentcolor 16%, transparent);
 }
 
-/* --border-input against --signal is 1.05:1 — all but the same colour.
+/* --border-input against --signal is 1.05:1 — all but the same color.
    White is 5.84:1 on it. */
 .person-row.is-selected .person-swatch {
   box-shadow:

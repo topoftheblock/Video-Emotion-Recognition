@@ -8,7 +8,7 @@
  * unusual for this video?" is one glance rather than one subtraction).
  * Audio and video additionally carry dimensional readings — valence and
  * arousal, plus dominance for audio — which are signed, and so grow
- * left/right from the centre of the track instead of from its left
+ * left/right from the center of the track instead of from its left
  * edge.
  *
  * Rows are built once per video by initEmotionPanels() and afterwards

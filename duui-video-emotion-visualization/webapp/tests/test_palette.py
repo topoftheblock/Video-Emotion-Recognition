@@ -1,9 +1,9 @@
-"""The person palette's separability under colour-vision deficiency.
+"""The person palette's separability under color-vision deficiency.
 
 The simulation and the distance arithmetic live in `cvd_check.py`; this
-file is the policy. See "Colour and contrast" in docs/accessibility.md.
+file is the policy. See "Color and contrast" in docs/accessibility.md.
 
-Why this is a test rather than a judgement call: a person's colour is
+Why this is a test rather than a judgment call: a person's color is
 the only thing linking a stroked box on the video to a name in the
 sidebar. Putting the name into the on-video label is out of scope, so
 there is no text channel to fall back on. Two palette entries that
@@ -23,8 +23,8 @@ def test_palette_is_read_from_state_js() -> None:
     assert palette[0] == "#e69f00"
 
 
-def test_no_two_person_colours_converge_under_any_deficiency() -> None:
-    """No two assignable colours collapse together under any model."""
+def test_no_two_person_colors_converge_under_any_deficiency() -> None:
+    """No two assignable colors collapse together under any model."""
     convergent = cvd_check.convergent()
     assert not convergent, (
         f"palette pairs below dE2000 {cvd_check.MIN_SEPARATION} "
@@ -35,31 +35,31 @@ def test_no_two_person_colours_converge_under_any_deficiency() -> None:
     )
 
 
-def test_unknown_person_grey_separates_from_every_assignable_colour() -> None:
-    """The fallback stays distinct from every colour it sits beside.
+def test_unknown_person_gray_separates_from_every_assignable_color() -> None:
+    """The fallback stays distinct from every color it sits beside.
 
     It is the entry most likely to collide, being neutral: every
-    deficiency pushes muted colours toward it. It is separated by
+    deficiency pushes muted colors toward it. It is separated by
     *lightness* rather than hue for that reason — lightness is the one
     axis a deficiency leaves intact — so this asserts the property that
     choice was made to secure.
     """
     palette = cvd_check.load_palette()
-    grey, colours = palette[-1], palette[:-1]
+    gray, colors = palette[-1], palette[:-1]
 
-    rows = [r for r in cvd_check.separations(palette) if grey in (r[1], r[2])]
+    rows = [r for r in cvd_check.separations(palette) if gray in (r[1], r[2])]
     worst = min(rows, key=lambda r: r[3])
     assert worst[3] >= cvd_check.MIN_SEPARATION, (
-        f"{grey} collapses into {worst[1] if worst[2] == grey else worst[2]} "
+        f"{gray} collapses into {worst[1] if worst[2] == gray else worst[2]} "
         f"under {worst[0]}: dE2000 {worst[3]:.2f}"
     )
-    assert len(colours) == 6
+    assert len(colors) == 6
 
 
-def test_simulation_is_a_no_op_for_a_neutral_colour() -> None:
-    """A grey survives every simulation, which checks the matrices.
+def test_simulation_is_a_no_op_for_a_neutral_color() -> None:
+    """A gray survives every simulation, which checks the matrices.
 
-    Greys carry no hue to lose, so every model should return one
+    Grays carry no hue to lose, so every model should return one
     essentially unchanged. This catches a transposed or mistyped
     matrix, which would otherwise show up as plausible-looking but
     wrong separations.
@@ -67,5 +67,5 @@ def test_simulation_is_a_no_op_for_a_neutral_colour() -> None:
     for kind in cvd_check.CVD_MATRICES:
         out = cvd_check.simulate((128, 128, 128), kind)
         assert all(abs(c - 128) <= 6 for c in out), (
-            f"{kind} moved a neutral grey to {out}"
+            f"{kind} moved a neutral gray to {out}"
         )

@@ -186,7 +186,7 @@
      supposed to copy is exactly what gets cut off.
 
      Letting the frame outgrow 16:9 is safe here and only here: the
-     overlay canvas maps normalised detection coordinates onto the
+     overlay canvas maps normalized detection coordinates onto the
      frame's own box (drawBox() in js/overlay.js), which is the video's
      content box only while the two share an aspect ratio. When the
      empty state is up there is no video and no detections to misplace,

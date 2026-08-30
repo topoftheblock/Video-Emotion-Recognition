@@ -1,14 +1,14 @@
 """
-Colour-vision-deficiency separability for the person palette.
+Color-vision-deficiency separability for the person palette.
 
-See "Colour and contrast" in docs/accessibility.md. The six person
-colours, plus the unknown-person grey, are assigned at runtime and used
+See "Color and contrast" in docs/accessibility.md. The six person
+colors, plus the unknown-person gray, are assigned at runtime and used
 in two places: a swatch beside a name in the sidebar, and the stroke
 around that person's face in the video. Nothing else links the two.
 
 Because putting the name into the on-video label is out of scope, **hue
 is the only channel** carrying that mapping. Two palette entries that
-collapse into each other under a common colour-vision deficiency make
+collapse into each other under a common color-vision deficiency make
 two people indistinguishable on the video, with no text fallback to
 recover from — so the palette's separability is load-bearing rather than
 cosmetic, and worth a test rather than an eyeball.
@@ -58,7 +58,7 @@ CVD_MATRICES = {
 }
 
 # CIEDE2000 below which two swatches of this size read as "the same
-# colour" at a glance. The literature's just-noticeable difference is
+# color" at a glance. The literature's just-noticeable difference is
 # ~1-2 for large adjacent patches; these are 9px squares scattered down
 # a list and 2px strokes over moving video, compared from memory rather
 # than side by side, so the bar has to be far higher. 10 is the working
@@ -88,7 +88,7 @@ def parse_hex(value: str) -> tuple[int, int, int]:
 
 
 def to_hex(rgb: tuple[int, int, int]) -> str:
-    """Format a colour back into a hex literal."""
+    """Format a color back into a hex literal."""
     return "#" + "".join(f"{max(0, min(255, c)):02x}" for c in rgb)
 
 
@@ -111,7 +111,7 @@ _WHITE = (0.95047, 1.00000, 1.08883)
 
 
 def to_lab(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
-    """Convert a colour to CIELAB, under a D65 white point."""
+    """Convert a color to CIELAB, under a D65 white point."""
     r, g, b = (_to_linear(c) for c in rgb)
     x = (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / _WHITE[0]
     y = (0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / _WHITE[1]

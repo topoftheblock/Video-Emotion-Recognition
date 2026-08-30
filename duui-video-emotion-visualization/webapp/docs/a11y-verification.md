@@ -105,14 +105,14 @@ index only.
 
 | Decision | Where the reasoning lives |
 | --- | --- |
-| Panel dots are decorative (labelled), exempt from 1.4.11 | `css/tokens.css`, accent block |
+| Panel dots are decorative (labeled), exempt from 1.4.11 | `css/tokens.css`, accent block |
 | `--border` hairlines are decorative separation, exempt | `css/tokens.css`, on `--border-input` |
 | Emotion groove keeps 1.24:1 — value is printed as text beside it | `css/emotions.css`, `.emo-track` |
 | Input fill no longer carries the boundary; its border does | `tests/support/contrast_check.py`, input pairs |
 | Person swatch boundary is a ring, not the hue | `css/sidebar.css`, `tests/support/contrast_check.py` |
-| `.person-swatch` opts out of forced colours; the hue *is* the data | `css/adaptive.css` |
-| `.subtitle-box` opts out of forced colours; it sits over video | `css/adaptive.css` |
-| Okabe-Ito palette, and why the grey separates by lightness | `js/state.js`, `tests/support/cvd_check.py` |
+| `.person-swatch` opts out of forced colors; the hue *is* the data | `css/adaptive.css` |
+| `.subtitle-box` opts out of forced colors; it sits over video | `css/adaptive.css` |
+| Okabe-Ito palette, and why the gray separates by lightness | `js/state.js`, `tests/support/cvd_check.py` |
 | The `19em` block that was tried and removed | `css/responsive.css`, end of file |
 
 Each row above was checked against the file it names, not assumed. The
@@ -128,6 +128,6 @@ verifies the accessibility *tree*; none of it verifies what a screen reader
 actually announces from that tree, which is a different question and the only
 way to confirm the combobox's `aria-activedescendant` behaves.
 
-**Windows High Contrast (Phase 4).** Same limitation: the forced-colours rules
+**Windows High Contrast (Phase 4).** Same limitation: the forced-colors rules
 were verified as parsed-and-intact through the CSSOM, never seen rendered.
 Worth doing in the same sitting as the screen-reader pass.

@@ -8,16 +8,16 @@
  */
 
 /*
- * Okabe-Ito, the standard colour-vision-safe qualitative palette.
+ * Okabe-Ito, the standard color-vision-safe qualitative palette.
  *
- * These are not decoration: a person's colour is the *only* thing
+ * These are not decoration: a person's color is the *only* thing
  * linking a stroked box on the video to a name in the sidebar, so two
  * entries that collapse into each other under a common deficiency make
  * two people indistinguishable with no text fallback to recover from.
  *
  * The previous palette had five such pairs — teal/light-blue collapsed
  * under tritanopia, teal/pink and orange/lime under deuteranopia, and
- * pink/grey under both red-green forms. These six hold a worst-case
+ * pink/gray under both red-green forms. These six hold a worst-case
  * separation of dE2000 11.1 across normal, protan, deutan and tritan
  * vision. tests/support/cvd_check.py is the check; run it before
  * touching this.
@@ -34,9 +34,9 @@ export const PERSON_COLORS = [
 /*
  * Fallback for a detection with no identified person.
  *
- * Light, not the mid-grey this used to be. Deficiency simulation leaves
- * lightness essentially intact while collapsing hue, so a grey in the
- * middle of the palette's lightness band is exactly where muted colours
+ * Light, not the mid-gray this used to be. Deficiency simulation leaves
+ * lightness essentially intact while collapsing hue, so a gray in the
+ * middle of the palette's lightness band is exactly where muted colors
  * land — the old #8b94a3 sat at dE2000 2.6 from Okabe-Ito's mauve and
  * 5.8 from the previous palette's pink. Separating it by lightness
  * instead is the one axis a deficiency cannot take away: this clears
@@ -51,7 +51,7 @@ export const state = {
   videos: [],
   /** GET /api/persons/global, fetched once and filtered per video. */
   globalPersonClusters: [],
-  /** person_id -> colour, stable for as long as one video is loaded. */
+  /** person_id -> color, stable for as long as one video is loaded. */
   personColor: new Map(),
   /** Handle of the in-flight requestAnimationFrame render loop. */
   rafHandle: null,
@@ -110,17 +110,17 @@ function contrastRatio(a, b) {
 }
 
 /**
- * Pick a text colour that stays readable on `hex` as a background.
+ * Pick a text color that stays readable on `hex` as a background.
  *
  * Compares the two candidates and returns whichever actually contrasts
  * more. This used to threshold on luminance at `L > 0.45`, which is far
  * above the real crossover near L = 0.18 — so four of the seven person
- * colours were handed white text at 2.2-3.1:1 on the emotion panels'
+ * colors were handed white text at 2.2-3.1:1 on the emotion panels'
  * filter chip. A comparison has no threshold to get wrong and stays
  * correct if the palette changes, which is the point: it is called with
  * whatever PERSON_COLORS happens to hold.
  *
- * Every colour clears 4.5:1 against one of the two. The worst case is
+ * Every color clears 4.5:1 against one of the two. The worst case is
  * the crossover itself, where both sit at about 4.58:1.
  */
 export function readableTextColor(hex) {

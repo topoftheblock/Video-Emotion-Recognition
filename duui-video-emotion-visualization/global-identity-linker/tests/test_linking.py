@@ -6,7 +6,7 @@ cleaning up and no separate test schema is required.
 
 `clear_global_persons`, and so `recompute_global_persons`, deletes
 every row in `global_persons` rather than only the rows a test inserted.
-That is the behaviour under test; the fixture's rollback is what stops
+That is the behavior under test; the fixture's rollback is what stops
 it reaching a populated database.
 """
 

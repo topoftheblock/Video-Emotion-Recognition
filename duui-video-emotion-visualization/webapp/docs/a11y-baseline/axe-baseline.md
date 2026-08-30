@@ -88,7 +88,7 @@ nothing, and cannot: a click listener on a non-interactive element leaves no
 signal in the accessibility tree. This is the single most severe finding in the
 audit, and it is only visible from the keyboard sweep.
 
-**The unlabelled Ask input.** axe passes `#askInput` because the accname spec
+**The unlabeled Ask input.** axe passes `#askInput` because the accname spec
 accepts `placeholder` as a last-resort name. It is still the Phase 1.2 finding:
 the name vanishes the moment the user types.
 

@@ -6,7 +6,7 @@
    tracks and both numbers line up down the whole panel and across all
    three of them.
 
-   Colour comes entirely from the theme's primary ramp — flat fills,
+   Color comes entirely from the theme's primary ramp — flat fills,
    no gradients, matching the Gateway's treatment of its accents.
 --------------------------------------------------------------- */
 
@@ -147,7 +147,7 @@
   overflow: hidden;
 }
 
-/* Signed values grow from the centre, so the centre gets a hairline to
+/* Signed values grow from the center, so the center gets a hairline to
    grow away from. */
 
 /* --border-input, not --border-strong. This is the line a signed value

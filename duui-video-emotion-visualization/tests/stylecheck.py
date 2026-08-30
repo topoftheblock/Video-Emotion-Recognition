@@ -294,11 +294,11 @@ def check_file(
                 probe = SQL_COMMENT.sub("", line, count=1)
             if re.search(r"(?<=\S) -- (?=\S)|(?<=\S) --\s*$|^\s*-- (?=\S)", probe):
                 found.append((number, "emdash", "'--' as an em dash; write '—'"))
-            # A colour value lists numbers the way a grouped thousand is
+            # A color value lists numbers the way a grouped thousand is
             # written, so it is not a corpus figure.
-            colourish = re.search(r"rgba?\(", line) is not None
+            colorish = re.search(r"rgba?\(", line) is not None
             for pattern, flags, message in GLOSSARY + CORPUS:
-                if colourish and "corpus figures" in message:
+                if colorish and "corpus figures" in message:
                     continue
                 if exempt_terms and (pattern, flags, message) in GLOSSARY:
                     continue

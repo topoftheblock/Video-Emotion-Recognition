@@ -48,7 +48,7 @@ target-version = "py314"
 [tool.ruff.lint]
 # Deliberately narrow to start: pyflakes (F), pycodestyle errors (E) and
 # import sorting (I). These are the rules the style guide already
-# implies, and none of them asks for a judgement call.
+# implies, and none of them asks for a judgment call.
 #
 # Opinionated families are left off on purpose. Docstring rules (D) in
 # particular would fire on almost every function, since Phase 5 has not
