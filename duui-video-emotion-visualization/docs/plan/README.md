@@ -783,9 +783,10 @@ nothing to do.** Recorded for the day that changes:
   beside each font file. A short attribution note in the webapp docs remains
   worthwhile for discoverability (Phase 7), but it is courtesy, not obligation.
 - **If the images are ever published**, `psycopg2-binary` is LGPL and the Debian
-  base of `python:3.12-slim` carries its own set — redistribution is what
+  base of `python:3.14-slim` carries its own set — redistribution is what
   triggers those obligations, and a `THIRD-PARTY-NOTICES.md` is the tidy answer.
-  Not now.
+  Not now. (Written against 3.12; Phase 4 moved to 3.14, which changes the base
+  image's package set but not the conclusion.)
 
 ### On linting in CI — yes, and it is the established pattern here
 
