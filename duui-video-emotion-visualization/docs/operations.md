@@ -141,6 +141,31 @@ A dump does not include the videos, and the videos do not include the
 rows. Restoring one without the other gives a webapp that lists videos
 it cannot play, or a store of files nothing references.
 
+## Knowing what the images were built on
+
+The four Dockerfiles build on floating tags — `python:3.14-slim`,
+`pgvector/pgvector:pg18`, and `node:24-trixie-slim` for the checker
+image. That is deliberate: a rebuild picks up security updates to the
+base, which is what a pinned digest would freeze.
+
+The cost is that two builds a month apart are not the same build, and
+nothing would say so. `docker-images.lock` at the project root records
+the digests, and is refreshed by hand:
+
+```bash
+tests/refresh-image-digests.sh
+```
+
+**Nothing reads that file.** It is a record, not a pin: it says what a
+build used, and does not make the next one match. If a rebuild starts
+behaving differently, a diff of this file across commits is the first
+place to look.
+
+The Python dependencies are not locked either. They carry
+floor-and-ceiling ranges and are resolved at build time, so the same
+question about them is answered with `pip freeze` inside two images and
+a diff, rather than from a file.
+
 ## Continuous integration
 
 The workflow lives at the **repository root**, outside this project, at

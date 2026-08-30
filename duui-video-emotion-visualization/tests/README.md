@@ -21,6 +21,7 @@ contain tests needs saying out loud, which is what this file is for.
 | `stylecheck.py` | Checks the project against the style guide and the glossary |
 | `test_stylecheck.py` | Tests for that checker — the only tests in this directory |
 | `hooks/pre-commit` | An optional git hook running the fast half of the lint pass before a commit |
+| `refresh-image-digests.sh` | Records which base images the build uses, into `docker-images.lock`. Nothing reads that file — see [`docs/operations.md`](../docs/operations.md) |
 
 ## Running them
 

@@ -97,83 +97,92 @@ replaced under a tag.
 
 `actions/checkout@v4`, used twice. `v4` is a moving tag by design.
 
-## 9.3 The questions this phase cannot answer on its own
+## 9.3 The questions, answered
 
-Four, and the first two decide the shape of everything else.
+Answered 2026-08-31 by the project owner. The phase came out much
+smaller than its own measurements suggested, and most of what is left is
+writing down why.
 
-### Q1 — How are the Python locks produced?
+### Python dependencies stay as they are
 
-| Option | What it gives | What it costs |
-| --- | --- | --- |
-| **`pip freeze` in the built image** | Exact versions for the whole closure, no new tool, output already clean — `pip freeze` excludes `pip`, `setuptools` and `wheel` | No hashes, so it pins *what* but not *that it is genuine*. Regenerating means rebuilding the image |
-| **`pip-compile` (pip-tools)** | The same, plus `--generate-hashes`, plus a comment saying which declaration pulled each package in | A new development dependency, and a much larger file |
-| **`uv pip compile`** | As above and far faster | A new tool that is not in any image today |
+**No Python lockfiles.** The floor-and-ceiling ranges stay, and the
+images keep resolving at build time. So the 39-installed-from-13-declared
+gap in §9.2 is accepted rather than closed, and two builds a month apart
+may still differ in the transitive set.
 
-**Recommendation: `pip freeze`.** It needs nothing new, and the images
-already exist as the thing being frozen. Hashes are worth having, but
-they are a second decision about supply-chain integrity, not about
-reproducibility, and mixing the two makes both harder to review.
+This is the decision, not an oversight, and it is worth being plain
+about what it costs: nothing records which nineteen packages the webapp
+image actually got. If a rebuild ever behaves differently, the way to
+find out why is `pip freeze` in both images and a diff — there is no
+file to consult.
 
-### Q2 — Does the image install *from* the lockfile?
+### The images do not install from any lockfile
 
-- **Yes** — `requirements.txt` stays the human-readable declaration,
-  `requirements.lock` is what `pip install` reads, and adding a
-  dependency means editing one and regenerating the other. Builds become
-  reproducible. This is the standard two-file arrangement.
-- **No** — the lockfile is a record of what one build produced, useful
-  for diffing and for reproducing by hand, and the build keeps resolving.
+Which follows from the above for Python, and is stated separately
+because it also settles the shape of anything added later: a lockfile in
+this project is a **record**, not a build input. Nothing in a Dockerfile
+reads one.
 
-**Recommendation: yes.** A lockfile the build ignores documents a
-problem instead of fixing it.
+### Base images are recorded, not pinned
 
-### Q3 — Are base images pinned by digest?
+The chosen answer to the trade-off §9.2 raised, and the more
+conservative side of it.
 
-This is the one with a real cost on both sides, and it is not a
-reproducibility question with an obvious answer.
+`FROM python:3.14-slim` and the other two stay as floating tags, so a
+rebuild keeps picking up security updates to the base — which is the
+thing digest pinning would have frozen, permanently and silently.
+Instead the digests are written to a tracked file that **nothing
+consumes**: a record you can diff, and reproduce from by hand if a
+rebuild ever misbehaves.
 
-- **Pin** (`python:3.14-slim@sha256:…`) and every build is identical —
-  including, permanently, whatever unpatched libraries the base held on
-  the day it was pinned. Nothing tells you a rebuild would now be safer.
-- **Do not pin** and rebuilds pick up security updates for free, at the
-  cost of two builds a week apart differing in ways no file records.
+The honest limit of this: it records what a build used, and does not
+make the next build match it.
 
-**No recommendation.** It depends on whether this stack is ever left
-running unattended, which is a question about deployment rather than
-about the code, and the owner is the one who knows.
+### The two downloaded binaries are not checksum-verified
 
-### Q4 — Are the two downloaded binaries checksum-verified?
+`Dockerfile.lint` keeps `ADD` on the hadolint and actionlint release
+assets, pinned by version and unverified in content.
 
-Adding `sha256sum --check` to `Dockerfile.lint` is four lines and makes
-the download verifiable rather than trusted. **Recommendation: yes** —
-it is small, it is contained, and the alternative is a checker image
-whose contents are decided by whoever can write to a release tag.
+### The Node tooling is left alone
+
+**Out of scope by decision**, including the `package-lock.json` that
+does not exist. The lint image's 8 declared tools keep resolving to 216
+packages fresh on every build.
+
+The cost, recorded because §9.2 measured it: this is the image that
+decides whether a build is green, so a change inside it changes what
+green means, and nothing records that it changed. If the checkers ever
+start failing or passing for no reason anyone can see, this is the first
+place to look.
 
 ## 9.4 Steps
 
+Small, after §9.3. Four of the six things measured are deliberately not
+being changed, so most of this phase is the record of that.
+
 | # | Step |
 | --- | --- |
-| 1 | Answer §9.3 |
-| 2 | Record the changelog decision in §7 of the plan overview |
-| 3 | Commit `package-lock.json`; `Dockerfile.lint` uses `npm ci` |
-| 4 | Generate a lockfile per Python requirements set, by the method Q1 picks |
-| 5 | Point the Dockerfiles at them, if Q2 says so |
-| 6 | Q3, whichever way it goes, written down with its reason |
-| 7 | Q4: verify the two binaries, if agreed |
-| 8 | Document how to add or upgrade a dependency now — the one thing lockfiles make non-obvious |
-| 9 | Verify — see §9.5 |
-| 10 | Close the phase, and the plan |
+| 1 | Answer §9.3 — done |
+| 2 | Record the changelog decision in §7 of the plan overview — done |
+| 3 | `tests/refresh-image-digests.sh`, and the `docker-images.lock` it writes — done |
+| 4 | Document what that file is, what it is not, and how to refresh it — done, in `operations.md` |
+| 5 | Write the four "no change" decisions into the plan's §7, where they can be found without reading this file — done |
+| 6 | Verify — see §9.5 — done |
+| 7 | Close the phase, and the plan |
 
 ## 9.5 Verification
 
-- **Every image rebuilt from scratch**, with no cache, and the resulting
-  installed set compared against the lockfile. A lock nobody checked is
-  a lock that does not hold.
-- **Two builds compared.** The point of the phase is that they match;
-  demonstrate it rather than assert it.
-- Every checker green, full suite green, from a **fresh clone** — Phase 8
-  established that as the only meaningful test of the build.
-- The corpus untouched: this phase changes how software is installed,
-  and should not go near the data.
+Smaller than it was, because less is changing.
+
+- **The script runs**, and the digests it writes match what
+  `docker image inspect` reports for the images the build actually used.
+- **Nothing consumes the file.** Demonstrated rather than asserted: grep
+  the Dockerfiles, the compose file and the runners for its name, and
+  build an image with it deleted.
+- **The refresh is idempotent** — running it twice against unchanged
+  images produces no diff.
+- Every checker green and the full suite green, from a **fresh clone**.
+- The corpus untouched. This phase does not go near the data.
 
 ## 9.6 What closing this phase means
 
@@ -188,3 +197,23 @@ Phase 9 is the end of the cleanup. When it merges:
   in scope here: whether `schema.sql` should be idempotent throughout,
   and whether to retire `DUUI_XMI_FILE`. They are deliberately not
   blockers.
+
+---
+
+## 9.7 Verification — the record
+
+Done 2026-08-31.
+
+- **The script runs and is idempotent.** Two consecutive runs against
+  unchanged images produce no diff, checked before and after an edit to
+  the script's own comments.
+- **The digests are the right ones.** `docker image inspect` on
+  `python:3.14-slim` reports
+  `sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4`,
+  which is what the file records.
+- **Nothing consumes the file**, demonstrated twice rather than
+  asserted: a grep across the Dockerfiles, the compose file, the runners
+  and the Python sources finds no reference outside the script that
+  writes it; and the webapp image builds with the file deleted.
+- Every checker green, 221 tests pass, and the corpus was not touched —
+  this phase went nowhere near the database.
