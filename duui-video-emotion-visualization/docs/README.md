@@ -14,12 +14,16 @@ that every question has exactly one document that answers it and the rest link.
 | [`operations.md`](operations.md) | Running and maintaining the stack after the first run |
 | [`glossary.md`](glossary.md) | The one correct name for each concept |
 | [`documentation-style.md`](documentation-style.md) | How to write anything in this repository |
+| [`todo.md`](todo.md) | Work that is wanted but not yet scheduled |
 | [`plan/`](plan/) | The documentation and code cleanup effort |
 
 Each sub-project has its own `README.md` and may have its own `docs/`:
-[`webapp`](../webapp/), [`cas-to-postgres-importer`](../cas-to-postgres-importer/),
-[`global-identity-linker`](../global-identity-linker/),
-[`pgvector-db`](../pgvector-db/).
+[`webapp`](../webapp/README.md),
+[`cas-to-postgres-importer`](../cas-to-postgres-importer/README.md),
+[`global-identity-linker`](../global-identity-linker/README.md),
+[`pgvector-db`](../pgvector-db/README.md). The project root's
+[`tests/`](../tests/README.md) holds the runners and the checkers rather than
+any tests.
 
 ## The map
 
@@ -38,6 +42,7 @@ explanation from appearing in five places and drifting five ways.
 | `docs/operations.md` | Operators | Running, upgrading, backup, schema changes on an existing volume, CI | First-run instructions |
 | `docs/glossary.md` | Everyone | One name per concept | Explanations of how things work |
 | `docs/documentation-style.md` | Contributors | How to write | Project facts |
+| `docs/todo.md` | Whoever picks the work up | Wanted work, and why it is not done | Anything already done, or in progress |
 | `docs/plan/` | This cleanup effort | The plan and its phases | Anything about the software itself |
 
 ### Per sub-project

@@ -47,7 +47,7 @@ Raise the connect timeout for a slow or distant database. Without one,
 a host that accepts the route but never answers hangs the caller for
 minutes with nothing printed.
 
-## Importer behaviour
+## Importer behavior
 
 | Variable | Default | What it does |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ a pipeline that used different ones.
 | Variable | Default | What it does |
 | --- | --- | --- |
 | `DUUI_GLOBAL_PERSON_FACE_DISTANCE_THRESHOLD` | `0.30` | Maximum cosine distance at which two face embeddings are taken to be the same person. Lower is stricter. |
-| `DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD` | `0.35` | The same, for voice embeddings, used when there are no faces to compare. |
+| `DUUI_GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD` | `0.35` | The same, for voice embeddings. Faces are compared first; voices are only reached for a person the face pass did not match. |
 
 pgvector's cosine distance is 0 for identical vectors and 2 for opposite
 ones. No derivation for either default is recorded in this repository.
