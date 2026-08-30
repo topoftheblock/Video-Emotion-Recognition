@@ -78,6 +78,39 @@ CORPUS = [
     (r"(?<!\d)\d{1,3},\d{3}(?!\d)", 0, "no corpus figures"),
 ]
 
+# Rule 8 of the style guide: US English, everywhere, including code
+# comments and log output. Nothing else in the roster spell-checks, so
+# without this the rule holds only by review — and it did not: Phase 8
+# found 231 British spellings across 38 files, in prose and in
+# identifiers alike.
+#
+# Matched as substrings, not whole words, because the guide binds
+# identifiers too and `load_person_colours` has no word boundary before
+# `colours`. Two sequences contain one of these and are not misspelled:
+# an ARIA attribute, and a license's actual name.
+SPELLING = [
+    ("colour", "color"),
+    ("behaviour", "behavior"),
+    ("artefact", "artifact"),
+    ("centre", "center"),
+    ("judgement", "judgment"),
+    ("defence", "defense"),
+    ("labelled", "labeled"),
+    ("grey", "gray"),
+    ("recognis", "recogniz"),
+    ("normalis", "normaliz"),
+    ("synthesise", "synthesize"),
+    ("analyse", "analyze"),
+    ("licence", "license"),
+    ("flavour", "flavor"),
+    ("honour", "honor"),
+    ("favour", "favor"),
+    ("organis", "organiz"),
+    ("initialis", "initializ"),
+    ("serialis", "serializ"),
+]
+SPELLING_EXEMPT = ("aria-labelledby", "Ubuntu Font Licence")
+
 CHECKED_SUFFIXES = (
     ".py",
     ".toml",
@@ -219,6 +252,29 @@ def prose_lines(src: str, path: pathlib.Path) -> set[int]:
     return lines
 
 
+def _spelling_findings(lines: list[str]) -> list[tuple[int, str, str]]:
+    """Report every British spelling, in prose and in identifiers alike.
+
+    Args:
+        lines: The file's lines.
+
+    Returns:
+        `(line, "spelling", message)` per finding.
+    """
+    found: list[tuple[int, str, str]] = []
+    for number, line in enumerate(lines, start=1):
+        probe = line
+        for exempt in SPELLING_EXEMPT:
+            probe = probe.replace(exempt, "")
+        lowered = probe.lower()
+        for british, american in SPELLING:
+            if british in lowered:
+                found.append(
+                    (number, "spelling", f"British spelling; write '{american}'")
+                )
+    return found
+
+
 def check_file(
     path: pathlib.Path, exempt: bool, exempt_terms: bool = False
 ) -> list[tuple[int, str, str]]:
@@ -239,6 +295,8 @@ def check_file(
     src = path.read_text()
     lines = src.split("\n")
     found: list[tuple[int, str, str]] = []
+
+    spelling_lines = _spelling_findings(lines)
     try:
         prose = prose_lines(src, path)
     except SyntaxError as exc:
@@ -364,6 +422,9 @@ def check_file(
             for pattern, flags, message in GLOSSARY:
                 if re.search(pattern, literal, flags):
                     found.append((number, "term", f"in a string: {message}"))
+
+    if not exempt_terms:
+        found.extend(spelling_lines)
     return found
 
 

@@ -123,6 +123,61 @@ def test_a_file_no_rule_matches_is_skipped(tmp_path: pathlib.Path) -> None:
     assert stylecheck.collect(tmp_path) == []
 
 
+# --- US English ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("british", "american"),
+    [
+        ("colour", "color"),
+        ("behaviour", "behavior"),
+        ("judgement", "judgment"),
+        ("artefact", "artifact"),
+        ("grey", "gray"),
+        # A stem, because -ise/-ize covers a family of endings and the
+        # suggestion is the part that changes.
+        ("recognise", "recogniz"),
+    ],
+)
+def test_a_british_spelling_is_found(
+    british: str, american: str, tmp_path: pathlib.Path
+) -> None:
+    """§8 of the guide says US English, in prose and in identifiers."""
+    path = write(tmp_path, "a.sh", f"# The {british} of it.\n")
+    assert kinds(path) == ["spelling"]
+    assert american in messages(path)[0]
+
+
+def test_the_american_spelling_is_not_found(tmp_path: pathlib.Path) -> None:
+    """The rule fires on the British form only."""
+    path = write(tmp_path, "a.sh", "# The color of it.\n")
+    assert kinds(path) == []
+
+
+def test_a_british_spelling_inside_an_identifier_is_found(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The guide binds identifiers, so a word boundary is not enough."""
+    body = '"""Doc."""\n\n\ndef load_colours() -> None:\n    """Doc."""\n'
+    assert "spelling" in kinds(write(tmp_path, "a.py", body))
+
+
+def test_aria_labelledby_is_not_a_spelling_error(tmp_path: pathlib.Path) -> None:
+    """An ARIA attribute contains `labelled` and is spelled correctly.
+
+    The rename this rule guards would have corrupted twelve of these if
+    it had matched on the substring alone.
+    """
+    path = write(tmp_path, "a.html", "<!-- aria-labelledby resolves -->\n")
+    assert kinds(path) == []
+
+
+def test_the_ubuntu_font_licence_keeps_its_name(tmp_path: pathlib.Path) -> None:
+    """A license's actual name is not a spelling to correct."""
+    path = write(tmp_path, "a.sh", "# Under the Ubuntu Font Licence 1.0.\n")
+    assert kinds(path) == []
+
+
 # --- Rules that already existed, so the extension cannot break them -----
 
 
