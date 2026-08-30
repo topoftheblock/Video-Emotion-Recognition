@@ -490,7 +490,7 @@ instructions come before architecture.
 
 ---
 
-### `[ ]` Phase 8 — Final sweep
+### `[~]` Phase 8 — Final sweep
 
 - Read the whole doc set start to finish as a new reader would. Fix what only
   becomes visible at that scale: contradictions, gaps between documents,
