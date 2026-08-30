@@ -220,6 +220,29 @@ sibling should not. Until that happens the item stays open, and the
 phase does not claim it. Recording an unverified claim as verified is
 the failure this whole plan exists to correct.
 
+### What was checked locally, 2026-08-30
+
+1. **`actionlint` on both workflows** — the project's and the sibling
+   `ci.yml`. Both clean.
+2. **The `paths:` filters, against the actual repository.** The workflow
+   filters on `duui-video-emotion-visualization/**` and on its own path.
+   Matched against every tracked file in the repository: **201 files
+   inside this project, all matched; 179 outside it, none matched**,
+   across 11 sibling top-level directories. So the scoping is right as
+   written — what remains unverified is that GitHub behaves the way the
+   filter says, not the filter itself.
+3. **The two commands the workflow runs**, which are the whole of what
+   it does: `docker compose run --rm lint` and `... tests`. Both green,
+   and now green from a fresh clone as well, which they were not before
+   §8.5.
+
+### Still open
+
+**Nobody has seen this workflow run.** By the project owner's decision
+the phase waits for that rather than closing around it. When the branch
+is pushed, two observations close it: a commit touching a file in this
+directory triggers the run, and one touching a sibling project does not.
+
 ## 8.7 Small things found while measuring
 
 - **`cas-to-postgres-importer/cas/`** is an empty untracked directory,
@@ -241,17 +264,17 @@ change lands.
 | # | Step |
 | --- | --- |
 | 1 | Answer §8.9 |
-| 2 | Read all 17 documents in sequence; record findings before fixing any of them |
-| 3 | Fix what the reading found — contradictions, gaps, terminology drift |
-| 4 | Name the Python version where a reader needs it (§8.2) |
-| 5 | Teach `stylecheck.py` the eight unread file kinds, test-first for `.sql` (§8.4) |
-| 6 | Fix what that finds — 20 over-width comment lines and one em dash in `schema.sql`, plus whatever the other seven files hold |
-| 7 | The British-spelling rename, prose and identifiers, in its own commit (§8.3) |
-| 8 | Add the spelling rule to `stylecheck.py`, in a second commit, so it cannot come back |
-| 9 | Fresh-clone verification (§8.5) |
-| 10 | The CI checks that can be done locally (§8.6); record the rest as open |
-| 11 | Settle §8.7 |
-| 12 | Close: every checker green, full suite, full build |
+| 2 | Read all 17 documents in sequence; record findings before fixing any of them — done, §8.11 |
+| 3 | Fix what the reading found — contradictions, gaps, terminology drift — done |
+| 4 | Name the Python version where a reader needs it (§8.2) — done |
+| 5 | Teach `stylecheck.py` the eight unread file kinds, test-first for `.sql` (§8.4) — done |
+| 6 | Fix what that finds — 72 findings in all — done |
+| 7 | The British-spelling rename, prose and identifiers, in its own commit (§8.3) — done, 38 files |
+| 8 | Add the spelling rule to `stylecheck.py`, in a second commit, so it cannot come back — done |
+| 9 | Fresh-clone verification (§8.5) — done, and it found two real defects |
+| 10 | The CI checks that can be done locally (§8.6); record the rest as open — done |
+| 11 | Settle §8.7 — done |
+| 12 | Close — **waiting on the push**, per §8.9 answer 3 |
 
 ## 8.9 Questions, answered
 
@@ -365,3 +388,43 @@ another fixed list.
   retired term. Phase 7's glossary pass holds.
 - **Every path named in prose still resolves**, re-run over the larger
   set.
+
+---
+
+## 8.12 What the fresh clone found
+
+Neither defect was visible from the working tree, which is the whole
+argument for the step.
+
+### F6 — `.coverage` was committed
+
+A 53 KB binary coverage database, written by a `--cov` run and committed
+by accident during Phase 6. Tracked, in `.gitignore` nowhere, and in
+every clone since. Untracked and ignored, with `htmlcov/`.
+
+### F7 — the test and lint services did not work from a clone
+
+The serious one.
+
+    $ docker compose run --rm tests
+    /bin/sh: 0: cannot open /app/tests/run-tests.sh: Permission denied
+
+On a labelling distro a fresh checkout is `user_home_t` or `user_tmp_t`,
+which `container_t` may not read. Both services mount the project at
+`/app` and neither mount carried the `z` flag, so both died on their own
+entry point with a message that names no cause.
+
+**The compose file already knew.** The importer's input mounts carry `z`
+and a paragraph explaining precisely this failure, written in an earlier
+phase. The tests and lint mounts were never given the same treatment,
+and nothing caught it because every check in every phase ran from a
+working tree whose label had already been changed to
+`container_file_t` by those very mounts.
+
+So the two commands the README pushes hardest failed for anyone
+following it, on the distribution family this project is developed on,
+and eight phases of verification could not see it.
+
+Fixed by adding `z` to both. Verified by cloning to `/tmp`, confirming
+the label was `user_tmp_t`, and running both services from there: 215
+tests pass and every checker is green, where before neither started.
