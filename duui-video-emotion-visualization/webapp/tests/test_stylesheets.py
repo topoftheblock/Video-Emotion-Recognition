@@ -154,7 +154,7 @@ def test_every_custom_property_used_is_defined(
 # --- Adaptive rendering -------------------------------------------------
 
 
-def test_the_colour_scheme_is_declared(all_css: str) -> None:
+def test_the_color_scheme_is_declared(all_css: str) -> None:
     """The palette is light-only. Without saying so, UA widgets — the
     range input, the text fields, the scrollbars — may render dark on a
     system set to dark."""
@@ -176,16 +176,16 @@ def test_the_preference_queries_are_present(all_css: str, query: str) -> None:
     assert f"@media {query}" in all_css, f"no @media {query} block"
 
 
-def test_forced_colours_covers_everything_whose_background_is_data(
+def test_forced_colors_covers_everything_whose_background_is_data(
     all_css: str,
 ) -> None:
     """
-    Forced-colours mode strips backgrounds.
+    Forced-colors mode strips backgrounds.
 
-    For an app that draws its readings as coloured boxes, that deletes
+    For an app that draws its readings as colored boxes, that deletes
     the data and leaves the layout intact — nothing looks broken enough
     to notice. Each selector below carries meaning in a background or a
-    box-shadow and has to be restated in system colours or opted out.
+    box-shadow and has to be restated in system colors or opted out.
     """
     block = re.search(
         r"@media\s*\(forced-colors:\s*active\)\s*\{(.*?)\n\}", all_css, re.DOTALL
@@ -206,12 +206,12 @@ def test_forced_colours_covers_everything_whose_background_is_data(
         )
 
 
-def test_suppressed_outlines_have_a_forced_colours_fallback(
+def test_suppressed_outlines_have_a_forced_colors_fallback(
     sheets: dict[str, str], all_css: str
 ) -> None:
     """
     `outline: none` plus a `box-shadow` ring is fine until forced
-    colours, which drops box shadows and would leave those controls with
+    colors, which drops box shadows and would leave those controls with
     no focus indicator at all — invisible until someone tries to use the
     app that way.
     """
@@ -233,7 +233,7 @@ def test_suppressed_outlines_have_a_forced_colours_fallback(
 
     missing = [s for s in suppressed if s.split(":")[0].strip() not in body]
     assert not missing, (
-        "these suppress their outline but have no forced-colours fallback: "
+        "these suppress their outline but have no forced-colors fallback: "
         + str(sorted(missing))
     )
 
@@ -242,7 +242,7 @@ def test_more_contrast_only_repoints_tokens(all_css: str) -> None:
     """
     Deliberately a constraint, not a convenience.
 
-    If raising contrast needs a per-rule change, some colour is being
+    If raising contrast needs a per-rule change, some color is being
     set outside the token layer — and the fix is to move it in, not to
     add an exception here. The block staying token-only is the evidence
     the token layer is still doing its job.

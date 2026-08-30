@@ -363,7 +363,7 @@ CREATE TABLE persons (
 
 | | |
 | --- | --- |
-| **Language** | US English, everywhere, including code comments and log output |
+| **Language** | US English, everywhere, including code comments, identifiers and log output. Enforced by `tests/stylecheck.py`; two sequences are exempt because they are names, not spellings — `aria-labelledby` and the Ubuntu Font Licence |
 | **Code line width** | 88 (the formatter enforces this) |
 | **Prose line width** | 72 in comments and docstrings; 80 in Markdown |
 | **Em dash** | `—`, not `--`. Files are UTF-8. Applies in code comments, docstrings, and user-facing strings alike — `--` was the legacy style. |

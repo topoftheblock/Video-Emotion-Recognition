@@ -67,7 +67,7 @@
 }
 
 /* The Gateway's .input-wrapper: recessed surface fill, soft border, and
-   a 2px primary ring on focus rather than a coloured glow. The combobox
+   a 2px primary ring on focus rather than a colored glow. The combobox
    wraps a text input that doubles as the search field and a list of
    matches that drops beneath it. */
 .video-combobox {

@@ -1,19 +1,20 @@
-# Matches docs/documentation-style.md section 8: 88 columns, same as the code.
-# yamllint's own default is 80, which would flag lines this project considers
-# correct.
+# Matches docs/documentation-style.md section 8: 88 columns, same as the
+# code. yamllint's own default is 80, which would flag lines this
+# project considers correct.
 extends: default
 
 rules:
   line-length:
     max: 88
-    # A healthcheck command, a URL and a ${VAR:-default} interpolation cannot be
-    # wrapped without changing what they mean. This permits a long line when it
-    # is one unbreakable value, and still flags prose that simply ran on.
+    # A healthcheck command, a URL and a ${VAR:-default} interpolation
+    # cannot be wrapped without changing what they mean. This permits a
+    # long line when it is one unbreakable value, and still flags prose
+    # that simply ran on.
     allow-non-breakable-inline-mappings: true
-  # `---` document markers. Nothing here is a multi-document stream, and the
-  # files are more readable without them.
+  # `---` document markers. Nothing here is a multi-document stream, and
+  # the files are more readable without them.
   document-start: disable
-  # GitHub Actions' `on:` key. YAML 1.1 reads it as the boolean true, so the
-  # rule fires on every workflow file ever written. Not a defect.
+  # GitHub Actions' `on:` key. YAML 1.1 reads it as the boolean true, so
+  # the rule fires on every workflow file ever written. Not a defect.
   truthy:
     check-keys: false

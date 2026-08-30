@@ -69,8 +69,8 @@
   --error-700: #bb4343;
   --error-800: #953535;
 
-  /* surface | #242735 — 50..300 are the light-mode greys, 400+ are the
-     dark blue-greys the Gateway uses for dark mode. We only reach past
+  /* surface | #242735 — 50..300 are the light-mode grays, 400+ are the
+     dark blue-grays the Gateway uses for dark mode. We only reach past
      400 for hairlines and dimmed text. */
   --surface-50: #f2f2f2;
   --surface-100: #e7e7e7;
@@ -137,7 +137,7 @@
 
      --text-dim reads 5.54:1 on the card and 4.95:1 on the page floor,
      but placeholders sit on the recessed --surface-alt fill, where the
-     same colour lands at 4.48:1 — close enough to look fine and still
+     same color lands at 4.48:1 — close enough to look fine and still
      be an AA failure. There is no step between surface-400 and
      surface-500 (#242735, which would read as filled-in text rather
      than as a prompt), so this is surface-400 nudged just past the
@@ -145,7 +145,7 @@
   --text-placeholder: #5c5e68;
 
   /* Interactive. Was indigo->violet; now flat primary. --gradient-brand
-     is deliberately a solid colour and not a gradient: every fill in
+     is deliberately a solid color and not a gradient: every fill in
      the Gateway is flat, and keeping the name means the ~8 rules that
      referenced it did not have to change. */
   --signal: var(--primary-500);
@@ -156,7 +156,7 @@
 
   /* Emotion read-outs, and the base every sidebar panel accent derives
      from. This was the theme's tertiary amber — which is a theme-blue
-     colour, but reads as foreign next to everything else on the page,
+     color, but reads as foreign next to everything else on the page,
      so the read-outs now sit on the primary ramp like the rest of the
      app. Still split by role: 500 for the bar fills, 700 for the
      dominant-emotion label, which is text and needs 8.7:1 rather than
@@ -179,7 +179,7 @@
 
      "On screen now" is the one deliberate outsider. It is an alert —
      someone is on screen at this instant — and error-500 is the only
-     colour on the page that says so. */
+     color on the page that says so. */
   --accent-emotion: var(--primary-500);
   --accent-people: var(--secondary-500);
   --accent-live: var(--error-500);
@@ -188,7 +188,7 @@
   /* Decided, so it is not re-raised: these four are *decorative* under
      WCAG 1.4.11 and deliberately left below 3:1 (--accent-people is the
      lowest, 2.18:1 on the card). Every dot sits immediately beside a
-     text label naming the same panel, so the colour is never the sole
+     text label naming the same panel, so the color is never the sole
      channel and the 3:1 rule does not reach it. tests/contrast_check.py
      records them as INFO for the same reason.
 
@@ -196,7 +196,7 @@
      */
 
   /* Status. Error only: the app has nothing that reports success as a
-     colour any more (the topbar's "Live sync" chip was the sole user of
+     color any more (the topbar's "Live sync" chip was the sole user of
      the success ramp, and it claimed a health check that did not
      exist). --danger-text is the on-white value; error text on the
      error-100 job banner needs --error-800 instead (see jobs.css). */
@@ -268,6 +268,6 @@
   --font-subtitle: "Roboto", system-ui, sans-serif;
 
   /* The Gateway's .transition-300. Replaces the 150ms transform-and-
-     glow transitions this app used; hovers there are colour-only. */
+     glow transitions this app used; hovers there are color-only. */
   --transition: 300ms;
 }

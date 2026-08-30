@@ -10,15 +10,22 @@
 # Each directory also has its own pyproject.toml, so `cd
 # cas-to-postgres-importer && pytest` (or either of the other two) works
 # standalone — this file is only the "run everything" convenience.
+#
+# `tests` is on both lists for one reason: the checkers in it have tests
+# of their own. `stylecheck.py` is the only enforcement several
+# style-guide rules have, so a bug in it is silent — the check passes
+# and the rule quietly stops existing.
 pythonpath = [
     "cas-to-postgres-importer/src",
     "webapp/src",
     "global-identity-linker/src",
+    "tests",
 ]
 testpaths = [
     "cas-to-postgres-importer/tests",
     "webapp/tests",
     "global-identity-linker/tests",
+    "tests",
 ]
 
 # --- Formatting and linting ---------------------------------------------
@@ -41,7 +48,7 @@ target-version = "py314"
 [tool.ruff.lint]
 # Deliberately narrow to start: pyflakes (F), pycodestyle errors (E) and
 # import sorting (I). These are the rules the style guide already
-# implies, and none of them asks for a judgement call.
+# implies, and none of them asks for a judgment call.
 #
 # Opinionated families are left off on purpose. Docstring rules (D) in
 # particular would fire on almost every function, since Phase 5 has not

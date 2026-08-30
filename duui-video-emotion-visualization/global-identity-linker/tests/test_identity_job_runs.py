@@ -7,7 +7,7 @@ belongs in the other. Sub-projects share no files by design, so the
 duplication is deliberate.
 
 What is worth testing is not the happy path, which the linker's own run
-covers by opening a run whenever it works. It is the three behaviours
+covers by opening a run whenever it works. It is the three behaviors
 that appear only when something goes wrong or takes a long time:
 
 - **The throttle.** `update` is called from inside loops. Without it, a
@@ -35,7 +35,7 @@ JOB = "zz-job-runs-test"
 def clean_job_rows(db_available: bool) -> Iterator[None]:
     """Remove every row this test job leaves behind, before and after.
 
-    Named distinctively so a row left by a crashed run is recognisable,
+    Named distinctively so a row left by a crashed run is recognizable,
     and so this can never touch a real job's row.
     """
     if not db_available:

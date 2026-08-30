@@ -78,7 +78,7 @@ x-cas-to-postgres-importer-common: &cas-to-postgres-importer-common
     #
     # `z` is the SELinux share flag. On a labelling distro (openSUSE,
     # Fedora, RHEL) the container runs as container_t and simply may not
-    # read files labelled user_home_t, so without this the importer sees
+    # read files labeled user_home_t, so without this the importer sees
     # an unreadable /data/input/xmi and reports "No .xmi files found" —
     # even running as root. `z` relabels this directory's contents to
     # container_file_t with a SHARED category, so both importer services
@@ -231,7 +231,13 @@ services:
       dockerfile: tests/Dockerfile.lint
     image: duui-video-emotion-visualization/lint:latest
     volumes:
-      - ./:/app:ro
+      # `z` for the same reason the importer's input mounts carry it: on
+      # a labelling distro the checkout is user_home_t or user_tmp_t,
+      # which container_t may not read, and the failure is a bare
+      # "Permission denied" on the entry point. Without it this service
+      # does not work from a fresh clone at all. It is a no-op where
+      # SELinux is not enforcing.
+      - ./:/app:ro,z
 
   # --- Tests ------------------------------------------------------------
   # Runs every suite against the same interpreter the images use.
@@ -274,8 +280,9 @@ services:
     volumes:
       # Read-write because pytest writes nothing but the source has to
       # be live; bytecode is disabled in the image so nothing lands back
-      # on the host.
-      - ./:/app
+      # on the host. `z` as on the lint service above, and for the same
+      # reason: without it a fresh clone cannot run its own tests.
+      - ./:/app:z
 
   webapp:
     build:

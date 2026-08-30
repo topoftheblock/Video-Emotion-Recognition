@@ -1,28 +1,28 @@
 """A WCAG contrast checker for the frontend's palette.
 
-Reads the committed colours out of `css/tokens.css` and `js/state.js`
+Reads the committed colors out of `css/tokens.css` and `js/state.js`
 and reports the contrast ratio of every pair the page actually
 composites, so a palette change that breaks a threshold fails a check
-rather than someone's eyes. See "Colour and contrast" in
+rather than someone's eyes. See "Color and contrast" in
 docs/accessibility.md.
 
-Two things make this more than a ratio between two colours:
+Two things make this more than a ratio between two colors:
 
-- **Alpha.** Several of the colours are translucent: the subtitle box is
+- **Alpha.** Several of the colors are translucent: the subtitle box is
   black at 85% over arbitrary video, the selected person's score is
-  white at 75% over the signal colour, and a soft border is a surface
+  white at 75% over the signal color, and a soft border is a surface
   tone at 20%. A pair like that is only measurable once flattened
   against its real backdrop, which is why every side of a pair here is a
-  *stack* of layers rather than one colour.
+  *stack* of layers rather than one color.
 
-- **Colours computed at runtime.** `readableTextColor` in `state.js`
-  picks the filter chip's text colour per person as it renders, so the
+- **Colors computed at runtime.** `readableTextColor` in `state.js`
+  picks the filter chip's text color per person as it renders, so the
   pair that matters is whatever that function returns against that
-  person's colour, not anything written literally in a stylesheet.
+  person's color, not anything written literally in a stylesheet.
   `_readable_text_color_impl` mirrors it from the parsed source.
 
 The registry of pairs is curated rather than discovered: nothing in the
-stylesheets says which colours end up stacked on which. A new
+stylesheets says which colors end up stacked on which. A new
 combination has to be added here, or it is not checked.
 
 **A helper, not a test.** pytest does not collect this file — its name
@@ -43,7 +43,7 @@ import re
 from pathlib import Path
 from typing import Protocol
 
-#: One opaque colour, as 0-255 channels.
+#: One opaque color, as 0-255 channels.
 RGB = tuple[int, int, int]
 
 
@@ -57,7 +57,7 @@ class TextColorPicker(Protocol):
     description: str
 
     def __call__(self, rgb: RGB) -> str:
-        """Return the text colour this picker would choose."""
+        """Return the text color this picker would choose."""
 
 
 FRONTEND = Path(__file__).resolve().parents[2] / "src" / "frontend"
@@ -67,7 +67,7 @@ STATE_JS = FRONTEND / "js" / "state.js"
 # WCAG 2.2 minimums. LARGE applies at 18.66px bold or 24px and above; UI
 # is the non-text minimum, for anything conveying meaning or marking a
 # control's boundary. INFO records a pair without asserting on it, for
-# colours deliberately exempted — so the decision stays visible rather
+# colors deliberately exempted — so the decision stays visible rather
 # than becoming a silent omission.
 TEXT = 4.5
 LARGE = 3.0
@@ -78,7 +78,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 
-# Colour maths.
+# Color maths.
 
 
 def _srgb_channel(value: int) -> float:
@@ -88,13 +88,13 @@ def _srgb_channel(value: int) -> float:
 
 
 def luminance(rgb: RGB) -> float:
-    """Return the relative luminance of an opaque colour."""
+    """Return the relative luminance of an opaque color."""
     r, g, b = (_srgb_channel(c) for c in rgb)
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
 def contrast(fg: RGB, bg: RGB) -> float:
-    """Return the contrast ratio between two opaque colours."""
+    """Return the contrast ratio between two opaque colors."""
     a, b = luminance(fg), luminance(bg)
     if a < b:
         a, b = b, a
@@ -121,21 +121,21 @@ _RGB = re.compile(
     r"^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)\s*(?:[,/]\s*([\d.]+)\s*)?\)$"
 )
 _VAR = re.compile(r"^var\(\s*(--[\w-]+)\s*\)$")
-# Only whole-value declarations are colours we can use. A shadow ("0 1px
+# Only whole-value declarations are colors we can use. A shadow ("0 1px
 # 2px rgba(...)"), a font stack or a length lands here too and is
 # skipped — matching the *entire* value is what rejects them.
 _DECL = re.compile(r"^\s*(--[\w-]+)\s*:\s*([^;]+);", re.MULTILINE)
 
 
 def _parse_rgba(text: str) -> tuple[RGB, float] | None:
-    """Parse one colour value into its channels and its alpha.
+    """Parse one color value into its channels and its alpha.
 
     Args:
         text: A whole CSS value.
 
     Returns:
-        The colour and its alpha, or None if the value is not a plain
-        colour — a shadow, a font stack or a length.
+        The color and its alpha, or None if the value is not a plain
+        color — a shadow, a font stack or a length.
     """
     text = text.strip()
 
@@ -159,7 +159,7 @@ def _parse_rgba(text: str) -> tuple[RGB, float] | None:
 def load_tokens(path: Path = TOKENS_CSS) -> dict[str, tuple[RGB, float]]:
     """
     Every custom property in tokens.css that resolves to a single
-    colour, as {name: ((r, g, b), alpha)}.
+    color, as {name: ((r, g, b), alpha)}.
 
     var() aliases are followed, which is the whole point: the semantic
     half of tokens.css is almost entirely `--signal:
@@ -172,7 +172,7 @@ def load_tokens(path: Path = TOKENS_CSS) -> dict[str, tuple[RGB, float]]:
     resolved: dict[str, tuple[RGB, float]] = {}
 
     def resolve(name: str, seen: tuple = ()) -> tuple[RGB, float] | None:
-        """Follow one name to a colour, through any var() aliases."""
+        """Follow one name to a color, through any var() aliases."""
         if name in resolved:
             return resolved[name]
         if name in seen or name not in raw:
@@ -186,24 +186,24 @@ def load_tokens(path: Path = TOKENS_CSS) -> dict[str, tuple[RGB, float]]:
                 resolved[name] = target
             return target
 
-        colour = _parse_rgba(value)
-        if colour is not None:
-            resolved[name] = colour
-        return colour
+        color = _parse_rgba(value)
+        if color is not None:
+            resolved[name] = color
+        return color
 
     for name in raw:
         resolve(name)
     return resolved
 
 
-def load_person_colours(path: Path = STATE_JS) -> list[str]:
+def load_person_colors(path: Path = STATE_JS) -> list[str]:
     """
     PERSON_COLORS plus UNKNOWN_PERSON_COLOR from js/state.js.
 
     These are not in tokens.css and cannot be: they are assigned to
     people at runtime by assignPersonColors(), and the same six values
     are used both as sidebar swatches on a light surface and as stroke
-    colours over arbitrary video. Two very different contrast questions,
+    colors over arbitrary video. Two very different contrast questions,
     same list.
     """
     source = path.read_text(encoding="utf-8")
@@ -226,7 +226,7 @@ def _readable_text_color_impl(path: Path = STATE_JS) -> TextColorPicker:
 
       * `L > <threshold> ? "<dark>" : "<light>"` — a fixed luminance
         threshold. One well above the true black-and-white crossover
-        picks the wrong text colour for the colours in between, which is
+        picks the wrong text color for the colors in between, which is
         the bug this mirror exists to catch.
       * anything else — assumed to be the fixed form, emulated as "pick
         whichever of the function's two hex literals contrasts better",
@@ -269,7 +269,7 @@ def _readable_text_color_impl(path: Path = STATE_JS) -> TextColorPicker:
         """Choose whichever candidate contrasts better."""
 
         def ratio(hex_value: str) -> float:
-            """The contrast of one candidate against this colour."""
+            """The contrast of one candidate against this color."""
             parsed = _parse_rgba(hex_value)
             assert parsed is not None
             return contrast(parsed[0], rgb)
@@ -286,7 +286,7 @@ def _readable_text_color_impl(path: Path = STATE_JS) -> TextColorPicker:
 
 class Layer:
     """
-    One side of a pair, as a stack of colours painted bottom-first.
+    One side of a pair, as a stack of colors painted bottom-first.
 
     A single opaque token is the common case (`Layer("--signal")`), but
     anything translucent needs what is underneath it to mean anything —
@@ -299,17 +299,17 @@ class Layer:
         self.specs = specs
 
     def flatten(self, tokens: dict[str, tuple[RGB, float]], base: RGB = WHITE) -> RGB:
-        """Paint the stack over `base` and return the resulting colour.
+        """Paint the stack over `base` and return the resulting color.
 
         Raises:
-            KeyError: If a layer names a colour that cannot be resolved.
+            KeyError: If a layer names a color that cannot be resolved.
         """
         rgb = base
         for spec in self.specs:
-            colour = tokens[spec] if spec in tokens else _parse_rgba(spec)
-            if colour is None:
-                raise KeyError(f"unknown colour spec: {spec!r}")
-            fg, alpha = colour
+            color = tokens[spec] if spec in tokens else _parse_rgba(spec)
+            if color is None:
+                raise KeyError(f"unknown color spec: {spec!r}")
+            fg, alpha = color
             rgb = fg if alpha >= 1.0 else composite(fg, alpha, rgb)
         return rgb
 
@@ -643,7 +643,7 @@ def _static_pairs() -> list[Pair]:
         ),
         P("topbar", "missing-file note", Layer("--text-dim"), Layer("--surface"), TEXT),
         # Decorative, recorded but not asserted. Panel dots each sit
-        # beside a text label naming the same panel, so colour is not
+        # beside a text label naming the same panel, so color is not
         # the sole channel and 1.4.11 does not apply. Recorded so the
         # exemption is visible rather than assumed.
         P(
@@ -696,20 +696,20 @@ def _static_pairs() -> list[Pair]:
 
 def _person_pairs(palette: list[str], pick_text: TextColorPicker) -> list[Pair]:
     """
-    Where a person's colour carries meaning, and what actually has to
+    Where a person's color carries meaning, and what actually has to
     clear a threshold for it to do so.
 
-    Not the colours themselves. The same six are stroked over arbitrary
+    Not the colors themselves. The same six are stroked over arbitrary
     video, where they have to stay bright, which leaves them at
     1.4-2.7:1 against the light rows in the sidebar — and darkening them
     to fix that would break the other use. The swatch's boundary is a
     ring for that reason, so the ring is what is asserted here;
-    the raw colour-on-surface figures stay as INFO, because they are the
+    the raw color-on-surface figures stay as INFO, because they are the
     reason the ring exists and would otherwise look like an omission.
 
     The overlay stroke over footage is not checked at all: its backdrop
     is whatever the video is showing, so there is no ratio to compute —
-    only the palette's separability under colour-vision deficiency,
+    only the palette's separability under color-vision deficiency,
     which is tests/support/cvd_check.py's job.
     """
     pairs = [
@@ -743,26 +743,26 @@ def _person_pairs(palette: list[str], pick_text: TextColorPicker) -> list[Pair]:
             UI,
         ),
     ]
-    for colour in palette:
+    for color in palette:
         pairs.append(
             Pair(
                 "person",
-                f"swatch {colour} on row fill (ringed)",
-                Layer(colour),
+                f"swatch {color} on row fill (ringed)",
+                Layer(color),
                 Layer("--surface-50"),
                 INFO,
             )
         )
-    for colour in palette:
-        parsed = _parse_rgba(colour)
-        assert parsed is not None, f"palette entry is not a colour: {colour}"
+    for color in palette:
+        parsed = _parse_rgba(color)
+        assert parsed is not None, f"palette entry is not a color: {color}"
         rgb = parsed[0]
         pairs.append(
             Pair(
                 "person",
-                f"filter chip text on {colour}",
+                f"filter chip text on {color}",
                 Layer(pick_text(rgb)),
-                Layer(colour),
+                Layer(color),
                 TEXT,
             )
         )
@@ -778,7 +778,7 @@ class Result:
     def __init__(
         self, pair: Pair, ratio: float, foreground: RGB, background: RGB
     ) -> None:
-        """Record the measurement and the colours it was taken from."""
+        """Record the measurement and the colors it was taken from."""
         self.pair = pair
         self.ratio = ratio
         self.foreground = foreground
@@ -807,7 +807,7 @@ class Result:
 def check() -> list[Result]:
     """Measure every registered pair against the committed sources."""
     tokens = load_tokens()
-    palette = load_person_colours()
+    palette = load_person_colors()
     pick_text = _readable_text_color_impl()
 
     results = []

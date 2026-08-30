@@ -74,13 +74,13 @@ function loop() {
 /* Inline SVG rather than the ▶ / ⏸ glyphs these replace. Oxanium has
  * neither, so both came from whatever symbol font the OS fell back to
  * — which is why they rendered at different sizes, and why only the
- * triangle sat off-centre: its glyph box carries a trailing side
+ * triangle sat off-center: its glyph box carries a trailing side
  * bearing that the pause bars do not, so centring the box left the ink
  * pushed left.
  *
- * The triangle is centred by centroid, not by bounding box: (8.5 + 8.5
- * + 19) / 3 = 12, the centre of the viewBox. A triangle whose *box* is
- * centred reads as sitting too far left, which is the same illusion the
+ * The triangle is centerd by centroid, not by bounding box: (8.5 + 8.5
+ * + 19) / 3 = 12, the center of the viewBox. A triangle whose *box* is
+ * centerd reads as sitting too far left, which is the same illusion the
  * glyph was suffering from. The pause bars are symmetric, so box and
  * centroid coincide.
  *

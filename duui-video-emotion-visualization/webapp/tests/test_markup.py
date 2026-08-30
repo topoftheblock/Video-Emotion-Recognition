@@ -1,7 +1,7 @@
 """Structural accessibility invariants for the page's markup.
 
 See docs/accessibility.md. Every one of these corresponds to something
-that was actually wrong once — an unlabelled
+that was actually wrong once — an unlabeled
 slider, a page with no `h1`, an `aria-expanded` on an element that could
 not carry it, an explanation reachable only by hovering. The point is
 that none of those can come back silently.

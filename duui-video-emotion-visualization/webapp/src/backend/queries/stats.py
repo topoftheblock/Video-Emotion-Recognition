@@ -41,7 +41,7 @@ def emotion_distribution(video_id: int) -> list[Row]:
                         THEN 'text (raw GoEmotions)' ELSE modality END AS series
             FROM base_emotions
             WHERE video_id = %s AND dominant_label IS NOT NULL
-        ) labelled
+        ) labeled
         GROUP BY series, modality, dominant_label
         ORDER BY series, n DESC
         """,

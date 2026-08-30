@@ -1,6 +1,6 @@
 """Tests for `cas/sofas.py` and `video_files.py`.
 
-Filesystem and XML logic only; no database. Covers the behaviour the
+Filesystem and XML logic only; no database. Covers the behavior the
 "importer places the video" flow depends on: an idempotent copy,
 extraction of a video embedded in the CAS when no companion file
 exists, and handling a missing source or filename without raising.
@@ -275,7 +275,7 @@ def test_stripping_removes_media_payloads_but_keeps_text(
 def test_stripping_leaves_a_sofa_with_no_mime_alone(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An unlabelled sofa is left alone, in case it is text.
+    """An unlabeled sofa is left alone, in case it is text.
 
     The cost of being wrong is silently broken offsets.
     """

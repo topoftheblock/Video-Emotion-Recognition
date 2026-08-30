@@ -8,7 +8,7 @@ reader says, the second only in which typeface the canvas silently fell
 back to.
 
 Kept deliberately narrow. These assert the specific shape of two known
-regressions rather than trying to analyse the JavaScript, because a
+regressions rather than trying to analyze the JavaScript, because a
 loose check over source text is a source of false alarms and these two
 are worth having no false alarms about.
 """
@@ -83,14 +83,14 @@ def test_canvas_label_size_is_derived_from_the_root_font_size() -> None:
         )
 
 
-def test_the_on_video_label_colour_comes_from_the_shared_decision() -> None:
+def test_the_on_video_label_color_comes_from_the_shared_decision() -> None:
     """
-    The tag drawn over each bounding box picks its text colour the same
+    The tag drawn over each bounding box picks its text color the same
     way the filter chip does. It used to hardcode a near-black — a
     second, independent copy of the same decision, which happened to
     pass but had nothing keeping it passing when the palette changed.
     """
     overlay = (FRONTEND / "js" / "playback" / "overlay.js").read_text(encoding="utf-8")
     assert "readableTextColor" in overlay, (
-        "overlay.js should route its label colour through readableTextColor()"
+        "overlay.js should route its label color through readableTextColor()"
     )

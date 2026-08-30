@@ -1,7 +1,7 @@
 """Contrast assertions over the committed frontend palette.
 
 The arithmetic and the pair registry live in `contrast_check.py`; this
-file is only the policy. See "Colour and contrast" in
+file is only the policy. See "Color and contrast" in
 docs/accessibility.md.
 
 The policy is the plain one — nothing below its threshold, ever. It was
@@ -32,7 +32,7 @@ def results() -> list:
 
 
 def test_semantic_tokens_resolve_through_var_aliases() -> None:
-    """A semantic name resolves through its aliases to a real colour."""
+    """A semantic name resolves through its aliases to a real color."""
     tokens = contrast_check.load_tokens()
     # --signal is var(--primary-500) is #006c98: two hops, and the shape
     # almost every semantic token in tokens.css takes.
@@ -48,17 +48,17 @@ def test_translucent_tokens_keep_their_alpha() -> None:
     assert tokens["--border-soft"] == ((102, 104, 114), 0.2)
 
 
-def test_non_colour_declarations_are_skipped() -> None:
-    """A radius or a font stack is not a colour, and is skipped."""
+def test_non_color_declarations_are_skipped() -> None:
+    """A radius or a font stack is not a color, and is skipped."""
     tokens = contrast_check.load_tokens()
     for name in ("--theme-rounded-base", "--font-ui", "--transition", "--shadow-md"):
-        assert name not in tokens, f"{name} is not a colour and must not be checked"
+        assert name not in tokens, f"{name} is not a color and must not be checked"
 
 
 def test_person_palette_is_read_from_state_js() -> None:
     """The palette measured is the one the frontend assigns from."""
-    palette = contrast_check.load_person_colours()
-    # Six assignable colours plus the unknown-person fallback.
+    palette = contrast_check.load_person_colors()
+    # Six assignable colors plus the unknown-person fallback.
     assert len(palette) == 7
     assert palette[0] == "#e69f00"
     assert palette[-1] == "#c8c8d0"
@@ -85,28 +85,28 @@ def test_no_contrast_failures(results: list) -> None:
     )
 
 
-def test_readable_text_color_clears_aa_for_every_person_colour() -> None:
+def test_readable_text_color_clears_aa_for_every_person_color() -> None:
     """The check that would have caught the original bug.
 
-    readableTextColor() picks the filter chip's text colour per person
+    readableTextColor() picks the filter chip's text color per person
     at render time. It used to threshold on luminance at L > 0.45 — far
-    above the true crossover near 0.18 — so four of the seven colours
+    above the true crossover near 0.18 — so four of the seven colors
     were handed white text at 2.2-3.1:1. Asserting the *outcome* for
     every palette entry is what makes that unrepeatable, including after
     a palette change.
     """
-    palette = contrast_check.load_person_colours()
+    palette = contrast_check.load_person_colors()
     pick = contrast_check._readable_text_color_impl()
 
     weak = []
-    for colour in palette:
-        parsed = contrast_check._parse_rgba(colour)
+    for color in palette:
+        parsed = contrast_check._parse_rgba(color)
         picked = contrast_check._parse_rgba(pick(parsed[0])) if parsed else None
         assert parsed is not None and picked is not None
         rgb = parsed[0]
         ratio = contrast_check.contrast(picked[0], rgb)
         if ratio < contrast_check.TEXT:
-            weak.append(f"  {colour}: picked {pick(rgb)} at {ratio:.2f}:1")
+            weak.append(f"  {color}: picked {pick(rgb)} at {ratio:.2f}:1")
 
     assert not weak, (
         f"readableTextColor() ({pick.description}) drops below "

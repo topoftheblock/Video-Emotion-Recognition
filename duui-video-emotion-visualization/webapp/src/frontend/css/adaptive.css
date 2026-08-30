@@ -2,7 +2,7 @@
 
 /*
    How the app answers the display preferences the user sets outside it:
-   forced colours, a request for more contrast, a request for less
+   forced colors, a request for more contrast, a request for less
    motion. Distinct from responsive.css, which is only about viewport
    width — these fire at any size.
 
@@ -12,7 +12,7 @@
 /* --- Reduced motion ------------------------------------------------- */
 
 /*
-   Every transition in the app is decorative (colour fades on hover,
+   Every transition in the app is decorative (color fades on hover,
    the width tween on emotion fills) and nothing depends on an
    animation finishing, so all of it can simply stop. The one
    animation that carries meaning — the Ask button's spinner — is
@@ -25,20 +25,20 @@
   }
 }
 
-/* --- Forced colours (Windows High Contrast and friends) ------------- */
+/* --- Forced colors (Windows High Contrast and friends) -------------- */
 
 /*
-   Forced-colours mode replaces every author colour with one from the
+   Forced-colors mode replaces every author color with one from the
    user's own small system palette, and — the part that matters here —
    *removes background images and most backgrounds outright*. For an app
-   whose data is drawn almost entirely as coloured boxes, that deletes
+   whose data is drawn almost entirely as colored boxes, that deletes
    the readings while leaving the layout perfectly intact: the emotion
    tracks become empty grooves, the person swatches vanish, and nothing
    looks broken enough to notice.
 
    Two tools. `forced-color-adjust: none` opts one element out of the
-   substitution entirely, which is right only where the specific colour
-   *is* the information. Everywhere else, system colour keywords
+   substitution entirely, which is right only where the specific color
+   *is* the information. Everywhere else, system color keywords
    (Canvas, CanvasText, Highlight, ButtonBorder, LinkText) let the
    element keep its meaning in whatever palette the user chose. */
 @media (forced-colors: active) {
@@ -46,7 +46,7 @@
      ring instead (see .ask-input:focus, .video-combobox-input:focus).
      Box shadows are dropped here, so without this the app's two most
      important controls would have no focus indicator at all — the one
-     forced-colours regression that is invisible until someone tries to
+     forced-colors regression that is invisible until someone tries to
      use it. */
   .ask-input:focus,
   .video-combobox-input:focus {
@@ -55,7 +55,7 @@
   }
 
   /* Everything else already uses `outline`, which survives — but the
-     colour has to come from the system palette rather than --signal. */
+     color has to come from the system palette rather than --signal. */
   .skip-link:focus,
   .ask-submit:focus-visible,
   .ask-reset:focus-visible,
@@ -102,10 +102,10 @@
     background: Highlight;
   }
 
-  /* Person swatches are the one place the *specific* colour is the
+  /* Person swatches are the one place the *specific* color is the
      information: it is what ties a name in the sidebar to a stroked box
-     on the video, and the video is a <canvas>, which forced colours do
-     not touch at all. Substituting a system colour here would break the
+     on the video, and the video is a <canvas>, which forced colors do
+     not touch at all. Substituting a system color here would break the
      match while looking fine. So this opts out — and takes a real
      border, because the ring that normally supplies its boundary is a
      box-shadow and would otherwise be dropped. */
@@ -114,8 +114,8 @@
     border: 1px solid CanvasText;
   }
 
-  /* Panel dots are decorative and labelled (see tokens.css); letting
-     them take a system colour is correct. They lose their halo with
+  /* Panel dots are decorative and labeled (see tokens.css); letting
+     them take a system color is correct. They lose their halo with
      every other box-shadow, which costs nothing. */
   .panel-dot {
     background: CanvasText;
@@ -159,7 +159,7 @@
    Token overrides only. Every value below is one that passes its WCAG
    threshold but sits closest to it, so this is the same palette with
    its narrowest margins widened — not a second theme. If this block
-   ever needs a per-rule change, that means a colour is being set
+   ever needs a per-rule change, that means a color is being set
    somewhere outside the token layer, and the fix is to move it in
    rather than to add exceptions here. */
 @media (prefers-contrast: more) {

@@ -36,6 +36,11 @@ for project in global-identity-linker cas-to-postgres-importer webapp; do
   run "mypy ($project)" mypy --cache-dir="/tmp/mypy-cache-$project" \
     --disallow-untyped-defs "$project/src" "$project/tests"
 done
+# The checkers and the session hook, which belong to no sub-project and
+# so were checked by nothing until Phase 8. The first run found a real
+# error in stylecheck.py.
+run "mypy (tests)" mypy --cache-dir=/tmp/mypy-cache-tests \
+  --disallow-untyped-defs tests conftest.py
 
 run "sqlfluff"     sqlfluff lint --dialect postgres pgvector-db/schema.sql
 run "yamllint"     yamllint docker-compose.yml webapp/docs/a11y-ci.yml
@@ -74,11 +79,12 @@ run "links"        python /app/tests/check_links.py
 #
 # The exemptions are files whose *subject* is the thing being checked:
 # two modules that describe UIMA type names and the schema the query
-# agent is given, and this checker's own rule table, which holds every
-# retired term by definition.
+# agent is given, the checker's own rule table, which holds every
+# retired term by definition, and its tests, which have to write a
+# violation in order to assert that it is caught.
 run "style" python /app/tests/stylecheck.py . \
   --exempt cas/types.py query_agent/schema_context.py \
-  --exempt-terms tests/stylecheck.py
+  --exempt-terms tests/stylecheck.py tests/test_stylecheck.py
 
 # The only workflow-shaped file inside this project. The real workflow
 # lives in the repository root's .github/workflows, one directory above

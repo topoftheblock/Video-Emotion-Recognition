@@ -153,7 +153,7 @@ def select_video_sofa(sofas: list[SofaPayload]) -> SofaPayload | None:
     Any other `video/*` sofa is used as a fallback, so a pipeline that
     routes the video somewhere unexpected still works unconfigured. The
     setting only has to be reached for when the CAS holds several video
-    sofas, or the intended one is not labelled `video/*` at all.
+    sofas, or the intended one is not labeled `video/*` at all.
 
     Args:
         sofas: The payload-carrying sofas found in the document.

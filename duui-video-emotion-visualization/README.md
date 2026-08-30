@@ -17,7 +17,9 @@ They share no code. The database is the only thing they have in common — see
 
 ## Running it
 
-Requires Docker.
+Requires Docker, and nothing else: every part runs in a container, including
+the tests. The images are built on Python 3.14 and Postgres 18, which is what
+a run outside Docker would have to match.
 
 ```bash
 docker compose up -d
@@ -70,8 +72,10 @@ Anything after `tests` is passed straight to pytest:
 docker compose run --rm tests webapp/tests -k contrast
 ```
 
-This is the only supported way to run the suite; [`tests/`](tests/README.md)
-says why, and what else lives in there.
+This is the supported way to run the whole suite; [`tests/`](tests/README.md)
+says why, and what else lives in there. The one documented exception is the
+accessibility subset, which needs no database and no dependencies and has its
+own path in [`webapp/docs/accessibility.md`](webapp/docs/accessibility.md).
 
 Continuous integration runs the same checks. The workflow lives at the
 repository root, outside this project, which has consequences if the project is

@@ -241,7 +241,7 @@
 
   /* overflow-wrap, not `word-break: break-word` — that spelling is a
      non-standard WebKit alias for exactly this and is deprecated. Same
-     behaviour: break a long token only when it would otherwise
+     behavior: break a long token only when it would otherwise
      overflow. */
   overflow-wrap: break-word;
 }

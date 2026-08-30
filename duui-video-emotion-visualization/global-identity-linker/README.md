@@ -48,8 +48,8 @@ docker build -t duui-video-emotion-visualization/global-identity-linker .
 Running it needs a database carrying the schema and some embeddings in it.
 Point `DUUI_DB_HOST` and the other credentials at yours.
 
-Natively, with the project's Python and the requirements installed, `src` is
-the source root rather than a package:
+Natively, on Python 3.14 with `requirements.txt` installed, `src` is the
+source root rather than a package:
 
 ```bash
 PYTHONPATH=src python -m identity

@@ -35,8 +35,8 @@ The image builds from this directory alone:
 docker build -t duui-video-emotion-visualization/webapp .
 ```
 
-Natively, with the project's Python and the requirements installed, `src` is
-the source root rather than a package:
+Natively, on Python 3.14 with `requirements.txt` installed, `src` is the
+source root rather than a package:
 
 ```bash
 PYTHONPATH=src python -m backend

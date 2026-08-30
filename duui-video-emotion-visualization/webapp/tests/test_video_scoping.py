@@ -22,7 +22,7 @@ from backend.db import get_db_connection
 from backend.queries import stats, videos
 
 # Distinctive enough that a row left behind by a crashed run is
-# recognisable, and outside anything an import would produce.
+# recognizable, and outside anything an import would produce.
 FILENAMES = ("zz-scoping-test-a.mp4", "zz-scoping-test-b.mp4")
 SHARED_EMOTION_ID = 16621
 SHARED_PERSON_ID = 1
