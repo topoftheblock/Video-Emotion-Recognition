@@ -406,7 +406,7 @@ green.
 
 ---
 
-### `[ ]` Phase 7 — READMEs and `docs/`
+### `[x]` Phase 7 — READMEs and `docs/`
 
 **Why last:** it describes the finished state, and the finished state does not
 exist until Phase 6 closes.
@@ -459,14 +459,15 @@ instructions come before architecture.
   reader cannot infer: the importer writes to the database and the linker wipes
   and recomputes every global person, so neither may run as a side effect of
   `docker compose up`.
-- **Decide what happens to `pgvector-db/data_schema_with_types.md`.** It is not a
-  stale copy of the schema — it is the *design* document mapping UIMA CAS types
-  to tables, and it declares itself as such. It is broadly accurate and states
-  most of its own divergences. Two things are wrong with it regardless of that
-  decision: it is written in mixed German and English (Phase 1 settled on US
-  English), and it specifies `FusedEmotion` / `EmotionFusionReference` types that
-  have no tables and no importer support. Consider a test that fails when the
-  design and `schema.sql` diverge.
+- **Decide what happens to `pgvector-db/data_schema_with_types.md`.**
+  **Resolved 2026-08-30: deleted with the rest of `docs/legacy/`.** Phase 2
+  quarantined it there; the project owner then ruled that nothing may be taken
+  from the quarantine, for facts or for topics, so a rewrite would have had to
+  establish every claim from the code and the schema anyway — which is what
+  `docs/database.md` now does, table by table, from `schema.sql` alone. The
+  file remains in git history. The idea of a test that fails when a design
+  document and `schema.sql` diverge dies with the document: there is no second
+  description of the schema left to diverge from it.
 - **Update `webapp/docs/a11y-ci.yml`** — fix the dead `duui-bundestag-stack/…`
   path, and correct its header, which currently justifies leaving it off with a
   claim that is false: the repository *does* have CI, and a `paths:`-scoped
@@ -498,6 +499,18 @@ instructions come before architecture.
   the new docs. Whatever the docs fail to say, this finds.
 - Full test run; full `docker compose` build; confirm the lint workflow fires on
   a change inside this project and stays silent on one outside it.
+- **British spellings, project-wide** (found in Phase 7, 2026-08-30). §8 of the
+  style guide says US English everywhere, and nothing enforces it: `ruff` and
+  `mypy` do not spell-check, and `stylecheck.py` has no rule for it. `colour`,
+  `behaviour`, `artefact`, `licence`, `synthesise` and `-ise` endings appear
+  across **28 files** — prose, docstrings, CSS comments, and **identifiers**
+  (`load_person_colours`, and nine `test_*_colour*` functions in
+  `webapp/tests/`). Left for this phase on purpose: it is a rename as well as a
+  rewrite, and §5 forbids mixing the two in one commit. Do the rename in its
+  own commit, and add the rule to `stylecheck.py` in another, so it cannot come
+  back. Two exceptions that are proper nouns and stay: the **Ubuntu Font
+  Licence**, and the CSS media feature `forced-colors` (already US-spelled in
+  the code — it is the prose around it that says `forced-colours`).
 
 ---
 
@@ -708,7 +721,7 @@ this is the index.
 | — | Commit attribution | **None.** No AI/Claude attribution in commits, comments or docs — see §5. |
 | — | Authority of existing comments | **None.** Unverified and possibly wrong, including about intent. Verify independently or discard; ask rather than assume. Only the frontend style/accessibility material reflects real decisions, and it is kept because it is test-verifiable. |
 | — | How provenance is described | **Never name AI as the author anywhere in the repository.** Say *legacy*, *outdated*, *unverified*, *possibly wrong*. Recorded in §5 and nowhere else. |
-| — | The root README and `data_schema_with_types.md` | **Quarantined to `docs/legacy/`**, not verified and not rewritten now. A short, true README replaces the root one. Phase 7 uses the quarantined files as a topic checklist, moves the database content into `docs/database.md`, then deletes them. |
+| — | The root README and `data_schema_with_types.md` | **Quarantined to `docs/legacy/`**, not verified and not rewritten. A short, true README replaces the root one. **Superseded 2026-08-29:** Phase 7 does *not* mine them for topics or content. They are stale and largely wrong, so nothing may be taken from them; the topics come from the code, the schema and the compose file. Phase 7 deletes them. |
 | — | `/api/stats` (D9) | **Keep for now**, and keep it registered as a discrepancy. |
 | — | `docs/todo.md` | A scratchpad for **post-cleanup** work — see §5. |
 | — | `docs/` skeleton | **Built in Phase 1**, not Phase 7, so Phase 5 has real pages to move rationale into. Phase 7 becomes an editing job. |
@@ -844,7 +857,7 @@ and verified in Phase 8.
 | 5 — In-file docs | `[x]` | `code-cleanup/phase-5` | Done 2026-08-29. Every comment and docstring rewritten across all four sub-projects; every function annotated; `tsc` and a style checker added to the gate; E501 exemption removed. 15 false claims corrected. Detail: [phase-5-documentation.md](phase-5-documentation.md). |
 | — Fix D4 | `[x]` | `code-cleanup/fix-d4-connect-timeout` | Done 2026-08-29. `connect_timeout` in `DB_CONFIG` across all three services, from `DUUI_DB_CONNECT_TIMEOUT` (default 10). The webapp now starts against an unreachable database instead of never listening. |
 | 6 — Test audit | `[x]` | `code-cleanup/phase-6` | Done 2026-08-29. Coverage 48% to 83%; the importer's parsers and both job-run copies had none. Two of the outline's premises were found stale and dropped. |
-| 7 — READMEs + docs | `[ ]` | | |
+| 7 — READMEs + docs | `[x]` | `code-cleanup/phase-7` | Done 2026-08-30. Five READMEs written, root README cut to 87 lines, four `docs/` pages finished, `.env.example` rewritten, `docs/legacy/` deleted. `stylecheck.py` now runs over the whole project, not three parts of it. Every documented command run, including a first-run rehearsal from a clean state in an isolated Compose project. Two questions left for decision: §7.6 and §7.11. Detail: [phase-7-docs.md](phase-7-docs.md). |
 | 8 — Final sweep | `[ ]` | | |
 | 9 — Lockfiles, then changelogs | `[ ]` | | |
 
@@ -864,7 +877,7 @@ and verified in Phase 8.
 | 5 — In-file documentation | [phase-5-documentation.md](phase-5-documentation.md) | `[x]` done |
 | — Fix D4 (connect timeout) | [fix-d4-connect-timeout.md](fix-d4-connect-timeout.md) | `[x]` done |
 | 6 — Test audit | [phase-6-tests.md](phase-6-tests.md) | `[x]` done |
-| 7 — READMEs + docs | *not yet written* | `[ ]` |
+| 7 — READMEs + docs | [phase-7-docs.md](phase-7-docs.md) | `[x]` done |
 | 8 — Final sweep | *not yet written* | `[ ]` |
 | 9 — Lockfiles, then changelogs | *not yet written* | `[ ]` |
 

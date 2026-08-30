@@ -3,19 +3,17 @@
 Browse videos annotated by a DUUI pipeline: transcripts, per-modality emotion
 readings, on-screen people, and the same person recognized across videos.
 
-> **The documentation is being rebuilt.** This page is deliberately short until
-> that work finishes. Start at [`docs/`](docs/README.md).
-
 ## The four parts
 
 | | What it does |
 | --- | --- |
-| [`pgvector-db`](pgvector-db/) | Postgres with pgvector, and the schema |
-| [`cas-to-postgres-importer`](cas-to-postgres-importer/) | Reads CAS `.xmi` files into the database and copies their videos into the video store |
-| [`global-identity-linker`](global-identity-linker/) | Links people across videos by face and voice embeddings |
-| [`webapp`](webapp/) | The web interface: a FastAPI backend and a static frontend |
+| [`pgvector-db`](pgvector-db/README.md) | Postgres with pgvector, and the schema |
+| [`cas-to-postgres-importer`](cas-to-postgres-importer/README.md) | Reads CAS `.xmi` files into the database and copies their videos into the video store |
+| [`global-identity-linker`](global-identity-linker/README.md) | Links people across videos by face and voice embeddings |
+| [`webapp`](webapp/README.md) | The web interface: a FastAPI backend and a static frontend |
 
-They share no code. The database is the only thing they have in common.
+They share no code. The database is the only thing they have in common — see
+[`docs/architecture.md`](docs/architecture.md).
 
 ## Running it
 
@@ -26,19 +24,39 @@ docker compose up -d
 ```
 
 That starts the database and the webapp, which is then at
-<http://localhost:8010>. The two batch jobs are held behind Compose profiles so
-they never run by accident:
+<http://localhost:8010>. It imports nothing, so the video list is empty until
+you ask for an import.
+
+The two batch jobs are held behind Compose profiles so they never run as a side
+effect of `up`. Naming one directly activates its profile:
 
 ```bash
-docker compose --profile import run --rm cas-to-postgres-importer
+docker compose run --rm cas-to-postgres-importer
+docker compose run --rm global-identity-linker
 ```
 
-```bash
-docker compose --profile identity run --rm global-identity-linker
+The first loads CAS files into the database. The second works out which people
+appear in more than one video, over the whole corpus at once, so it is worth
+running after a batch of imports rather than during one.
+
+*If your Compose does not recognize the service, add `--profile import` or
+`--profile identity`. Older versions did not activate a profile from `run`.*
+
+## Pointing it at your own material
+
+Copy `.env.example` to `.env`. With nothing set, the importer reads the sample
+CAS that ships inside its own image. Two settings point it at yours instead:
+
+```ini
+DUUI_INPUT_XMI_DIR=/absolute/path/to/xmi
+DUUI_INPUT_VIDEO_DIR=/absolute/path/to/videos
 ```
 
-Copy `.env.example` to `.env` to change ports, credentials, or where the
-importer looks for input.
+Both are mounted read-only, so nothing is moved or modified where it already
+lives. Leave the second unset when the videos sit beside the CAS files.
+
+Every other setting — ports, credentials, thresholds, the Ask panel — is in
+[`docs/configuration.md`](docs/configuration.md).
 
 ## Tests
 
@@ -52,13 +70,18 @@ Anything after `tests` is passed straight to pytest:
 docker compose run --rm tests webapp/tests -k contrast
 ```
 
-This is the only supported way to run the suite. The project targets a Python
-version that is not installable everywhere, so the runner is a container; it
-creates its own empty test database, applies the schema, and fails rather than
-skipping if the database is unreachable.
+This is the only supported way to run the suite; [`tests/`](tests/README.md)
+says why, and what else lives in there.
+
+Continuous integration runs the same checks. The workflow lives at the
+repository root, outside this project, which has consequences if the project is
+ever moved — [`docs/operations.md`](docs/operations.md) has them.
 
 ## Documentation
 
-[`docs/`](docs/README.md) — architecture, configuration, the schema, operations,
-the glossary, and the writing style. [`docs/plan/`](docs/plan/README.md) tracks
-the rebuild.
+[`docs/`](docs/README.md) is the map: architecture, configuration, the schema,
+operations, the glossary, and the writing style. Each sub-project's own README
+is linked from the table above.
+
+[`docs/plan/`](docs/plan/README.md) tracks the cleanup this project is going
+through.

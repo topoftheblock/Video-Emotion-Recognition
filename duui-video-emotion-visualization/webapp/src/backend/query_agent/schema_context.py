@@ -6,16 +6,16 @@ from `information_schema`: which columns are populated in practice, how
 label vocabularies differ between modalities, and how to recover a time
 anchor for a row that has none.
 
-The structure comes from `pgvector-db/schema.sql`. The semantics were
-cross-checked against three sources: the design mapping now kept at
-`docs/legacy/data-schema-design.md`, the importer's parsers for what is
-actually inserted, and a live query against a populated database for
-which columns are non-null in practice rather than merely nullable in
-the DDL.
+The structure has to match `pgvector-db/schema.sql`, which is what the
+database actually contains. The semantics — which columns are populated,
+what the values look like — are only checkable against two things: the
+importer's parsers, for what is written, and a query against a populated
+database, for what is there. Check a claim below against those before
+trusting it.
 
-The value lists below are representative rather than enumerated: they
-record what has been observed, and a differently configured pipeline
-run could add more.
+The value lists are representative rather than enumerated: they record
+what has been observed, and a differently configured pipeline run could
+add more.
 
 The string itself is a prompt, not documentation for a human reader,
 and is left as written — see docs/plan/phase-5-documentation.md, Q3.

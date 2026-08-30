@@ -386,7 +386,9 @@ reading happens now or as part of rewriting each file.
 ## 2.7 The legacy quarantine
 
 The root `README.md` and `pgvector-db/data_schema_with_types.md` were moved to
-[`docs/legacy/`](../legacy/README.md) rather than verified or rewritten.
+`docs/legacy/` rather than verified or rewritten. **Phase 7 deleted that
+directory** (2026-08-30), so the text below describes a quarantine that no
+longer exists; the files are in git history.
 
 Verifying them now would have been work thrown away: much of what they claim
 describes commands, paths and service names that Phases 3 and 4 will change.

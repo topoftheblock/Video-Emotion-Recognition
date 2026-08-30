@@ -1,9 +1,17 @@
-# Accessibility verification — after Phases 1–5
+# Accessibility verification — baseline versus now
 
-Phase 6.1 of [accessibility.md](accessibility.md). Run 2026-08-20
-against the rebuilt container, diffed against
+What the accessibility remediation actually changed, measured rather
+than asserted. The verification step of the plan in
+[accessibility.md](accessibility.md), which numbers its own phases 0–6
+and has nothing to do with the cleanup effort in `docs/plan/`.
+
+Run 2026-08-20 against the rebuilt container, diffed against
 [a11y-baseline/](a11y-baseline/README.md), which is left untouched as the
 before-picture.
+
+Paths below are relative to the webapp project root (`webapp/`), except
+`css/…` and `js/…`, which are relative to `src/frontend/` — the same convention
+as [accessibility.md](accessibility.md).
 
 Same method as the baseline: axe-core 4.10.2 injected into the live page at
 `http://localhost:8010`, the same five application states, the same `fetch`

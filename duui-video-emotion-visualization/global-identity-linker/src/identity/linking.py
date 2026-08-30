@@ -164,10 +164,8 @@ def _best_cross_video_match(
 
     Returns:
         The candidate, the global person it already belongs to if any,
-            and the
-        distance between them. None when there is no candidate, or the
-            closest
-        one is beyond `threshold`.
+        and the distance between them. None when there is no candidate,
+        or when the closest one is beyond `threshold`.
     """
     cursor.execute(_MATCH_SQL.format(temp_table=temp_table), person)
     row = cursor.fetchone()

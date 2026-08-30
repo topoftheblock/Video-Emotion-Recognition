@@ -19,14 +19,18 @@ are not rewrapped — see docs/plan/phase-5-documentation.md, Q6.
 TYPES = {
     "multimedia_element": "org.texttechnologylab.annotation.type.MultimediaElement",
     "document_meta_data": "de.tudarmstadt.ukp.dkpro.core.api.metadata.type.DocumentMetaData",
-    # Lives under the `.model` subpackage, not directly under
-    # `.annotation` — confirmed against real pipeline output.
-    # The design mapping (docs/legacy/data-schema-design.md) specifies
-    # the bare `annotation.MetaData` type here, not `.model.MetaData`.
-    # Since `model.MetaData`/`model.HuggingfaceMetaData` both extend
-    # this bare type (see INJECTED_FALLBACK_TYPES), selecting the bare
-    # type already picks up every concrete subtype instance too, since
-    # select() includes descendants. One name covers every Model row.
+    # The bare type, deliberately, not `.model.MetaData`.
+    #
+    # INJECTED_FALLBACK_TYPES below declares the hierarchy:
+    # `model.MetaData` extends this bare type, and
+    # `model.HuggingfaceMetaData` extends `model.MetaData`. Since
+    # `select` includes descendants, this one name reaches every
+    # concrete model annotation.
+    #
+    # Narrowing it to `model.MetaData` would drop nothing today but
+    # would break the moment a pipeline emits a sibling subtype. In the
+    # shipped sample every instance returned is one of the two
+    # subtypes; not one is the bare type itself.
     "model_meta_data": "org.texttechnologylab.annotation.MetaData",
     "shot": "org.texttechnologylab.annotation.video.Shot",
     "speaker_sentence": "org.texttechnologylab.annotation.audio.SpeakerSentence",

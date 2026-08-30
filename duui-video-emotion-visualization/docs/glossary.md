@@ -231,7 +231,7 @@ Fixed and not to be changed. Refer to each by its exact directory name:
 | `webapp` | `backend` | The webapp: FastAPI backend plus static frontend |
 | `cas-to-postgres-importer` | `importer` | The importer: CAS files into the database |
 | `global-identity-linker` | `identity` | The identity linker: assigns global persons |
-| `pgvector-db` | — | Postgres 16 + pgvector, with the schema baked in |
+| `pgvector-db` | — | Postgres 18 + pgvector, with the schema baked in |
 
 In prose, "the importer", "the linker", "the webapp", and "the database" are the
 short forms.

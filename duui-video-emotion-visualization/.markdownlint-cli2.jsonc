@@ -1,10 +1,7 @@
 {
-  // Applies to every .md file. Legacy documents are excluded below: they are
-  // deleted when Phase 7 finishes and reformatting them would put churn in a
-  // diff that should stay empty.
+  // Applies to every .md file, with the two exclusions noted below.
   "globs": [
     "**/*.md",
-    "!docs/legacy/**",
     "!node_modules/**",
     // Captured output from a past accessibility run, not documents under
     // maintenance. Reformatting a record of what a tool printed would falsify
@@ -25,11 +22,11 @@
     // This project writes *emphasis* with asterisks throughout.
     "MD049": { "style": "asterisk" },
     "MD050": { "style": "asterisk" },
-    // Duplicate headings are fine when they sit under different parents -- the
+    // Duplicate headings are fine when they sit under different parents — the
     // phase plans repeat "Exit criteria" and similar by design.
     "MD024": { "siblings_only": true },
-    // Inline HTML is used deliberately: <!-- --> notes in the stub documents and
-    // the occasional <br> in a table cell.
+    // Inline HTML is used deliberately: an <!-- --> note marking where a
+    // living document is appended to, and the occasional <br> in a table cell.
     "MD033": false,
   },
 }

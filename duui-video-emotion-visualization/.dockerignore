@@ -1,5 +1,6 @@
-# Build context for Dockerfile.tests. The sub-projects have their own; this one
-# covers the project root, whose context is the whole directory.
+# Build context for Dockerfile.tests. The sub-projects have their own;
+# this one covers the project root, whose context is the whole
+# directory.
 .venv/
 __pycache__/
 .pytest_cache/

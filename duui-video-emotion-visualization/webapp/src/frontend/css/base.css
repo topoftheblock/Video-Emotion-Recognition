@@ -7,16 +7,16 @@
 ------------------------------------------------------------------ */
 
 /* Every self-hosted family lives in its own fonts/<family>/ folder,
-   next to that family's own licence file — fonts/oxanium/OFL.txt,
+   next to that family's own license file — fonts/oxanium/OFL.txt,
    fonts/ubuntu-mono/UFL.txt, fonts/roboto/OFL.txt. One font, one
-   licence, one directory: nothing to cross-reference when a licence
+   license, one directory: nothing to cross-reference when a license
    needs checking or a family needs pulling out. */
 
 /* Oxanium — the same file DUUIWeb ships in static/fonts/.
 
    Variable (wght 200-800) in a single 42KB file. DUUIWeb's @font-face
    omits the weight range, which pins the axis at 400 and leaves the
-   browser to synthesise every bold; declaring the real range here means
+   browser to synthesize every bold; declaring the real range here means
    600/700 render as drawn glyphs instead. Same typeface, just not
    faked. */
 @font-face {
@@ -30,18 +30,22 @@
 /* Ubuntu Mono, from the official ubuntu-font-family-0.83 release rather
    than the lone Regular that DUUIWeb bundles. Same font, same version
    (0.80), but the release carries the real Bold and Italic faces, so
-   nothing here is synthesised.
+   nothing here is synthesized.
 
-   All four faces of the family, for completeness — three of them match
-   what the app currently asks for: 400 normal  -- the default for every
-   read-out 700 normal  -- what a request for 600 (.emo-dominant,
-   .ask-table th) resolves to, since CSS matching walks upward from any
-   desired weight above 500 400 italic  -- .emo-row-dim .emo-label, the
-   valence/arousal/ dominance rows in the emotion panels 700 italic  --
-   unused today; shipped so the family is whole rather than missing its
-   one remaining combination Note that 500 (.time-readout, .emo-now)
-   resolves *down* to 400 by the same weight-matching rule — a real
-   Regular, not a synthesised in-between. */
+   All four faces of the family are declared. Three of them match what
+   the page currently asks for:
+
+     400 normal  the default for every read-out
+     700 normal  what a request for 600 (.emo-dominant, .ask-table th)
+                 resolves to, since CSS weight matching walks upward
+                 from any desired weight above 500
+     400 italic  .emo-row-dim .emo-label, the valence/arousal/dominance
+                 rows in the emotion panels
+     700 italic  unused today; shipped so the family is whole rather
+                 than missing its one remaining combination
+
+   Note that 500 (.time-readout, .emo-now) resolves *down* to 400 by the
+   same rule — a real Regular, not a synthesized in-between. */
 @font-face {
   font-family: "Ubuntu Mono";
   src: url("../fonts/ubuntu-mono/UbuntuMono-R.ttf") format("truetype");

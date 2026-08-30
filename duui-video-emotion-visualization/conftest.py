@@ -10,15 +10,17 @@ Its only job is to make an incomplete run say so. `docker compose run
 --rm tests`, the supported way to run the suite, provisions a database
 and fails outright if it cannot, so nothing skips on that path. Running
 `pytest` directly does not, and the database-backed tests then skip
-quietly — 29 of them, in a run that still reports success. That is a
-weaker signal than it looks, and this makes it visible.
+quietly — well over a quarter of the suite, in a run that still reports
+success. That is a weaker signal than it looks, and this makes it
+visible. The banner counts them, so the number stays true as the suite
+grows.
 """
 
 import pytest
 
-#: A skip reason mentioning any of these is a skip for want of a
-#: database, rather than a deliberate exclusion such as a check that
-#: cannot run as root.
+# A skip reason mentioning any of these is a skip for want of a
+# database, rather than a deliberate exclusion such as a check that
+# cannot run as root.
 _DATABASE_WORDS = ("database", "postgres", "db reachable")
 
 
