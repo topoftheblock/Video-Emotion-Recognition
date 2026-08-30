@@ -858,7 +858,7 @@ and verified in Phase 8.
 | — Fix D4 | `[x]` | `code-cleanup/fix-d4-connect-timeout` | Done 2026-08-29. `connect_timeout` in `DB_CONFIG` across all three services, from `DUUI_DB_CONNECT_TIMEOUT` (default 10). The webapp now starts against an unreachable database instead of never listening. |
 | 6 — Test audit | `[x]` | `code-cleanup/phase-6` | Done 2026-08-29. Coverage 48% to 83%; the importer's parsers and both job-run copies had none. Two of the outline's premises were found stale and dropped. |
 | 7 — READMEs + docs | `[x]` | `code-cleanup/phase-7` | Done 2026-08-30. Five READMEs written, root README cut to 87 lines, four `docs/` pages finished, `.env.example` rewritten, `docs/legacy/` deleted. `stylecheck.py` now runs over the whole project, not three parts of it. Every documented command run, including a first-run rehearsal from a clean state in an isolated Compose project. Two questions left for decision: §7.6 and §7.11. Detail: [phase-7-docs.md](phase-7-docs.md). |
-| 8 — Final sweep | `[ ]` | | |
+| 8 — Final sweep | `[~]` | `code-cleanup/phase-8` | Plan drafted 2026-08-30; four questions open. Detail: [phase-8-sweep.md](phase-8-sweep.md). |
 | 9 — Lockfiles, then changelogs | `[ ]` | | |
 
 ---
@@ -878,7 +878,7 @@ and verified in Phase 8.
 | — Fix D4 (connect timeout) | [fix-d4-connect-timeout.md](fix-d4-connect-timeout.md) | `[x]` done |
 | 6 — Test audit | [phase-6-tests.md](phase-6-tests.md) | `[x]` done |
 | 7 — READMEs + docs | [phase-7-docs.md](phase-7-docs.md) | `[x]` done |
-| 8 — Final sweep | *not yet written* | `[ ]` |
+| 8 — Final sweep | [phase-8-sweep.md](phase-8-sweep.md) | `[~]` plan drafted |
 | 9 — Lockfiles, then changelogs | *not yet written* | `[ ]` |
 
 **What goes where.** This file is the durable record: constraints (§1), the
