@@ -1,8 +1,8 @@
 """Session-level reporting for a run that spans all three suites.
 
 Deliberately not a shared fixture. Sub-projects share no files, and each
-keeps its own `tests/conftest.py` with its own copy of anything it needs
-— see docs/plan/README.md §1. What lives here is the one thing that
+keeps its own `tests/conftest.py` with its own copy of anything it
+needs. What lives here is the one thing that
 cannot live there: a summary of the whole session, which would print
 three times if each suite defined it.
 

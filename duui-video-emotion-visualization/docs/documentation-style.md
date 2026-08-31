@@ -224,8 +224,8 @@ Rules:
 
 ### Type annotations
 
-Every function annotates its parameters and its return. Adopted in full — see
-`docs/plan/README.md` §7.
+Every function annotates its parameters and its return. Adopted in full, and
+checked by `mypy --disallow-untyped-defs` over every sub-project.
 
 ```python
 def parse_and_insert(

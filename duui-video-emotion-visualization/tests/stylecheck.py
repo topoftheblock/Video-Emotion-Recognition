@@ -88,6 +88,13 @@ CORPUS = [
 # identifiers too and `load_person_colours` has no word boundary before
 # `colours`. Two sequences contain one of these and are not misspelled:
 # an ARIA attribute, and a license's actual name.
+#
+# The `-ise` entries are listed one by one rather than matched as a
+# family, and have to be: `otherwise`, `promise`, `exercise`,
+# `compromise`, `likewise` and `surprise` all end that way and are
+# correct. A general rule would report every one of them. The cost is
+# that a British word nobody has listed goes unnoticed, which is how
+# `centralis` and `materialis` reached this list late.
 SPELLING = [
     ("colour", "color"),
     ("behaviour", "behavior"),
@@ -108,14 +115,10 @@ SPELLING = [
     ("organis", "organiz"),
     ("initialis", "initializ"),
     ("serialis", "serializ"),
+    ("centralis", "centraliz"),
+    ("materialis", "materializ"),
 ]
 SPELLING_EXEMPT = ("aria-labelledby", "Ubuntu Font Licence")
-
-# `docs/plan/` is excluded by decision (2026-08-30). Those files record
-# what was found and decided on a date; correcting a spelling in one
-# edits the evidence rather than the software. The guide binds what the
-# project says, not the account of how it got there.
-SPELLING_SKIP_DIRS = ("docs/plan",)
 
 CHECKED_SUFFIXES = (
     ".py",
@@ -311,8 +314,7 @@ def check_file(
     lines = src.split("\n")
     found: list[tuple[int, str, str]] = []
 
-    in_skipped_dir = any(skipped in path.as_posix() for skipped in SPELLING_SKIP_DIRS)
-    spelling_lines = [] if in_skipped_dir else _spelling_findings(lines)
+    spelling_lines = _spelling_findings(lines)
     try:
         prose = prose_lines(src, path)
     except SyntaxError as exc:

@@ -86,6 +86,3 @@ ever moved — [`docs/operations.md`](docs/operations.md) has them.
 [`docs/`](docs/README.md) is the map: architecture, configuration, the schema,
 operations, the glossary, and the writing style. Each sub-project's own README
 is linked from the table above.
-
-[`docs/plan/`](docs/plan/README.md) tracks the cleanup this project is going
-through.

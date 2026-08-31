@@ -47,7 +47,6 @@ GLOBAL_PERSON_VOICE_DISTANCE_THRESHOLD = float(
 # simply an unfinished template is not recorded anywhere in this
 # repository. It does have one known consequence: on a host with no
 # DUUI_DB_* set, every database-backed test skips instead of running.
-# See docs/plan/phase-0-baseline.md §0.2(c).
 # Seconds to wait for the connection itself. Without it, psycopg2 waits
 # on the operating system's TCP timeout: against a host that accepts the
 # route but never answers, that is minutes with nothing printed. Ten
