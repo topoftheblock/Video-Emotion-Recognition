@@ -71,7 +71,7 @@ known-first-party = ["importer", "backend", "identity"]
 # 332 lines of prose inside one string constant, describing the database
 # to a language model. It is a prompt, not documentation for a human
 # reader, and rewrapping it would change what the model is given. Left
-# as written by decision — see docs/plan/phase-5-documentation.md, Q3.
+# as written, by decision.
 "webapp/src/backend/query_agent/schema_context.py" = ["E501"]
 
 [tool.mypy]

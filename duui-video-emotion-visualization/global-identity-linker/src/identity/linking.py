@@ -42,7 +42,7 @@ Person = tuple[int, int]
 # rather than any single one. pgvector averages the vector type
 # directly.
 #
-# Materialised into a temp table once per run rather than recomputed as
+# Materialized into a temp table once per run rather than recomputed as
 # a CTE inside each lookup, because a recompute does one lookup per
 # person in the corpus and each would otherwise rescan the whole
 # embeddings table.

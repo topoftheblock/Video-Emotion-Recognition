@@ -4,12 +4,12 @@ Type names and fallback type definitions: domain constants, not
 settings. Nothing here varies per deployment, which is what separates
 this module from `config.py`, and why it was split out of it.
 
-The XML strings below are data. They are exempt from the line limit and
-are not rewrapped — see docs/plan/phase-5-documentation.md, Q6.
+The XML strings below are data. They are exempt from the line limit
+and are not rewrapped: wrapping them would corrupt what they define.
 """
 
 # --- UIMA type names ----------------------------------------------------
-# Centralising these means a type-system rename only touches this file.
+# Centralizing these means a type-system rename only touches this file.
 # Only types some parser step selects by name are listed. Types this
 # importer reads but never selects — Embedding, AnnotationComment,
 # HuggingfaceMetaData — are reached by following a feature off an
@@ -207,7 +207,7 @@ INJECTED_FALLBACK_TYPES = {
 # buries anything real, so `loading_cas_quietly` filters exactly these
 # messages. Declaring them here instead of stubbing them in
 # INJECTED_FALLBACK_TYPES is deliberate: a featureless stub would make
-# cassis materialise thousands of annotations nobody reads, and then
+# cassis materialize thousands of annotations nobody reads, and then
 # complain about their unknown features instead.
 #
 # Nothing outside this set is silenced. A type that goes missing because

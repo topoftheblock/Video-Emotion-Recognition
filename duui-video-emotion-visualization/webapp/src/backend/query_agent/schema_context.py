@@ -18,7 +18,7 @@ what has been observed, and a differently configured pipeline run could
 add more.
 
 The string itself is a prompt, not documentation for a human reader,
-and is left as written — see docs/plan/phase-5-documentation.md, Q3.
+and is left as written, by decision.
 """
 
 SCHEMA_CONTEXT = """

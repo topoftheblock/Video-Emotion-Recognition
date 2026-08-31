@@ -75,8 +75,6 @@ CI workflow does with its `paths:` filter.
 
 ## Where the detail is
 
-- **What each checker covers, and why each one is in the roster** —
-  [`docs/plan/README.md`](../docs/plan/README.md) §6.
 - **The rules `stylecheck.py` enforces** —
   [`docs/documentation-style.md`](../docs/documentation-style.md) and
   [`docs/glossary.md`](../docs/glossary.md).

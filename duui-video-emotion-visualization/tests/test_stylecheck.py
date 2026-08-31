@@ -154,6 +154,22 @@ def test_the_american_spelling_is_not_found(tmp_path: pathlib.Path) -> None:
     assert kinds(path) == []
 
 
+@pytest.mark.parametrize(
+    "word", ["otherwise", "promise", "exercise", "compromise", "likewise", "surprise"]
+)
+def test_a_word_merely_ending_in_ise_is_not_a_finding(
+    word: str, tmp_path: pathlib.Path
+) -> None:
+    """Why the -ise entries are listed one by one, not as a family.
+
+    Every one of these is correct in both dialects. A general
+    `-ise` rule would report all six, which is why the list is
+    explicit and why it has to be extended a word at a time.
+    """
+    path = write(tmp_path, "a.sh", f"# It would {word} otherwise.\n")
+    assert kinds(path) == []
+
+
 def test_a_british_spelling_inside_an_identifier_is_found(
     tmp_path: pathlib.Path,
 ) -> None:
@@ -221,19 +237,6 @@ def test_a_markdown_table_is_not_measured_at_88(tmp_path: pathlib.Path) -> None:
 def test_a_markdown_code_fence_is_not_read_as_prose(tmp_path: pathlib.Path) -> None:
     """A documented flag is not a legacy em dash."""
     path = write(tmp_path, "a.md", "```bash\ngit diff --cached -- src/\n```\n")
-    assert kinds(path) == []
-
-
-def test_the_plan_is_exempt_from_the_spelling_rule(tmp_path: pathlib.Path) -> None:
-    """`docs/plan/` records what was found on a date; it is evidence.
-
-    Rewriting it to fix a spelling edits the record rather than
-    the software, which is why the owner excluded it.
-    """
-    plan = tmp_path / "docs" / "plan"
-    plan.mkdir(parents=True)
-    path = plan / "phase-1.md"
-    path.write_text("The colour it was then.\n")
     assert kinds(path) == []
 
 

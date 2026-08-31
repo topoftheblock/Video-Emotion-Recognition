@@ -238,7 +238,7 @@
      control a low-vision * reader actually reaches for, and the one
      that does not reflow the * layout the way full-page zoom does. Page
      zoom scales px fine; this * setting does not touch it. WCAG 1.4.4.
-     * * Centralised rather than written at each call site, where `14px`
+     * * Centralized rather than written at each call site, where `14px`
      * appeared eighteen times and `12px` fourteen with nothing tying
      them * together. The comment on each step is the px value at a
      default * 16px root, which is what the design was drawn at — not a

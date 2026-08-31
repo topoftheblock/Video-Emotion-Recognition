@@ -2,8 +2,7 @@
 
 What the accessibility remediation actually changed, measured rather
 than asserted. The verification step of the plan in
-[accessibility.md](accessibility.md), which numbers its own phases 0–6
-and has nothing to do with the cleanup effort in `docs/plan/`.
+[accessibility.md](accessibility.md), which numbers its own phases 0–6.
 
 Run 2026-08-20 against the rebuilt container, diffed against
 [a11y-baseline/](a11y-baseline/README.md), which is left untouched as the
